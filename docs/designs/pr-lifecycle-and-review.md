@@ -292,9 +292,9 @@ skill.
 ## Validation scenarios
 | Scenario | Configuration / action | Expected result | Evidence |
 | --- | --- | --- | --- |
-| <primary> | <setup/action> | <observable result> | <test, command, screenshot, or other evidence> |
+| <primary> | <setup/action> | <observable result> | <screenshot, migration observation, or other durable reviewer evidence> |
 
-## Rollout and removal gates
+## Rollout plan
 - <Configuration/default.>
 - <Enablement evidence.>
 - <Rollback action.>
@@ -303,13 +303,15 @@ skill.
 
 Only `Overview` and `Validation scenarios` are universal. Include `Scoped
 architecture` when a short ASCII diagram materially clarifies flow, ownership,
-state, or dependency order. Include `Rollout and removal gates` for flags,
-migrations, compatibility paths, or staged removal.
+state, or dependency order. Include `Rollout plan` only for an actual feature
+flag, migration sequence, staged enablement, compatibility window, or
+operational rollback. A removal, version change, or deferred follow-up belongs
+in `Overview` and does not trigger the section by itself.
 
 The description owns durable behavior, compatibility, scenarios, and evidence
-not already visible elsewhere. Automation owns live check status and changing
-counts. When a repository has no PR CI or requires local evidence, name the
-exact commands that actually ran.
+not already visible elsewhere. CI owns commands, pass/fail status, changing
+counts, and revision-bound review results. Do not repeat them in a separate
+validation-results summary.
 
 Any user-visible UI slice includes proportional visual evidence. Use a cropped
 before/after or resulting-state screenshot for a small change and broader

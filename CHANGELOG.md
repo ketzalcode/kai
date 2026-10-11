@@ -13,7 +13,7 @@ follow semantic versioning.
 - Added `pr-review` and `pr-review-comments` for adaptive review and balanced,
   authorization-aware inline feedback.
 - Added a `pr-delivery` description reference with concise overview, scoped
-  ASCII architecture, scenario evidence, and conditional rollout/removal gates.
+  ASCII architecture, scenario evidence, and conditional rollout plans.
 
 ### Changed
 

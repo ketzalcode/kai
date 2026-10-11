@@ -19,17 +19,20 @@ no information.
 
 | Scenario | Configuration / action | Expected result | Evidence |
 | --- | --- | --- | --- |
-| Primary behavior | Exercise the accepted path | Accepted observable result | Exact test, command, screenshot, or other evidence |
+| Primary behavior | Exercise the accepted path | Accepted observable result | Screenshot, migration observation, or other durable reviewer evidence |
 
 Use proportional scenarios for the slice. User-visible UI changes include
-usable uploaded screenshots. Automation owns live status and changing counts;
-the description owns durable behavior and evidence not visible elsewhere.
+usable uploaded screenshots. Evidence is only durable reviewer-facing material
+not already visible in automation. CI owns commands, pass/fail status, changing
+counts, and revision-bound review results. Do not add a separate
+validation-results summary.
 
-## Rollout and removal gates
+## Rollout plan
 
-Use this section only for flags, migrations, compatibility paths, staged
-rollout, rollback, or later cleanup. Add rollout and removal gates only when
-those cases apply.
+Include this section only when the PR has an actual rollout plan: a feature
+flag, migration sequence, staged enablement, compatibility window, or
+operational rollback. A removal, version change, or deferred follow-up by
+itself does not trigger this section; keep those boundaries in `Overview`.
 
 ### Feature-flagged migration profile
 

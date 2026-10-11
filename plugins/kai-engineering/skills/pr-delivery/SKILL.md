@@ -121,12 +121,13 @@ Slugs are kebab-case, lowercase, and short enough to read in a branch list.
 
 Read `references/pr-description.md` before drafting or updating the body. Use
 the `Overview` and `Validation scenarios` sections by default. Add scoped ASCII
-architecture and rollout/removal gates only when their triggers apply.
+architecture when its trigger applies, and a rollout plan only when the change
+has one.
 
 Describe one accepted delivery slice. Name dependencies on earlier PRs and work
-deliberately deferred to later slices. Do not copy live CI counts, reviewer
-history, or stale implementation narrative into the durable behavior
-description.
+deliberately deferred to later slices. CI owns commands, pass/fail status,
+changing counts, reviewer state, and exact-revision results. Keep those out of
+the durable behavior description.
 
 ## 5 - Version bump
 
@@ -171,7 +172,8 @@ Before opening the PR:
    escalate to `@operator`.
 4. **The human presses merge.** Draft and validate; never merge, tag, or
    release. Consistent with every other kai role.
-5. **Verification names the command.** An unnamed claim is not verification.
+5. **Keep execution status out of the PR description.** CI and repository
+   checks own commands, counts, and current results.
 6. **A changed user-visible surface ships before/after screenshots**, scaled to
    the change - a cropped pair for a copy tweak, a full pair for a layout change.
 7. **Read conventions from the workspace, not from memory.** A repo with a
@@ -183,8 +185,8 @@ Before opening the PR:
 - Pushing to a protected `main` and reporting `Bypassed rule violations` as
   though it were success.
 - A PR body that describes the fix but never explains the changed behavior, preserved behavior, scope boundary/dependency, or evidence, so the reviewer cannot disagree with the diagnosis.
-- "Tests pass" with no command, or a Verification section written before the
-  command was run.
+- Copying test commands, pass counts, review status, or exact revision results
+  into the durable PR description.
 - A `feat` branch with no issue and no coordination Task, delivered silently.
 - Bumping a minor because the diff was large, or a patch because it felt small -
   semver describes the **surface**, not the effort.

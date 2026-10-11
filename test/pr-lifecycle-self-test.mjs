@@ -85,6 +85,9 @@ test('pr delivery reads the shared description reference', () => {
     delivery,
     /changed behavior, preserved behavior, scope boundary\/dependency, or evidence/,
   );
+  assert.match(delivery, /rollout plan only when the change\s+has one/);
+  assert.doesNotMatch(delivery, /rollout\/removal gates/);
+  assert.doesNotMatch(delivery, /Verification names the command/);
 
   const reference = readFileSync(join(
     root,
@@ -117,12 +120,25 @@ test('pr delivery reads the shared description reference', () => {
   );
   assert.match(
     reference,
-    /Add rollout and removal gates only when[\s\S]*those cases apply\./,
+    /CI owns commands, pass\/fail status, changing\s+counts, and revision-bound review results/,
+  );
+  assert.match(
+    reference,
+    /Do not add a separate\s+validation-results summary/,
+  );
+  assert.match(
+    reference,
+    /Include this section only when the PR has an actual rollout plan/,
+  );
+  assert.match(
+    reference,
+    /A removal, version change, or deferred follow-up by\s+itself does not trigger this section/,
   );
   assert.match(reference, /^## Overview$/m);
   assert.match(reference, /^## Scoped architecture$/m);
   assert.match(reference, /^## Validation scenarios$/m);
-  assert.match(reference, /^## Rollout and removal gates$/m);
+  assert.match(reference, /^## Rollout plan$/m);
+  assert.doesNotMatch(reference, /^## Rollout and removal gates$/m);
   for (const scenario of [
     'Default/inactive',
     'Enabled success',
