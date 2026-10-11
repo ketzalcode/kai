@@ -1,59 +1,42 @@
 ---
 name: pr-sizing
-description: "Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment."
-tools: [read, search]
+description: "Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs."
+tools: [execute, read, search]
 user-invocable: true
-argument-hint: "optional feature description"
+argument-hint: "optional completed diff or delivery goal"
 ---
 
 # PR Sizing
 
-Turn an authorized scope into proportional delivery decomposition. Return an
-ordered proposal when splitting improves delivery, or conclude that one
-coherent delivery needs no split.
+Read the complete integrated diff and decide how the finished work reaches
+review. Return one coherent delivery or an ordered proposal of independently
+valid slices.
 
-## When to use
+## One PR by default
 
-- The user asks how to sequence an authorized change.
-- The work has real compatibility, rollout, review, or risk boundaries that
-  may justify ordered increments.
-- The caller cannot yet tell whether one coherent delivery or several
-  increments is the safer proportionate answer.
+Prefer one PR when the change expresses one cohesive behavior or structural
+step that a reviewer can understand and validate together.
 
-Do not load this skill merely because implementation is about to begin. If the
-authorized work is already one coherent delivery, continue it without a sizing
-ceremony unless the user explicitly asks for a sizing decision.
+## Split only at safe review boundaries
 
-## Method
+Split only when compatibility, independent validation, rollout, reversal, risk
+isolation, or reviewer comprehension materially improves.
 
-### 1. Read the delivery constraints
+A typical slice should aim for roughly four or five primary hand-authored files
+when cohesion allows. This is a signal, not a cap. Tests stay with behavior;
+generated files and synchronized metadata do not force another split.
 
-Identify the intended outcome, compatibility obligations, rollout or reversal
-needs, dependencies, and relevant validation. File counts, estimated diff size,
-and elapsed time may provide context, but they do not decide the split.
+Do not split solely because one part is client-side and another is server-side.
+A server foundation may precede its client only when both merged states are
+independently valid and testable.
 
-### 2. Decide whether decomposition helps
+## Slice contract
 
-Prefer one delivery when the change is a coherent concept that can be reviewed,
-validated, and landed safely together. State **no split** and explain why.
+Each slice states one purpose, remains valid at that landing point, includes its
+tests and scenarios, preserves later compatibility, names dependencies and
+deferred work, and has a reversal story when applicable.
 
-Split only where an ordered boundary materially improves compatibility, risk,
-review, rollout, or reversibility without creating coordination-only
-micro-PRs.
-
-A necessary small refactor may accompany its feature when separating them adds
-no independent value. An independently useful or risk-reducing refactor may
-also be its own increment.
-
-Ordered increments may depend on earlier landed increments. Preserve
-compatibility and safety at each landing point, and state the dependency. A
-preparatory increment does not have to deliver the final user feature
-immediately when it is a safe, meaningful step in a genuine migration.
-
-Tests stay with the affected behavior. Do not separate tests into a later
-increment.
-
-### 3. Return the proposal
+## Output
 
 For one delivery:
 
@@ -66,15 +49,10 @@ For several deliveries, return an ordered proposal:
 
 ```text
 1. <purpose>
-   - Depends on: <earlier landed increment or none>
-   - Landing safety: <compatibility, reversal, or risk boundary>
+   - Depends on: <earlier landed slice or none>
+   - Landing safety: <compatibility, reversal, rollout, or risk boundary>
    - Validation: <tests and checks for affected behavior>
 ```
 
-Stop after the proposal. Do not edit code, create branches or pull requests,
-start an increment, or add a new approval step solely because this skill was
-loaded.
-
-After consuming the proposal, the caller may continue any independently
-authorized implementation. Sizing neither grants nor withdraws that authority;
-a plan-only request remains plan-only.
+Stop after the sizing proposal. Do not edit code, create branches or pull
+requests, or add a new approval step solely because this skill was loaded.

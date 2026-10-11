@@ -4,6 +4,31 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [21.0.0] - 2026-10-09
+
+### Added
+
+- Added `eng-lead-software` for complete-change integration, builder routing,
+  post-build PR sizing, independent review routing, and PR delivery.
+- Added `pr-review` and `pr-review-comments` for adaptive review and balanced,
+  authorization-aware inline feedback.
+- Added a `pr-delivery` description reference with concise overview, scoped
+  ASCII architecture, scenario evidence, and conditional rollout plans.
+
+### Changed
+
+- Moved `pr-sizing` after the complete diff exists and made human reviewability,
+  valid intermediate states, and dependency order its delivery boundaries.
+- Builders now stop at implementation/test evidence handoff instead of owning
+  final PR sizing or delivery.
+
+### Removed
+
+- Removed `workflow-pull-request`; its useful integration, protection, and
+  merge-readiness responsibilities now belong to `eng-lead-software`.
+- Removed `eng-lead-architecture` from active discovery and preserved it under
+  incubation for the redesign tracked by #249.
+
 ## [20.0.1] - 2026-10-09
 
 ### Changed
@@ -4495,6 +4520,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[21.0.0]: https://github.com/ketzalcode/kai/compare/v20.0.1...v21.0.0
 [20.0.1]: https://github.com/ketzalcode/kai/compare/v20.0.0...v20.0.1
 [20.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v20.0.0
 [19.0.0]: https://github.com/ketzalcode/kai/compare/v18.0.0...v19.0.0

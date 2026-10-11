@@ -101,6 +101,11 @@ valid. Unknown and untested coverage is explicit. Do not suppress scope-
 expanding defects, invent expected behavior, spawn nested reviewers, or patch
 the product.
 
+When inline PR comments are requested, use the shared comment flow. Apply `pr-review-comments`
+to this reviewer's verified findings. The shared skill
+controls communication and posting authorization; it does not replace this
+role's specialist judgment.
+
 ## Requested durable or coordinated work
 
 Default to inline findings. For a requested durable report backed by the

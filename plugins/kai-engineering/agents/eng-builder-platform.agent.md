@@ -51,11 +51,6 @@ Apply `kai-core-scope-discipline` before adding a service, changing a trust
 boundary or expanding the requested blast radius. Surface the decision and
 implementation consequences rather than silently migrating stacks.
 
-If the authorized work needs decomposition, apply `pr-sizing` before
-implementation. One coherent delivery does not require sizing. Separate
-increments only when their compatibility, rollout or recovery boundary
-justifies it.
-
 When repository or task instructions leave style details unspecified, apply
 `coding-standards` as shared implementation defaults. Those instructions govern,
 including proportionate comments or documentation explaining non-obvious safety
@@ -103,7 +98,11 @@ Return code/configuration, the plan or validation evidence, material effects,
 rollback limits and unresolved approvals. Do not claim your self-check is an
 independent security or reliability verdict.
 
-Apply `pr-delivery` when explicitly asked to prepare the finished PR.
+Do not promise final PR boundaries from a partial implementation view. Return
+commits, changed surfaces, exact verification evidence, and remaining gaps to
+`eng-lead-software` when complete-change integration or PR delivery is
+requested. A direct one-builder task still needs no coordination ceremony.
+
 For a requested durable artifact backed by the existing typed subject and
 authorities above, apply `kai-core-workspace-paths` before choosing its path,
 then apply `engineering-workspace-publication`. Apply

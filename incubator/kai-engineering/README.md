@@ -1,4 +1,4 @@
-# Incubated engineering review components
+# Incubated engineering components
 
 These components are inactive development drafts. In this checkout, they are
 tracked here to preserve source and history, but they are not part of the active
@@ -12,9 +12,14 @@ independent review of its responsibility, triggers, inputs, output contract,
 consumer, stopping point, grounding rules, focused evidence, and operator
 sign-off.
 
+`eng-lead-architecture` is tracked separately in
+[#249](https://github.com/ketzalcode/kai/issues/249). Its active trigger and
+relationship to `eng-lead-software` require redesign before re-entry.
+
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
 | `workflow-doc-review` | agent | `plugins/kai-engineering/agents/workflow-doc-review.agent.md` | inactive |
+| `eng-lead-architecture` | agent | `plugins/kai-engineering/agents/eng-lead-architecture.agent.md` | inactive; re-entry tracked by #249 |
 | `doc-review-rigor` | skill | `plugins/kai-engineering/skills/doc-review-rigor/SKILL.md` | inactive |
 | `review-security-privacy` | skill | `plugins/kai-engineering/skills/review-security-privacy/SKILL.md` | inactive |
 | `review-rollout-operability` | skill | `plugins/kai-engineering/skills/review-rollout-operability/SKILL.md` | inactive |

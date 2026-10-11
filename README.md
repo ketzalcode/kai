@@ -1,9 +1,9 @@
 # Kai
 
 Kai is an open-source plugin for the **GitHub Copilot CLI**. It adds a team of
-specialist agents — implementation, architecture, independent review, delivery,
-design and demo production — that each own a piece of judgment, and a durable
-work record that survives the session.
+specialist agents — implementation, technical investigation, independent review,
+and delivery — that each own a piece of judgment, and a durable work record
+that survives the session.
 
 **Who it is for.** Developers and small teams already using the Copilot CLI who
 want a reviewer that disagrees with them, a scope owner that pushes back, and a
@@ -28,10 +28,11 @@ Three packages. That is the entire shipped surface.
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
   | 13 agents                      |   |  3 agents                      |
-  |  7 skills                      |   |  7 skills                      |
+  |  9 skills                      |   |  7 skills                      |
   |  0 executable entry points     |   |  3 executable entry points     |
-  | implementation, architecture,  |   | UI/UX, visual identity,        |
-  | independent review, delivery   |   | video and demo production      |
+  | implementation, technical      |   | UI/UX, visual identity,        |
+  | investigation, independent     |   |                                |
+  | review, and delivery           |   | video and demo production      |
   +--------------------------------+   +--------------------------------+
                   |                                    |
                   |             depends on             |
@@ -61,7 +62,7 @@ resolves, and why you can install just the departments you want.
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
 | `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 7 | Implementation, architecture, independent review, delivery |
+| `kai-engineering` | 13 / 9 | Implementation, technical investigation, independent review, and delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
 Counts come from `plugins/` and are checked against the generated
@@ -346,13 +347,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v20.0.1` is this checkout's prepared metadata version — not a tag, a release,
+`v21.0.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 39 skills** |
+| Surface | **20 agents and 41 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

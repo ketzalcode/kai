@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **21 agents** and **39 skills**.
+The repository ships **20 agents** and **41 skills**.
 
-The default marketplace supplies **21 agents** and **39 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **20 agents** and **41 skills** through core, engineering, and creative (11 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -40,22 +40,21 @@ Delivery coordination, on explicit request. Nothing has to be routed through it.
 
 ### Engineering
 
-Direct technical decisions and complete implementations. Architecture is situational; domain methods do not require separate agents.
+Integrate complete software changes and implement bounded application or platform work.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-lead-architecture`](../../plugins/kai-engineering/agents/eng-lead-architecture.agent.md) | `kai-engineering` | Resolves expensive software decisions across components or services: boundaries, contracts, data ownership, and system trade-offs. Use when local implementation judgment is insufficient. Not delivery coordination, production code, or independent security/readiness approval. |
+| [`eng-lead-software`](../../plugins/kai-engineering/agents/eng-lead-software.agent.md) | `kai-engineering` | Coordinates one complete authorized software change across builders, integration, independent review, post-build PR sizing, and PR delivery. Use for multi-builder work or packaging a finished diff. Never implements product code, self-approves, merges, deploys, tags, or releases. |
 | [`eng-builder-software`](../../plugins/kai-engineering/agents/eng-builder-software.agent.md) | `kai-engineering` | Implements a scoped software change end-to-end: frontend, APIs, persistence, data pipelines, or applied AI, with its tests. Use for features, fixes, and refactors. Not independent review, platform provisioning, or production deployment. |
 | [`eng-builder-platform`](../../plugins/kai-engineering/agents/eng-builder-platform.agent.md) | `kai-engineering` | Implements CI/CD, IaC, containers, build tooling, runtime configuration, and observability with plan or dry-run evidence. Use for platform changes. Not application implementation, independent readiness approval, or production operations. |
 
 ### Intake & delivery
 
-Bounded investigation, PR preparation, and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.
+Bounded investigation and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`eng-advisor-investigation`](../../plugins/kai-engineering/agents/eng-advisor-investigation.agent.md) | `kai-engineering` | Investigates a bounded issue, codebase question, technical option, or AI research topic and returns cited findings and unknowns. Use when evidence is missing. Not implementation, independent acceptance, or automatic delivery planning. |
-| [`workflow-pull-request`](../../plugins/kai-engineering/agents/workflow-pull-request.agent.md) | `kai-engineering` | Packages one finished diff into an authorized branch, commits, push, and pull request, then reports live merge readiness. Works directly from a supplied change. Never merges, tags, releases, force-pushes, or bypasses protection. |
 | [`workflow-ship`](../../plugins/kai-engineering/agents/workflow-ship.agent.md) | `kai-engineering` | Assesses release readiness directly or, for authorized coordinated work, records PREPARE, deployment start, completion, production verification, rollback, and shipped transitions. Never deploys, merges, pushes, tags, migrates, triggers CI, or monitors continuously. |
 
 ### Trust & reliability
@@ -168,8 +167,10 @@ Task-local methods for authorized implementation, bounded evidence, requested or
 | ---- | ------- | ------------ |
 | [`coding-standards`](../../plugins/kai-engineering/skills/coding-standards/SKILL.md) | `kai-engineering` | Use when writing, modifying, or refactoring code. |
 | [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
-| [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment. |
-| [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
+| [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
+| [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |
+| [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
+| [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
 

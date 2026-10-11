@@ -230,7 +230,7 @@ export function seedHostAttempt(store, observations = [], overrides = {}) {
     attempt_id: id,
     subject: reportSubject,
     subject_version: 1,
-    actor: {role: 'eng-lead-architecture', runId: 'lead-run'},
+    actor: {role: 'eng-lead-software', runId: 'lead-run'},
     target: builder,
     agent_id: 'kai-engineering:eng-builder-software',
     profile: 'execution',

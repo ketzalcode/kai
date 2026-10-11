@@ -31,7 +31,7 @@ const NOW = '2026-09-16T12:00:00.000Z';
 const LATER = '2099-09-16T13:00:00.000Z';
 const builder = {role: 'eng-builder-software', runId: 'builder-run'};
 const reviewer = {role: 'eng-reviewer-code', runId: 'review-run'};
-const steward = {role: 'eng-lead-architecture', runId: 'steward-run'};
+const steward = {role: 'eng-lead-software', runId: 'steward-run'};
 const roles = [builder.role, reviewer.role, steward.role, 'workflow-ship'];
 const taskSubject = id => ({kind: 'task', id});
 
