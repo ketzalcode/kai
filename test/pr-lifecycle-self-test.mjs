@@ -94,7 +94,19 @@ test('pr delivery reads the shared description reference', () => {
   );
   assert.match(
     reference,
-    /Include one small ASCII diagram only when it is materially clearer;[\s\S]*omit the[\s\S]*section when it adds no information\./,
+    /Include one small ASCII diagram only when caller flow, ownership, state, or/,
+  );
+  assert.match(
+    reference,
+    /dependency order is materially clearer visually;/,
+  );
+  assert.match(
+    reference,
+    /omit the section when it adds/,
+  );
+  assert.match(
+    reference,
+    /no information\./,
   );
   assert.match(
     reference,

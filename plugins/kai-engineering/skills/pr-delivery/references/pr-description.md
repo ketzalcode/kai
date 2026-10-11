@@ -11,8 +11,9 @@ the important scope boundary or dependency.
 
 ## Scoped architecture
 
-Include one small ASCII diagram only when it is materially clearer; omit the
-section when it adds no information.
+Include one small ASCII diagram only when caller flow, ownership, state, or
+dependency order is materially clearer visually; omit the section when it adds
+no information.
 
 ## Validation scenarios
 
