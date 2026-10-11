@@ -344,7 +344,7 @@ repository-owned post-merge evidence.
 ### Task 7 - Deliver
 
 Create coherent commits, push
-`kai/design/2026-10-10-nightshift`, and open one reviewer-focused pull request.
+`kai/feat/2026-10-10-nightshift`, and open one reviewer-focused pull request.
 
 The PR description includes:
 
