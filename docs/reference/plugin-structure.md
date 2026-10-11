@@ -107,6 +107,35 @@ adding a route, search both directions. If A reaches B and B reaches A, keep
 orchestration in A or extract genuinely shared behavior into a lower-level
 skill C. `npm run validate` rejects circular agent/skill routes.
 
+### Progressive disclosure
+
+Kai uses the same three-tier shape as the
+[Agent Skills specification](https://agentskills.io/specification):
+
+1. **Catalog** — the host sees agent or skill `name` and `description`.
+2. **Activated instructions** — selecting an agent loads its body; activating a
+   skill loads its `SKILL.md`.
+3. **Task-local resources** — references, scripts, and lower-level skills load
+   only when execution reaches the instruction that needs them.
+
+This distinction matters because an agent body loads as one prompt. Keep role
+identity, authority, routing, universal boundaries, and a short operating loop
+there. Put reusable method in skills and lookup material in focused references.
+GitHub's
+[custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
+also treats the Markdown body as the agent prompt and caps it at 30,000
+characters.
+
+An inline route is a decision boundary, not a manifest. Do not collect possible
+Core skills under `PREPARE`, `Dependencies`, `Required skills`, or
+`**Inherits:**`. Route `kai-core-contract-v1` immediately before the first Core
+skill that the active branch needs, then route later skills only at their own
+workspace, grant, mutation, activity, publication, or closure step. Direct work
+must not enter coordinated setup merely because an agent can coordinate.
+
+Use `kai-core-create-agent` for a new or materially revised role and
+`kai-core-create-skill` for reusable method.
+
 ### Execution profiles and models
 
 Agent model policy is deterministic and versioned as
@@ -164,7 +193,8 @@ seam, human gate, completion condition, and runtime fit.
    `durable-output-producer`, and only tools required by real actions.
 4. Route skills inside the instruction that needs them. Route
    `kai-core-contract-v1` immediately before the first other core skill; do not
-   add an eager inheritance list or dependency-guard block.
+   add an eager inheritance list, dependency-guard block, or collected preflight
+   paragraph.
 5. Set `durable-output-producer: true` only for an authorized typed Kai
    artifact branch. Route the owning package's publication skill immediately
    before `kai-core-asset-producing`; non-producers route neither.

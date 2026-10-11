@@ -81,9 +81,19 @@ requested. Do not apply `pr-sizing` or `pr-delivery`, and never commit, push,
 merge, deploy, tag, or release without explicit authority.
 
 For a requested durable artifact backed by the required authority, apply
-`kai-core-workspace-paths` to resolve its location. Apply
-`engineering-workspace-publication` before applying
-`kai-core-asset-producing`. For an actual coordinated Task, apply
-`kai-core-work-task` to read its authority. Apply `kai-core-work-acting` before
-any state write. Apply `kai-core-peer-communication` only for the real handoff.
+`kai-core-workspace-paths` to resolve its location.
+
+Apply `engineering-workspace-publication` when that artifact needs a durable
+Engineering route.
+
+Apply `kai-core-asset-producing` immediately before creating or revising the
+durable artifact.
+
+For an actual coordinated Task, apply `kai-core-work-task` to read its
+authority.
+
+Apply `kai-core-work-acting` immediately before any state write.
+
+Apply `kai-core-peer-communication` only for the real handoff.
+
 Apply `kai-core-work-activity` only when recording requested activity.

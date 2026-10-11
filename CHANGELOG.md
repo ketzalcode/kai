@@ -4,6 +4,26 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [22.2.0] - 2026-10-11
+
+### Added
+
+- Added `kai-core-create-agent`, a lean authoring guide that requires a role to
+  earn its permanent context cost, define one authority lane, and keep reusable
+  method in task-local skills.
+- Added validation that rejects agent paragraphs collecting three or more Core
+  skill routes as eager preflight.
+
+### Changed
+
+- Made `kai-core-create-skill` explicitly follow catalog, activated
+  instructions, and task-local resource disclosure.
+- Moved collected Core routes in 11 existing agents to the exact workspace,
+  hierarchy, grant, mutation, publication, activity, or closure step that needs
+  each contract. Direct work still bypasses coordinated setup.
+- Documented Kai's progressive-disclosure contract and its Agent Skills and
+  GitHub custom-agent basis.
+
 ## [22.1.0] - 2026-10-10
 
 ### Added
@@ -4583,6 +4603,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[22.2.0]: https://github.com/ketzalcode/kai/compare/v22.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
 [22.0.0]: https://github.com/ketzalcode/kai/compare/v21.0.0...v22.0.0
 [21.0.0]: https://github.com/ketzalcode/kai/compare/v20.0.1...v21.0.0

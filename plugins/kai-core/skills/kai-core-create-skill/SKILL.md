@@ -57,6 +57,15 @@ into a third lower-level skill C that both may use.
 
 ## Keep the main skill lean
 
+Use progressive disclosure:
+
+1. **Catalog:** `name` and `description` describe what the skill does and when
+   it fires.
+2. **Instructions:** the full `SKILL.md` loads only after activation, so keep
+   it to the stable method, decisions, boundaries, and failure behavior.
+3. **Resources:** load references, scripts, assets, or lower-level skills only
+   at the step that needs them.
+
 The main `SKILL.md` contains:
 
 - a precise use-when description;
@@ -68,6 +77,10 @@ Put large examples, templates, and lookup material under `references/`. Put
 deterministic parsing, persistence, and machine validation in scripts or source
 code. Do not copy a runtime schema into prose merely so an agent can keep
 rewriting it.
+
+Do not begin with a collected dependency list. Route a lower-level skill inline
+where the method reaches that decision. If every run needs another skill before
+this one can be understood, the boundary is probably misplaced.
 
 When work accumulates incrementally, prefer:
 

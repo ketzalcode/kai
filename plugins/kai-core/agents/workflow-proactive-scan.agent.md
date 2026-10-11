@@ -55,9 +55,12 @@ Inputs:
 6. If the durable-output inputs are absent, return the scan inline and stop
    before any artifact command. Otherwise apply `kai-core-work-acting` before
    the state-changing artifact command.
+
    Apply `kai-core-workspace-publication` immediately before durable core asset
-   production. Apply `kai-core-asset-producing` to register the private report
-   revision under:
+   production.
+
+   Apply `kai-core-asset-producing` to register the private report revision
+   under:
 
    ```text
    .kai/core/reports/proactive-scan/drafts/

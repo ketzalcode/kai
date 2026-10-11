@@ -1010,6 +1010,7 @@ export function agentRoutingErrors({
   if (declaresEagerInherits) {
     errors.push('an agent routes skills just in time and must not declare an eager `**Inherits:**` line');
   }
+  errors.push(...hoistedSkillRouteErrors(text));
 
   // A skill is routed wherever the instruction that needs it lives. Hoisting
   // every route into one section reproduces the `**Inherits:**` manifest this
@@ -1144,6 +1145,51 @@ function routedSkillOccurrences(body) {
     out.push({id: m[1], index: m.index, end: m.index + m[0].length});
   }
   return out;
+}
+
+export function hoistedSkillRouteErrors(body) {
+  const text = normalizeLF(body ?? '')
+    .replace(/^---\n[\s\S]*?\n---\n?/, '')
+    .replace(/^\s*```[\s\S]*?^\s*```/gm, '')
+    .replace(/^\s*```[\s\S]*/m, '');
+  const blocks = [];
+  let paragraph = [];
+  const flush = () => {
+    if (paragraph.length) blocks.push(paragraph.join(' '));
+    paragraph = [];
+  };
+
+  for (const line of text.split('\n')) {
+    if (line.trim() === '') {
+      flush();
+      continue;
+    }
+    if (/^\s*(?:[-*+]|\d+\.)\s+/.test(line)) {
+      flush();
+      paragraph.push(line.trim());
+      continue;
+    }
+    if (/^(?:#|\s*\|)/.test(line)) {
+      flush();
+      continue;
+    }
+    paragraph.push(line.trim());
+  }
+  flush();
+
+  for (const block of blocks) {
+    if (!/\b(?:Load|Invoke|Apply|Run)\b/i.test(block)) continue;
+    const coreSkills = new Set(
+      [...block.matchAll(/`(kai-core-[a-z0-9-]+)`/g)].map(match => match[1]),
+    );
+    if (coreSkills.size >= 3) {
+      return [
+        `collects ${coreSkills.size} Core skill routes in one instruction; `
+        + 'route each skill at the decision that needs it instead of eager preflight',
+      ];
+    }
+  }
+  return [];
 }
 
 export function routedSkills(body) {

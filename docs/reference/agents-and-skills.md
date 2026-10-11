@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **14 agents** and **46 skills**.
+The repository ships **14 agents** and **47 skills**.
 
-The default marketplace supplies **14 agents** and **46 skills** through core, engineering, and creative (13 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **14 agents** and **47 skills** through core, engineering, and creative (14 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -136,6 +136,7 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | `kai-core` | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
+| [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | `kai-core` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
 | [`kai-core-create-skill`](../../plugins/kai-core/skills/kai-core-create-skill/SKILL.md) | `kai-core` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
 | [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure. |
 | [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | `kai-core` | Use when recording final asset disposition, validity, supersession, retraction, archival, or publication cleanup. |

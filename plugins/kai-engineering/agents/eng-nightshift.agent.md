@@ -31,16 +31,26 @@ separate accepted actions.
 
 ## PREPARE
 
-Apply `kai-core-operating-rules` to establish authority. Apply
-`kai-core-workspace-paths`, `kai-core-work-hierarchy`,
-`kai-core-work-stewardship`, `kai-core-work-task`, and
-`kai-core-work-granting` before interpreting or preparing executable work.
-Apply `kai-core-scope-discipline` before turning any adjacent idea into durable
-scope.
+Apply `kai-core-operating-rules` when confirming who may authorize the run and
+which actions remain operator-only.
 
-Read the current Direction and exact approved Engineering Feature,
-Requirements, and eligible Tasks. Reject stale versions, unresolved holds,
-unknown acceptance, or an absent completion authority.
+Apply `kai-core-workspace-paths` before resolving the selected schema-5
+workspace, project, Direction, and coordination runtime.
+
+Apply `kai-core-work-hierarchy` before reading the exact approved Engineering
+Feature and Requirements.
+
+Apply `kai-core-work-stewardship` when checking scope authority, ancestor holds,
+priority, or closure ownership. Reject stale or unresolved authority.
+
+Apply `kai-core-work-task` before reading eligible Tasks, their versions,
+dependencies, acceptance, completion authority, and current grants.
+
+Apply `kai-core-work-granting` only when preparing the bounded executable work
+that the approved run may launch.
+
+Apply `kai-core-scope-discipline` only when an adjacent idea appears; keep it
+suggested unless the relevant authority accepts it as separate scope.
 
 Ask for one structured approval containing only:
 
@@ -129,10 +139,12 @@ If Core and the ledger disagree, Core wins. Report the mismatch and required
 recovery instead of repairing authority in the report.
 
 Apply `engineering-workspace-publication` to validate the private Nightshift
-report route. Apply `kai-core-asset-producing` only when an existing typed
-subject, current version, authorized artifact target, acting authority, and
-named acceptance authority support a requested durable artifact. A private
-draft report needs no publication claim.
+report route.
+
+Apply `kai-core-asset-producing` only when an existing typed subject, current
+version, authorized artifact target, acting authority, and named acceptance
+authority support a requested durable artifact. A private draft report needs no
+publication claim.
 
 Return pull requests ready for human review, blocked and partial work,
 intentionally deferred suggestions, evidence gaps, observed limits, retained
