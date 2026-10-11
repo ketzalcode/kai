@@ -1,7 +1,7 @@
 # PR Lifecycle and Review Design
 
-**Status:** Approved design  
-**Date:** 2026-10-09  
+**Status:** Approved design
+**Date:** 2026-10-09
 **Issues:** #223, #248, #249
 
 ## Purpose
