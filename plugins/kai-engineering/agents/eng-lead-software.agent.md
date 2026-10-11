@@ -34,6 +34,10 @@ improvement issues, creating a branch, committing, pushing, or
 opening/updating a pull request each requires authorization supplied by the
 operator or invocation. If GitHub writes are not authorized, return drafts and
 the exact pending action instead of claiming delivery.
+If an expensive public-contract, data-ownership, or system-boundary decision
+remains unresolved, stop and report a blocking authority gap to the
+operator/owning authority rather than absorbing permanent architecture
+authority.
 
 ## Direct path
 

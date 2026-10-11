@@ -44,6 +44,8 @@ test('software lead is the single active PR integration owner', () => {
   assert.match(lead, /Apply `pr-sizing` after integration, when the complete diff exists/);
   assert.match(lead, /Apply `pr-delivery`/);
   assert.match(lead, /eng-reviewer-code/);
+  assert.match(lead, /blocking authority gap/);
+  assert.match(lead, /operator\/owning authority/);
   assert.match(lead, /Never merge, deploy, tag, release/);
 });
 
@@ -74,6 +76,11 @@ test('pr delivery reads the shared description reference', () => {
   assert.match(delivery, /references\/pr-description\.md/);
   assert.match(delivery, /opens and prepares/);
   assert.doesNotMatch(delivery, /opens and lands/);
+  assert.doesNotMatch(delivery, /principal-swe-\*/);
+  assert.match(
+    delivery,
+    /\| Is the code correct and well-designed\? \| `eng-reviewer-code` \|/,
+  );
   assert.match(
     delivery,
     /changed behavior, preserved behavior, scope boundary\/dependency, or evidence/,

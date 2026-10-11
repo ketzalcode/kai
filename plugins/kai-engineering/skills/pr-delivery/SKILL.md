@@ -32,7 +32,7 @@ work               ONE pull request       release-ready
 | Question | Owner |
 |---|---|
 | Was the work split into the right increments? | `pr-sizing` |
-| Is the code correct and well-designed? | `principal-swe-*` |
+| Is the code correct and well-designed? | `eng-reviewer-code` |
 | Is it ready to release? | `kai-core-definition-of-done` |
 | How does it reach production? | `workflow-ship` |
 | **How does this change physically reach `main`?** | **this skill** |
