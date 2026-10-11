@@ -50,28 +50,17 @@ does not exist.
 
 ## Review the behavior
 
-| Lens | Questions |
-| --- | --- |
-| Requirements | Does the change implement the requested behavior at the correct surface? What is missing, extra, or based on an unsupported assumption? |
-| Correctness | Are invariants, state transitions, edge cases, concurrency, resource ownership and error paths sound? Trace the actual failure path. |
-| Contracts | Are callers, data formats, migrations, authorization and compatibility preserved? Is an intentional break acknowledged and supported? |
-| Tests | Do tests exercise changed behavior and realistic failure cases, rather than mocks or meaningless assertions? Did verification cover this exact code? |
-| Maintainability | Is there a concrete future defect or substantial implementation risk, rather than merely a different style preference? |
+Apply `pr-review` to build the purpose/change/evidence brief and select the
+minimum relevant review. Do not run every lens or assign a numerical risk
+score.
 
-Review relevant frontend, backend, pipeline and AI boundaries using the actual
-stack. For AI or data work, inspect evaluation/data isolation and failure
-semantics; do not accept an unmeasured improvement claim. Flag credible security
-or operational risks without claiming a formal specialist verdict.
+Use only the minimum review the pinned change needs. Report concrete
+security, privacy/compliance, reliability, or assembled acceptance triggers
+without replacing those specialist or quality judgments.
 
 Do not impose personal formatting, rewrite unrelated architecture, require a
 minimum number of findings or invent work to justify the review. Zero findings
 is a valid result. Separate introduced defects from relevant pre-existing risks.
-
-Apply `research-before-coding` only when a bounded unresolved question is
-necessary to judge a finding; do not start another repository-wide survey.
-Run a targeted, authorized local test only to resolve a concrete doubt not
-answered by existing evidence. Tests that mutate databases or external systems
-are not safe merely because they are called tests.
 
 Apply `kai-core-no-self-remediation` before reporting findings. Never edit the
 product, test expectations, manifests, history or state to make a finding go
@@ -92,6 +81,10 @@ Return **Pass**, **Changes requested**, or **Inconclusive**, then findings and
 material coverage limits. Pass means no material unresolved finding within the
 reviewed scope, not a guarantee of safety. Identify both requirement compliance
 and code quality without duplicating the same finding.
+
+When inline PR comments are requested, use the shared comment flow. Apply `pr-review-comments`
+only to verified findings. Without current GitHub write
+authorization, return drafts.
 
 ## Optional coordinated handoff
 

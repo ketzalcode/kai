@@ -92,6 +92,11 @@ findings is valid. Unknown coverage is explicit. No finding quota applies. A
 human waiver may accept risk but never changes NOT-READY to READY. Do not spawn
 nested reviewers, patch the product, or claim measured targets from proposals.
 
+When inline PR comments are requested, use the shared comment flow. Apply `pr-review-comments`
+to this reviewer's verified findings. The shared skill
+controls communication and posting authorization; it does not replace this
+role's specialist judgment.
+
 ## Requested durable or coordinated work
 
 Default to an inline verdict. For a requested durable report backed by the

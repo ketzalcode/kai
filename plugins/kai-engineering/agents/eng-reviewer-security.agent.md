@@ -101,6 +101,11 @@ CLEAR is valid. A human risk acceptance may authorize proceeding but never
 rewrites BLOCK as CLEAR. Do not invent a waiver, suppress a finding, self-accept
 risk, spawn nested reviewers, or turn the review into remediation.
 
+When inline PR comments are requested, use the shared comment flow. Apply `pr-review-comments`
+to this reviewer's verified findings. The shared skill
+controls communication and posting authorization; it does not replace this
+role's specialist judgment.
+
 ## Requested durable or coordinated work
 
 Default to an inline verdict; do not create a report tree automatically. For a

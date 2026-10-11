@@ -125,3 +125,41 @@ test('pr delivery reads the shared description reference', () => {
     assert.match(reference, new RegExp(scenario.replace('/', '\\/')));
   }
 });
+
+test('review requests route through the reviewer and internal review method', () => {
+  const reviewer = readAgent('eng-reviewer-code');
+  assert.match(reviewer, /Apply `pr-review`/);
+  assert.match(reviewer, /Apply `pr-review-comments`/);
+
+  const review = readSkill('pr-review');
+  assert.doesNotMatch(review, /^user-invocable:\s*true$/m);
+  assert.match(review, /Purpose:/);
+  assert.match(review, /Changed behavior:/);
+  assert.match(review, /Affected surfaces:/);
+  assert.match(review, /Risk signals:/);
+  assert.match(review, /specialist verdict/);
+});
+
+test('review comments calibrate tone and require posting authority', () => {
+  const comments = readSkill('pr-review-comments');
+  assert.match(comments, /^user-invocable:\s*true$/m);
+  assert.match(comments, /There is no mandatory `Suggestion:` label/);
+  assert.match(comments, /Uncertain intent/);
+  assert.match(comments, /Verified defect with corrective options/);
+  assert.match(comments, /Required change/);
+  assert.match(comments, /Without GitHub write authorization, return drafts/);
+  assert.match(comments, /verify that the PR head still matches/);
+});
+
+test('specialist reviewers share comment communication, not review judgment', () => {
+  for (const id of [
+    'eng-reviewer-security',
+    'eng-reviewer-privacy-compliance',
+    'eng-reviewer-reliability',
+    'eng-reviewer-quality',
+  ]) {
+    const body = readAgent(id);
+    assert.match(body, /Apply `pr-review-comments`/);
+    assert.doesNotMatch(body, /Apply `pr-review`/);
+  }
+});

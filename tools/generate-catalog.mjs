@@ -139,7 +139,8 @@ const CATEGORIES = [
     title: 'Engineering craft',
     blurb: 'Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.',
     members: [
-      'coding-standards', 'research-before-coding', 'pr-sizing', 'pr-delivery',
+      'coding-standards', 'research-before-coding',
+      'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
       'onboard-to-codebase', 'build-diagrams',
     ],
   },
