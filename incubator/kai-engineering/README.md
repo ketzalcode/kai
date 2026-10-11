@@ -21,11 +21,17 @@ repository-learning design that grounds platform behavior in the target
 repository's CI/CD, infrastructure, runtime, identity, and observability
 conventions rather than generic platform advice.
 
+`workflow-ship` remains inactive until it owns meaningful release authority or
+executable release actions beyond recording state. Re-entry also needs measured
+evidence that the capability should be an agent rather than an explicit skill
+or host command.
+
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
 | `workflow-doc-review` | agent | `plugins/kai-engineering/agents/workflow-doc-review.agent.md` | inactive |
 | `eng-lead-architecture` | agent | `plugins/kai-engineering/agents/eng-lead-architecture.agent.md` | inactive; re-entry tracked by #249 |
 | `eng-builder-platform` | agent | `plugins/kai-engineering/agents/eng-builder-platform.agent.md` | inactive; requires repository-learning redesign |
+| `workflow-ship` | agent | `plugins/kai-engineering/agents/workflow-ship.agent.md` | inactive; requires meaningful release actions |
 | `doc-review-rigor` | skill | `plugins/kai-engineering/skills/doc-review-rigor/SKILL.md` | inactive |
 | `review-security-privacy` | skill | `plugins/kai-engineering/skills/review-security-privacy/SKILL.md` | inactive |
 | `review-rollout-operability` | skill | `plugins/kai-engineering/skills/review-rollout-operability/SKILL.md` | inactive |

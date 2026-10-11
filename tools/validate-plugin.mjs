@@ -329,11 +329,6 @@ const exists = (asset) => assetIndex.has(asset);
 const ASSESSOR_CONTRACT = 'kai-core-no-self-remediation';
 const ASSESSOR_ROLES = [
   'eng-reviewer-code',
-  'eng-reviewer-security',
-  'eng-reviewer-privacy-compliance',
-  'eng-reviewer-reliability',
-  'eng-reviewer-quality',
-  'eng-advisor-investigation',
   'eng-lead-technical-writing',
 ];
 {
