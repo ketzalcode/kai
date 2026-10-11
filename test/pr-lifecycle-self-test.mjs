@@ -140,15 +140,43 @@ test('review requests route through the reviewer and internal review method', ()
   assert.match(review, /specialist verdict/);
 });
 
-test('review comments calibrate tone and require posting authority', () => {
+test('pr-review skips docs and metadata-only changes', () => {
+  const review = readSkill('pr-review');
+  assert.match(review, /documentation or metadata-only changes skip code-only lenses/);
+});
+
+test('pr-review routes assembled acceptance to quality', () => {
+  const review = readSkill('pr-review');
+  assert.match(review, /assembled UI, API, CLI, or system behavior may require quality review/);
+});
+
+test('pr-review handles stacked PR parent revisions', () => {
+  const review = readSkill('pr-review');
+  assert.match(review, /review each slice against its real parent revision/);
+  assert.match(review, /A changed PR head invalidates prior review comments and verdicts tied to the old revision/);
+});
+
+test('review comments return structured finding records', () => {
   const comments = readSkill('pr-review-comments');
   assert.match(comments, /^user-invocable:\s*true$/m);
+  assert.match(comments, /Both draft and post-ready outputs include:/);
+  assert.match(comments, /Finding: <stable finding identifier>/);
+  assert.match(comments, /Location: <file and changed line, or general review>/);
+  assert.match(comments, /Kind: <question \| change-request \| required-change>/);
+  assert.match(comments, /Comment: <comment text>/);
+  assert.match(comments, /Authorization: <supplied source or required>/);
   assert.match(comments, /There is no mandatory `Suggestion:` label/);
-  assert.match(comments, /Uncertain intent/);
-  assert.match(comments, /Verified defect with corrective options/);
-  assert.match(comments, /Required change/);
   assert.match(comments, /Without GitHub write authorization, return drafts/);
   assert.match(comments, /verify that the PR head still matches/);
+});
+
+test('review comments use tone rules for questions and required outcomes', () => {
+  const comments = readSkill('pr-review-comments');
+  assert.match(comments, /Uncertain intent/);
+  assert.match(comments, /Ask a question only when intent, ownership, or the corrective choice is genuinely unresolved/);
+  assert.match(comments, /Verified defect with corrective options/);
+  assert.match(comments, /Required change/);
+  assert.match(comments, /State a required outcome directly when evidence settles it/);
 });
 
 test('specialist reviewers share comment communication, not review judgment', () => {

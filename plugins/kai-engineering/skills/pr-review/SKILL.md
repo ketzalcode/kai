@@ -30,12 +30,13 @@ Risk signals: only concrete triggers visible in this change
 - Code changes receive requirements, correctness, contracts, regressions,
   changed-behavior tests, maintainability, and applicable
   `coding-standards` review.
-- Docs or metadata-only changes skip code-only lenses.
+- documentation or metadata-only changes skip code-only lenses.
 
 ## Route follow-up judgment to the right owner
 
 - Route assembled UI, API, CLI, or system acceptance to quality when
   applicable.
+- assembled UI, API, CLI, or system behavior may require quality review.
 - Route concrete security, privacy/compliance, and reliability triggers to
   their owners.
 - Use `research-before-coding` only for a bounded unresolved fact that could
@@ -45,7 +46,8 @@ Risk signals: only concrete triggers visible in this change
 
 ## Revision handling
 
-- Review stacked PRs against their real parent revision instead of the default
-  branch when the stack changes the effective scope.
+- For stacked PRs, review each slice against its real parent revision instead of
+  the default branch when the stack changes the effective scope.
+- A changed PR head invalidates prior review comments and verdicts tied to the old revision.
 - Require end-to-end evidence on the final slice for behavior that spans the
   full stack.

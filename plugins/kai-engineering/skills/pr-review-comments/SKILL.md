@@ -22,7 +22,22 @@ re-judge whether the issue is real.
 
 There is no mandatory `Suggestion:` label.
 
+## Return contract
+
+Both draft and post-ready outputs include:
+
+```text
+Finding: <stable finding identifier>
+Location: <file and changed line, or general review>
+Kind: <question | change-request | required-change>
+Comment: <comment text>
+Authorization: <supplied source or required>
+```
+
 ## Tone calibration
+
+- Ask a question only when intent, ownership, or the corrective choice is genuinely unresolved.
+- State a required outcome directly when evidence settles it.
 
 ### Uncertain intent
 
