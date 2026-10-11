@@ -199,3 +199,27 @@ test('specialist reviewers share comment communication, not review judgment', ()
     assert.doesNotMatch(body, /Apply `pr-review`/);
   }
 });
+
+test('README overview reflects the released engineering surface', () => {
+  const readme = readFileSync(join(root, 'README.md'), 'utf8')
+    .replace(/\r\n/g, '\n');
+  const overview = readme.slice(0, readme.indexOf('\n## Install'));
+
+  assert.doesNotMatch(
+    overview,
+    /specialist agents — implementation, architecture, independent review, delivery/,
+  );
+  assert.match(
+    overview,
+    /specialist agents — implementation, technical investigation, independent review,\s+and delivery/,
+  );
+  assert.match(overview, /\|\s*9 skills\s*\|/);
+  assert.match(
+    overview,
+    /\| `kai-engineering` \| 13 \/ 9 \| Implementation, technical investigation, independent review, and delivery \|/,
+  );
+  assert.doesNotMatch(
+    overview,
+    /\| `kai-engineering` \| 13 \/ 7 \| Implementation, architecture, independent review, delivery \|/,
+  );
+});
