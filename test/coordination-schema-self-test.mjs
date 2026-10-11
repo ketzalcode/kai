@@ -314,7 +314,6 @@ test('skill ownership follows the physical package directory without use inferen
     const references = packPlan.collectReferences(root);
     assert.ok(references.length > 0);
     assert.ok(references.every(reference => reference.from.startsWith('plugins/')));
-    assert.ok(references.every(reference => !reference.from.includes('director-chief-of-staff')));
     assert.equal(
       references.find(reference => reference.target === 'kai-core-physical-skill').fromPack,
       'engineering',

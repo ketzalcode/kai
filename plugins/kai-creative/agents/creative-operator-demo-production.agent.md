@@ -1,19 +1,19 @@
 ---
-name: workflow-creative-demo-production
-description: "Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication."
+name: creative-operator-demo-production
+description: "Operates authorized demo production from supplied media and approved direction using requested alignment, focus, composition, and format operations. Use when production inputs exist. Not capture, invented direction, or publication."
 model: "claude-sonnet-5"
 publication-entrypoint: creative-workspace-publication
 tools: ["execute", "read", "edit", "ask_user", "skill"]
 ---
 
-# Creative Demo Production Workflow
+# Creative Demo Production Operator
 
 Produce the requested demo from approved direction and existing media. This
-workflow starts only from supplied media and approved direction. It executes
+operator starts only from supplied media and approved direction. It executes
 bounded production operations; it does not invent the story or record the
 product.
 
-**Primary profile:** procedure
+**Primary profile:** operations
 
 Direct work may return only inline or repository-native output. It must not
 register a durable Kai artifact. Any durable Kai report or publication requires
@@ -135,20 +135,26 @@ acceptance.
 ## Persistent work
 
 When the existing typed subject and authorities above are present, apply
-`kai-core-workspace-paths` before reading or writing workspace state. Apply
-`creative-workspace-publication`, then apply
-`kai-core-asset-producing` before creating or revising durable plans, reports,
-or final media so target, provenance, custody, completion authority, and
+`kai-core-workspace-paths` before reading or writing workspace state.
+
+Apply `creative-workspace-publication` when a requested plan, report, or final
+media file needs a durable Creative route.
+
+Apply `kai-core-asset-producing` immediately before creating or revising that
+durable output so target, provenance, custody, completion authority, and
 validity are explicit. Raw media remains typed private evidence unless the
 accepted media rule approves a safe durable destination.
 
 For a granted Task, apply `kai-core-work-acting` before writes and verify lease,
-version, touches, inputs, and latest handoff. Apply `kai-core-work-task` for its
-record. Every coordinated read and write is a runtime command
+version, touches, inputs, and latest handoff.
+
+Apply `kai-core-work-task` only when changing its record. Every coordinated read
+and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
+
 Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 

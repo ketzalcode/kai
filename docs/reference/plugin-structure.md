@@ -55,18 +55,23 @@ Choose the kind from the responsibility, not from a title:
 | --- | --- | --- |
 | Durable role | Holds standing judgment or execution responsibility across requests. | `<family>-<posture>-<scope>` |
 | Named capability role | Holds a standing product entry point whose capability name is clearer than a posture label. | `<family>-<capability>`; exact ID, pack, and profiles are registered in `NAMED_CAPABILITY_AGENTS` |
-| Workflow | Runs a bounded procedure with a defined completion condition. | `workflow-<outcome>` |
 | Persona | Represents a user or stakeholder viewpoint without delivery authority. | `persona-<viewpoint>` |
 | Instructor | Teaches or structures learning for the operator. | `instructor-<teaching-scope>` |
 | Skill | Supplies reusable method without an independent authority lane. | `<kebab-case>`; core skills use `kai-core-*` |
+
+A bounded procedure is a user-invocable skill, not a `workflow-*` agent. Keep an
+agent only when the capability needs a durable identity or authority lane.
 
 The active durable-role provider families are:
 
 | Family | Package | Responsibility |
 | --- | --- | --- |
-| `core` | `kai-core` | Shared contracts, workspace machinery, and explicitly requested coordination |
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation |
 | `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production |
+
+`kai-core` is deliberately agent-free. It supplies shared skills, workspace
+machinery, and coordination runtime to department agents and direct skill
+invocations.
 
 Use full responsibility words in scope: `frontend`, `backend`, and `software`,
 not `fe`, `be`, or `swe`. Choose the posture with this first-match rule:
@@ -92,7 +97,7 @@ A new durable role earns a permanent slot only when every row has evidence:
 | Cost justified | Reduced ambiguity exceeds the permanent context and coordination cost |
 
 If any row fails, strengthen an existing agent, add reusable method to a skill,
-or use a bounded workflow instead.
+or use a bounded user-invocable procedure instead.
 
 ### Dependency direction
 
@@ -107,10 +112,39 @@ adding a route, search both directions. If A reaches B and B reaches A, keep
 orchestration in A or extract genuinely shared behavior into a lower-level
 skill C. `npm run validate` rejects circular agent/skill routes.
 
+### Progressive disclosure
+
+Kai uses the same three-tier shape as the
+[Agent Skills specification](https://agentskills.io/specification):
+
+1. **Catalog** — the host sees agent or skill `name` and `description`.
+2. **Activated instructions** — selecting an agent loads its body; activating a
+   skill loads its `SKILL.md`.
+3. **Task-local resources** — references, scripts, and lower-level skills load
+   only when execution reaches the instruction that needs them.
+
+This distinction matters because an agent body loads as one prompt. Keep role
+identity, authority, routing, universal boundaries, and a short operating loop
+there. Put reusable method in skills and lookup material in focused references.
+GitHub's
+[custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
+also treats the Markdown body as the agent prompt and caps it at 30,000
+characters.
+
+An inline route is a decision boundary, not a manifest. Do not collect possible
+Core skills under `PREPARE`, `Dependencies`, `Required skills`, or
+`**Inherits:**`. Route `kai-core-contract-v1` immediately before the first Core
+skill that the active branch needs, then route later skills only at their own
+workspace, grant, mutation, activity, publication, or closure step. Direct work
+must not enter coordinated setup merely because an agent can coordinate.
+
+Use `kai-core-create-agent` for a new or materially revised role and
+`kai-core-create-skill` for reusable method.
+
 ### Execution profiles and models
 
 Agent model policy is deterministic and versioned as
-`kai-agent-models-v3`. Declare exactly one
+`kai-agent-models-v4`. Declare exactly one
 `**Primary profile:** <profile>` line and use the exact quoted model:
 
 | Profile | Allowed posture or kind | Required model |
@@ -123,7 +157,6 @@ Agent model policy is deterministic and versioned as
 | `operations` | `operator` | `claude-sonnet-5` |
 | `coordination` | `coordinator` | `claude-sonnet-5` |
 | `advisory` | `advisor` | `claude-sonnet-5` |
-| `procedure` | `workflow` | `claude-sonnet-5` |
 | `teaching` | `instructor` | `claude-sonnet-5` |
 | `simulation` | `persona` | `claude-sonnet-5` |
 
@@ -164,7 +197,8 @@ seam, human gate, completion condition, and runtime fit.
    `durable-output-producer`, and only tools required by real actions.
 4. Route skills inside the instruction that needs them. Route
    `kai-core-contract-v1` immediately before the first other core skill; do not
-   add an eager inheritance list or dependency-guard block.
+   add an eager inheritance list, dependency-guard block, or collected preflight
+   paragraph.
 5. Set `durable-output-producer: true` only for an authorized typed Kai
    artifact branch. Route the owning package's publication skill immediately
    before `kai-core-asset-producing`; non-producers route neither.

@@ -138,23 +138,28 @@ questions. The operator receives identity-adoption choices.
 ## Persistent work
 
 When the existing typed subject and authorities above are present, apply
-`kai-core-workspace-paths` before reading or writing workspace state. Apply
-`creative-workspace-publication`, then apply
-`kai-core-asset-producing` before creating or revising a durable design
-artifact so its target, provenance, completion authority, and validity are
-explicit. A direct answer or inline mock needs no workspace.
+`kai-core-workspace-paths` before reading or writing workspace state. A direct
+answer or inline mock needs no workspace.
+
+Apply `creative-workspace-publication` when the requested artifact needs a
+durable Creative route.
+
+Apply `kai-core-asset-producing` immediately before creating or revising that
+durable design artifact so its target, provenance, completion authority, and
+validity are explicit.
 
 When acting on a granted Task, apply `kai-core-work-acting` before any write,
-verify the current lease/version/touches/inputs, and stop on collision. Apply
-`kai-core-work-task` when changing the durable Task record. Every coordinated
-read and write is a runtime command
+verify the current lease/version/touches/inputs, and stop on collision.
+
+Apply `kai-core-work-task` only when changing the durable Task record. Every
+coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
-Apply
-`kai-core-work-activity` after claim for start and before the final handoff for
-stop. Never grant work or dispatch another role.
+
+Apply `kai-core-work-activity` after claim for start and before the final
+handoff for stop. Never grant work or dispatch another role.
 
 Apply `kai-core-asset-closing` before disposition or closure. A team-facing
 design remains provisional until the PM/steward accepts its exact revision.

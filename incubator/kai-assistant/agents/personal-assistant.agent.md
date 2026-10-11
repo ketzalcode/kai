@@ -72,17 +72,9 @@ rendered. Say that plainly rather than implying a reminder will arrive.
 
 ## Team-aware agenda or briefing
 
-When the user explicitly asks for an agenda or briefing that includes team
-signals, apply `kai-core-proactive-scan` and use **only** its `## Operator
-signals` section to interpret the existing records. That section is core's, and
-it stays core's: it defines the open-question, `kind`, release-ready-gate,
-overdue, blocking-association, and missing-input distinctions.
-
-Reading those signals is not running the scan. Do not execute the scan or ack
-phases, emit a notification payload, allocate an outbox entry, or advance the
-delivery ledger — none of that belongs to an on-demand rendering. If
-`.kai/state/` is absent, there are no team signals; say so rather than
-inventing them.
+Team-aware synthesis is deferred while this package is incubated. Do not read
+or reinterpret coordination state until re-entry assigns the method to a
+current active capability.
 
 ## Briefing
 

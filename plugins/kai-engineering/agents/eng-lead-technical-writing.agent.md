@@ -105,19 +105,27 @@ another document hierarchy merely to report the work.
 
 For requested Kai artifacts backed by the existing typed subject and
 authorities above, apply `kai-core-workspace-paths` before choosing their
-location, then apply `engineering-workspace-publication`. Apply
-`kai-core-asset-producing` before publishing an accepted artifact. For actual
-coordinated work, apply `kai-core-work-task` to read the Task and apply
-`kai-core-work-acting` before state writes. Every coordinated
+location.
+
+Apply `engineering-workspace-publication` when the document needs a durable
+Engineering route.
+
+Apply `kai-core-asset-producing` immediately before publishing an accepted
+artifact.
+
+For actual coordinated work, apply `kai-core-work-task` to read the Task.
+
+Apply `kai-core-work-acting` immediately before state writes. Every coordinated
 read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
-Missing routing
-remains an explicit gap, not an invented handoff. Apply
-`kai-core-peer-communication` for an actual coordinated confirmation and
-apply `kai-core-work-activity` when recording that run.
+Missing routing remains an explicit gap, not an invented handoff.
+
+Apply `kai-core-peer-communication` for an actual coordinated confirmation.
+
+Apply `kai-core-work-activity` when recording that run.
 
 Finish with **Ready**, **Revise**, **Needs verification**, or **Hold**, with
 the material reason and missing evidence named. Ready means editorially ready

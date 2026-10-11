@@ -13,7 +13,6 @@
 // that a host could look up a model name.
 
 export const ROLE_FAMILY_PACK = Object.freeze({
-  core: 'core',
   eng: 'engineering',
   creative: 'creative',
 });
@@ -22,7 +21,7 @@ export const ROLE_POSTURES = Object.freeze([
   'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
 ]);
 
-export const MODEL_POLICY_VERSION = 'kai-agent-models-v3';
+export const MODEL_POLICY_VERSION = 'kai-agent-models-v4';
 export const AGENT_PROMPT_HARD_LIMIT = 30_000;
 
 export const ROLE_POSTURE_PROFILES = Object.freeze({
@@ -42,7 +41,6 @@ export const NAMED_CAPABILITY_AGENTS = Object.freeze({
 });
 
 export const KIND_AGENT_PROFILES = Object.freeze({
-  workflow: Object.freeze(['procedure']),
   persona: Object.freeze(['simulation']),
   instructor: Object.freeze(['teaching']),
 });
@@ -56,13 +54,12 @@ export const ROLE_PROFILE_MODELS = Object.freeze({
   operations: 'claude-sonnet-5',
   coordination: 'claude-sonnet-5',
   advisory: 'claude-sonnet-5',
-  procedure: 'claude-sonnet-5',
   teaching: 'claude-sonnet-5',
   simulation: 'claude-sonnet-5',
 });
 
 export const KIND_AGENT_FAMILIES = Object.freeze([
-  'workflow', 'persona', 'instructor',
+  'persona', 'instructor',
 ]);
 
 export function agentProfileModelErrors({ id, body, fm = {} }) {

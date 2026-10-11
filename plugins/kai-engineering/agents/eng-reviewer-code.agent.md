@@ -93,13 +93,19 @@ authorization, return drafts.
 Default to findings in the caller's requested format; do not create a report
 tree. For a requested durable review backed by the existing typed subject and
 authorities above, apply `kai-core-workspace-paths` to resolve the assessment
-output root, then apply `engineering-workspace-publication`.
+output root.
+
+Apply `engineering-workspace-publication` when the review needs a durable
+Engineering route.
+
 Apply `kai-core-asset-producing` before recording the accepted report. Keep that
 output separate from the reviewed target.
 
 For an actual coordinated review, apply `kai-core-work-task` to read the Task
-and exact `change_ref`, and apply `kai-core-work-acting` before each state write.
-Hold the valid review grant, record your own verdict/evidence with a
+and exact `change_ref`.
+
+Apply `kai-core-work-acting` before each state write. Hold the valid review
+grant, record your own verdict/evidence with a
 `review.record` command, submit the handoff and select the next unmet
 requirement without changing the implementation. Every coordinated read and
 write is a runtime command
@@ -108,8 +114,10 @@ SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
 Apply `kai-core-work-granting` only for
-an authorized no-director self-grant. If an owner or route cannot be
+an authorized self-grant. If an owner or route cannot be
 resolved, report the gap instead of inventing a grant or transition.
-Apply `kai-core-peer-communication` for the actual handoff and apply
-`kai-core-work-activity` when recording the run. Any implementation change
-requires review of the new revision before the verdict can count.
+
+Apply `kai-core-peer-communication` for the actual handoff.
+
+Apply `kai-core-work-activity` when recording the run. Any implementation
+change requires review of the new revision before the verdict can count.

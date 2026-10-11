@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **14 agents** and **46 skills**.
+The repository ships **9 agents** and **46 skills**.
 
-The default marketplace supplies **14 agents** and **46 skills** through core, engineering, and creative (13 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **46 skills** through core, engineering, and creative (16 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -20,23 +20,6 @@ and not available through any install path.
 - **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).
 
 ## Agents
-
-### Workspace foundation
-
-Set a workspace up and keep its structure honest.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing or repairing a private schema-5 workspace, or re-onboarding an unsupported workspace without importing old records. |
-| [`workflow-epic-init`](../../plugins/kai-core/agents/workflow-epic-init.agent.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
-
-### Direction
-
-Delivery coordination, on explicit request. Nothing has to be routed through it.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | `kai-core` | Coordinates approved Kai work by planning, granting, reconciling, and handing off executable Tasks without inventing product or hierarchy authority. |
 
 ### Engineering
 
@@ -65,7 +48,7 @@ Design and video judgment from supplied needs and evidence, plus bounded demo pr
 | ---- | ------- | ------------ |
 | [`creative-lead-design`](../../plugins/kai-creative/agents/creative-lead-design.agent.md) | `kai-creative` | Designs or critiques product interactions, visual hierarchy, applied design systems, and visual identity from approved needs and positioning. Use for UI, UX, brand-system, or revision-bound design review. Not product priority, positioning, frontend implementation, or unilateral brand adoption. |
 | [`creative-lead-video`](../../plugins/kai-creative/agents/creative-lead-video.agent.md) | `kai-creative` | Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication. |
-| [`workflow-creative-demo-production`](../../plugins/kai-creative/agents/workflow-creative-demo-production.agent.md) | `kai-creative` | Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication. |
+| [`creative-operator-demo-production`](../../plugins/kai-creative/agents/creative-operator-demo-production.agent.md) | `kai-creative` | Operates authorized demo production from supplied media and approved direction using requested alignment, focus, composition, and format operations. Use when production inputs exist. Not capture, invented direction, or publication. |
 
 ### Implementation review
 
@@ -74,15 +57,6 @@ Selective independent code review. Implementers retain ownership of their change
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact code change for requirements, correctness, contracts, regressions, risk, and test adequacy. Use explicitly for a diff, PR, or implementation review. Returns evidence-based findings and never repairs the code. |
-
-### Private workspace signals
-
-Core-owned weekly synthesis and explicitly requested signal scans.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | `kai-core` | Produces an explicitly requested private weekly synthesis from selected sources without changing coordinated work. |
-| [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | `kai-core` | Runs an explicitly requested read-only signal scan and writes a private typed core report payload without acting on findings. |
 
 ## Skills
 
@@ -99,6 +73,7 @@ Resolve private schema-5 workspaces, initialize Direction, and validate core pub
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding. |
 | [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
+| [`kai-core-create-epic`](../../plugins/kai-core/skills/kai-core-create-epic/SKILL.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
 
 ### Hierarchy & stewardship
 
@@ -136,6 +111,7 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | `kai-core` | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
+| [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | `kai-core` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
 | [`kai-core-create-skill`](../../plugins/kai-core/skills/kai-core-create-skill/SKILL.md) | `kai-core` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
 | [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure. |
 | [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | `kai-core` | Use when recording final asset disposition, validity, supersession, retraction, archival, or publication cleanup. |
@@ -188,15 +164,6 @@ Browser-run plumbing, content methods, and the claim safety creative content res
 | [`kai-core-web-evaluation`](../../plugins/kai-core/skills/kai-core-web-evaluation/SKILL.md) | `kai-core` | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | `kai-core` | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`content-grounding`](../../plugins/kai-creative/skills/content-grounding/SKILL.md) | `kai-creative` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
-| [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | `kai-core` | Use when an explicitly requested weekly synthesis needs source weighting, narratable structure, coverage accounting, and private report output. |
-
-### Operator signals
-
-Core's own reading of what the team records need a human for, plus the runner-invoked notification contract.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`kai-core-proactive-scan`](../../plugins/kai-core/skills/kai-core-proactive-scan/SKILL.md) | `kai-core` | Use when an explicitly requested read-only scan must classify, deduplicate, deliver, and acknowledge operator-relevant signals. |
 
 ---
 

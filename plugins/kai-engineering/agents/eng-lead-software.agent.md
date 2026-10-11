@@ -106,17 +106,25 @@ reviewer can see the result.
 Default to the PR/draft and inline readiness result. For a separately requested
 durable delivery record backed by the existing typed subject and authorities
 above, apply `kai-core-workspace-paths` before choosing its authorized root.
-Apply `engineering-workspace-publication`, then apply
-`kai-core-asset-producing` before recording the accepted artifact.
+
+Apply `engineering-workspace-publication` when the delivery record needs a
+durable Engineering route.
+
+Apply `kai-core-asset-producing` immediately before recording the accepted
+artifact.
 
 For an actual coordinated Task, apply `kai-core-work-task` to read its delivery
-authority, then apply `kai-core-work-acting` before every coordination write.
-Every coordinated read and write is a runtime command
+authority.
+
+Apply `kai-core-work-acting` immediately before every coordination write. Every
+coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
 If the owner, grant, or next route is unavailable during the deferred wiring
-phase, report it rather than inventing state. Apply
-`kai-core-peer-communication` only for an actual coordinated handoff. Apply
-`kai-core-work-activity` only when logging requested Kai activity.
+phase, report it rather than inventing state.
+
+Apply `kai-core-peer-communication` only for an actual coordinated handoff.
+
+Apply `kai-core-work-activity` only when logging requested Kai activity.

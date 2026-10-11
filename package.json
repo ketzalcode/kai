@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "22.1.0",
+  "version": "22.2.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; one build writes release metadata and consumer artifacts.",
   "private": true,
   "scripts": {
@@ -12,7 +12,6 @@
     "doctor": "node src/core/workspace-doctor.mjs",
     "host-contract": "node tools/host-contract.mjs --self-test",
     "host-contract:update": "node tools/host-contract.mjs --update",
-    "proactive-runner": "node examples/proactive-runner/runner.mjs --self-test",
     "release-readiness": "node tools/release-readiness.mjs",
     "release-notes": "node tools/release-notes.mjs",
     "check-syntax": "node tools/check-syntax.mjs",

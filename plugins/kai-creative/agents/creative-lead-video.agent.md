@@ -150,22 +150,27 @@ recorded visibility, audio fit, render quality, or publication readiness.
 ## Persistent work
 
 When the existing typed subject and authorities above are present, apply
-`kai-core-workspace-paths` before using workspace state. Apply
-`creative-workspace-publication`, then apply `kai-core-asset-producing` before
-producing or revising durable direction so the target, provenance, completion
-authority, and validity are explicit. A bounded concept or critique may remain
-inline.
+`kai-core-workspace-paths` before using workspace state. A bounded concept or
+critique may remain inline.
+
+Apply `creative-workspace-publication` when the requested direction needs a
+durable Creative route.
+
+Apply `kai-core-asset-producing` immediately before producing or revising that
+durable direction so the target, provenance, completion authority, and validity
+are explicit.
 
 For a granted Task, apply `kai-core-work-acting` before writes and verify the
-lease, version, touches, inputs, and latest handoff. Apply
-`kai-core-work-task` when updating its record. Every coordinated read and write
-is a runtime command
+lease, version, touches, inputs, and latest handoff.
+
+Apply `kai-core-work-task` only when updating its record. Every coordinated
+read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
-Apply
-`kai-core-work-activity` after claim for start and before handoff for stop.
+
+Apply `kai-core-work-activity` after claim for start and before handoff for stop.
 Never grant work, launch production, or dispatch another role.
 
 Apply `kai-core-asset-closing` before disposition or closure. The commissioning

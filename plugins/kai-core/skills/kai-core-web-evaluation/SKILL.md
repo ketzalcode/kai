@@ -137,7 +137,7 @@ private evidence, referenced by their
 run path; promote the text, not the binaries.
 
 If the target workspace was never onboarded, stop and invoke
-`workflow-workspace-init` for that exact root before a coordinated run.
+`kai-core-workspace-onboarding` for that exact root before a coordinated run.
 Playwright MCP's scratch directory (`.playwright-mcp/`) remains scratch only
 and is never the durable report/evidence location.
 
