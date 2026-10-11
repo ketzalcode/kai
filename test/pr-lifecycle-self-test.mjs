@@ -50,12 +50,49 @@ test('software lead is the single active PR integration owner', () => {
 });
 
 test('builders stop at implementation evidence handoff', () => {
-  for (const id of ['eng-builder-software', 'eng-builder-platform']) {
+  assert.equal(agents.has('eng-builder-frontend'), true);
+  assert.equal(agents.has('eng-builder-backend'), true);
+  assert.equal(agents.has('eng-builder-software'), false);
+  assert.equal(agents.has('eng-builder-platform'), false);
+  assert.equal(
+    existsSync(join(
+      root,
+      'incubator',
+      'kai-engineering',
+      'agents',
+      'eng-builder-platform.agent.md',
+    )),
+    true,
+  );
+
+  for (const id of ['eng-builder-frontend', 'eng-builder-backend']) {
     const body = readAgent(id);
     assert.doesNotMatch(body, /Apply `pr-sizing`/);
     assert.doesNotMatch(body, /Apply `pr-delivery`/);
     assert.match(body, /eng-lead-software/);
     assert.match(body, /changed-behavior tests|Tests for changed/);
+    assert.match(body, /Apply `software-development`/);
+    assert.match(body, /Apply `coding-standards`/);
+  }
+
+  const frontend = readAgent('eng-builder-frontend');
+  assert.match(frontend, /Apply `frontend-coding-standards`/);
+  assert.doesNotMatch(frontend, /Apply `backend-coding-standards`/);
+
+  const backend = readAgent('eng-builder-backend');
+  assert.match(backend, /Apply `backend-coding-standards`/);
+  assert.doesNotMatch(backend, /Apply `frontend-coding-standards`/);
+});
+
+test('active engineering agents require explicit invocation', () => {
+  for (const id of [
+    'eng-builder-frontend',
+    'eng-builder-backend',
+    'eng-lead-software',
+    'eng-reviewer-code',
+    'eng-lead-technical-writing',
+  ]) {
+    assert.match(readAgent(id), /^disable-model-invocation:\s*true$/m);
   }
 });
 

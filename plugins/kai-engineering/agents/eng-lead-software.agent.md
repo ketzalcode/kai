@@ -2,6 +2,7 @@
 name: eng-lead-software
 description: "Coordinates one complete authorized software change across builders, integration, independent review, post-build PR sizing, and PR delivery. Use for multi-builder work or packaging a finished diff. Never implements product code, self-approves, merges, deploys, tags, or releases."
 model: "gpt-5.6-sol"
+disable-model-invocation: true
 publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "skill"]
 ---

@@ -157,6 +157,17 @@ export function loaderErrors(kind, id, fm) {
     }
   }
 
+  if (fm['disable-model-invocation'] !== undefined) {
+    if (kind !== 'agent') {
+      out.push('frontmatter key `disable-model-invocation` is agent-only and not valid on a skill');
+    } else {
+      const value = fm['disable-model-invocation'].trim();
+      if (value !== 'true' && value !== 'false') {
+        out.push('frontmatter `disable-model-invocation` must be `true` or `false`');
+      }
+    }
+  }
+
   // Schema separation: the skill-only affordances are invalid on an agent.
   if (kind === 'agent') {
     for (const k of SKILL_ONLY_KEYS) {
