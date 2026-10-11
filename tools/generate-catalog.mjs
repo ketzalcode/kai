@@ -44,9 +44,10 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Engineering',
-    blurb: 'Implement bounded frontend and backend work, or explicitly coordinate a complete software change.',
+    blurb: 'Implement bounded frontend and backend work, explicitly coordinate a complete change, or run approved unattended delivery.',
     members: [
       'eng-lead-software', 'eng-builder-frontend', 'eng-builder-backend',
+      'eng-nightshift',
     ],
   },
   {
@@ -115,7 +116,7 @@ const CATEGORIES = [
       'kai-core-fleet-observation', 'kai-core-definition-of-done',
       'kai-core-scope-discipline', 'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-peer-communication',
-      'kai-core-contract-v1',
+      'kai-core-contract-v1', 'kai-core-create-skill',
       'kai-core-asset-producing', 'kai-core-asset-closing',
     ],
   },
@@ -126,6 +127,7 @@ const CATEGORIES = [
     members: [
       'software-development', 'coding-standards',
       'frontend-coding-standards', 'backend-coding-standards',
+      'nightshift-run',
       'research-before-coding',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
       'onboard-to-codebase', 'build-diagrams',

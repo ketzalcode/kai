@@ -4,6 +4,38 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [22.1.0] - 2026-10-10
+
+### Added
+
+- Added `eng-nightshift` for explicitly approved unattended engineering
+  runs that deliver bounded pull-request slices serially and stop at current
+  Direction, scope, authority, and run limits.
+- Added `nightshift-run` with required-first delivery, structured Core
+  blockers, revision-bound evidence, dependency-safe continuation, and a
+  private morning report for delivered, blocked, skipped, and suggested work.
+- Added the dependency-free Engineering Nightshift runner for isolated
+  worktrees, append-only checkpoints, and fresh standalone software-lead,
+  builder, delivery, and required-review sessions without model overrides.
+- Added `kai-core-create-skill`, a lean authoring guide for reusable,
+  caller-agnostic skills with one-way dependency direction, incremental state,
+  and proportionate splitting.
+- Added validation that rejects circular agent/skill routes before they ship.
+
+### Changed
+
+- Added `reports/nightshift` to the Engineering publication vocabulary for
+  private admissions, append-only events, evidence, and morning reports.
+- Made `eng-nightshift` choose one next PR slice, blocker, or completion after
+  each checkpoint, while using the caller-agnostic `eng-lead-software` for one
+  complete integration/delivery cycle. The runner only validates, persists,
+  launches, observes, and enforces deterministic limits.
+- Registered `eng-nightshift` as a named Engineering capability agent with the
+  `technical-judgment` profile and GPT-5.6 Sol, keeping the user-facing name
+  independent of workflow implementation terminology.
+- Extended the Engineering package description and catalog to include bounded
+  unattended delivery.
+
 ## [22.0.0] - 2026-10-10
 
 ### Added
@@ -4551,6 +4583,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
 [22.0.0]: https://github.com/ketzalcode/kai/compare/v21.0.0...v22.0.0
 [21.0.0]: https://github.com/ketzalcode/kai/compare/v20.0.1...v21.0.0
 [20.0.1]: https://github.com/ketzalcode/kai/compare/v20.0.0...v20.0.1

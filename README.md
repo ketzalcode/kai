@@ -12,8 +12,8 @@ context, proportionate confidence, and fast shipping.
 
 Kai is an open-source plugin for the **GitHub Copilot CLI**. Its focused agents
 own frontend implementation, backend implementation, coordination, selective
-review, technical writing, and creative work. Durable coordination is available
-when direct work is not enough.
+review, technical writing, bounded unattended delivery, and creative work.
+Durable coordination is available when direct work is not enough.
 
 **Who it is for.** Developers and small teams already using the Copilot CLI who
 want a reviewer that disagrees with them, a scope owner that pushes back, and a
@@ -38,9 +38,9 @@ Three packages. That is the entire shipped surface.
 ```text
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
-  |  5 agents                      |   |  3 agents                      |
-  | 12 skills                      |   |  7 skills                      |
-  |  0 executable entry points     |   |  3 executable entry points     |
+  |  6 agents                      |   |  3 agents                      |
+  | 13 skills                      |   |  7 skills                      |
+  |  1 executable entry point      |   |  3 executable entry points     |
   | frontend/backend, selective     |   | UI/UX, visual identity,        |
   | review, writing, explicit       |   |                                |
   | coordination and delivery      |   | video and demo production      |
@@ -54,7 +54,7 @@ Three packages. That is the entire shipped surface.
   | kai-core                                                            |
   |                                                                      |
   |  5 agents                                                            |
-  | 25 skills                                                            |
+  | 26 skills                                                            |
   |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
@@ -72,13 +72,19 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 5 / 12 | Frontend and backend implementation, selective review, technical writing, and explicit delivery |
+| `kai-core` | 5 / 26 | Shared contracts, workspace machinery, requested coordination |
+| `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
 Counts come from `plugins/` and are checked against the generated
 **[agents & skills catalog](docs/reference/agents-and-skills.md)** by `npm test`.
 They describe source ownership, not runtime quality.
+
+`eng-nightshift` is the explicit unattended path. One approved run
+executes bounded pull-request slices serially in isolated worktrees, delivers
+required outcomes first, preserves structured blockers, and leaves broader or
+lower-confidence ideas in a private morning report. It never infers merge,
+deployment, release, or production authority.
 
 ## Install
 
@@ -353,13 +359,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v22.0.0` is this checkout's prepared metadata version - not a tag, a release,
+`v22.1.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **13 agents and 44 skills** |
+| Surface | **14 agents and 46 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

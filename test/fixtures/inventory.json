@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 13,
-    "skills": 44
+    "agents": 14,
+    "skills": 46
   },
   "agents": [
     "creative-lead-design",
@@ -11,6 +11,7 @@
     "eng-builder-frontend",
     "eng-lead-software",
     "eng-lead-technical-writing",
+    "eng-nightshift",
     "eng-reviewer-code",
     "workflow-creative-demo-production",
     "workflow-epic-init",
@@ -30,6 +31,7 @@
     "kai-core-asset-closing",
     "kai-core-asset-producing",
     "kai-core-contract-v1",
+    "kai-core-create-skill",
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
     "kai-core-fleet-observation",
@@ -54,6 +56,7 @@
     "kai-core-workspace-reonboard",
     "mockups-ascii",
     "mockups-html",
+    "nightshift-run",
     "onboard-to-codebase",
     "pr-delivery",
     "pr-review",
@@ -72,6 +75,10 @@
     {
       "name": "html-block-diagrams",
       "argument_hint": ""
+    },
+    {
+      "name": "kai-core-create-skill",
+      "argument_hint": "skill purpose or existing skill path"
     },
     {
       "name": "kai-core-fleet-observation",

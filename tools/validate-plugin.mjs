@@ -33,7 +33,7 @@ import {
   materializePacks,
   CONTRACT_SKILL,
   HOOKS_OWNER, HOOK_ASSET_RE, loadedSkills, packProviders,
-  collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
+  collectReferences, referenceErrors, referenceCycleErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentTaxonomyErrors,
   requiresCoordinatedRunContracts, agentRoutingErrors,
   agentProfileModelErrors, agentPromptLimitErrors,
@@ -305,6 +305,7 @@ const packAssets = planAssets(packRefs);
       err(e.file, e.msg);
     }
   }
+  for (const e of referenceCycleErrors(packRefs)) err(e.file, e.msg);
   // Assets resolve through the source index: a shipped body names the path a
 // consumer runs (`scripts/x.mjs`), which is authored at `src/<pack>/x.mjs`.
 const assetIndex = sourceAssetIndex(ROOT);

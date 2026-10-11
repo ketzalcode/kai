@@ -169,6 +169,7 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     ['kai-core/scripts/observe-watch.mjs', ['--once', '--root', consumerRoot]],
     ['kai-core/scripts/work-status.mjs', ['--root', consumerRoot, '--json']],
     ['kai-core/scripts/workspace-doctor.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-engineering/scripts/nightshift.mjs', ['--help']],
     ['kai-creative/scripts/demo-format.mjs', ['--placements']],
     [
       'kai-creative/scripts/demo-narrate.mjs',

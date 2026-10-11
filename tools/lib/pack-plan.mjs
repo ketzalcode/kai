@@ -18,6 +18,7 @@ import {incubatedIds} from './incubation-contract.mjs';
 import { bundlePack } from './bundle.mjs';
 import {
   ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+  NAMED_CAPABILITY_AGENTS,
   KIND_AGENT_FAMILIES, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
   agentProfileModelErrors as profileModelErrors,
 } from '../../src/core/lib/agent-model-policy.mjs';
@@ -407,7 +408,7 @@ export { packPluginName, PACK_ORDER };
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
-  engineering: 'Explicit frontend and backend implementation, selective code review, technical writing, and delivery procedures over kai-core.',
+  engineering: 'Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.',
 };
 
 function packDescription(pack) {
@@ -898,6 +899,7 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 export {
   ROLE_FAMILY_PACK, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
   ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+  NAMED_CAPABILITY_AGENTS,
 } from '../../src/core/lib/agent-model-policy.mjs';
 const RETIRED_AGENT_FAMILIES = [
   'principal', 'director',
@@ -936,6 +938,12 @@ const RETIRED_AGENT_IDS = new Set(
 // namespace with enforced posture and placement.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
+  const namedCapability = NAMED_CAPABILITY_AGENTS[id] ?? null;
+  if (namedCapability) {
+    return namedCapability.pack === pack
+      ? []
+      : [`named capability agent \`${id}\` belongs to ${packPluginName(namedCapability.pack)}, not ${packPluginName(pack)}`];
+  }
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
     return RETIRED_AGENT_IDS.has(id)
       ? []
@@ -966,6 +974,7 @@ export function agentTaxonomyErrors({ id, pack }) {
 
 export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
+  if (NAMED_CAPABILITY_AGENTS[id]) return true;
   if (['director', 'principal', 'workflow'].includes(family)) return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
@@ -1451,6 +1460,60 @@ export function referenceErrors({ refs, providers }) {
     });
   }
   return errs;
+}
+
+function referenceNode(path) {
+  const normalized = path.replace(/\\/g, '/');
+  const agent = normalized.match(/\/agents\/([^/]+)\.agent\.md$/);
+  if (agent) return `agent:${agent[1]}`;
+  const skill = normalized.match(/\/skills\/([^/]+)\/SKILL\.md$/);
+  if (skill) return `skill:${skill[1]}`;
+  return null;
+}
+
+export function referenceCycleErrors(refs) {
+  const graph = new Map();
+  const files = new Map();
+  for (const ref of refs) {
+    if (ref.kind !== 'agent' && ref.kind !== 'skill') continue;
+    const from = referenceNode(ref.from);
+    const to = `${ref.kind}:${ref.target}`;
+    if (!from || from === to) continue;
+    if (!graph.has(from)) graph.set(from, new Set());
+    graph.get(from).add(to);
+    files.set(from, ref.from);
+  }
+
+  const visiting = new Set();
+  const visited = new Set();
+  const stack = [];
+  const reported = new Set();
+  const errors = [];
+  const visit = node => {
+    if (visiting.has(node)) {
+      const at = stack.indexOf(node);
+      const cycle = [...stack.slice(at), node];
+      const key = [...new Set(cycle.slice(0, -1))].sort().join('|');
+      if (!reported.has(key)) {
+        reported.add(key);
+        errors.push({
+          file: files.get(node) ?? node,
+          msg: `agent/skill dependency cycle: ${cycle.join(' -> ')} — higher-level callers `
+            + 'may depend on reusable resources, but a resource must not route back to its caller',
+        });
+      }
+      return;
+    }
+    if (visited.has(node)) return;
+    visiting.add(node);
+    stack.push(node);
+    for (const target of graph.get(node) ?? []) visit(target);
+    stack.pop();
+    visiting.delete(node);
+    visited.add(node);
+  };
+  for (const node of graph.keys()) visit(node);
+  return errors;
 }
 
 // Assign every referenced asset to one pack, by the ratified rule: an asset

@@ -40,6 +40,15 @@
     },
     {
       "type": "reports",
+      "subtype": "nightshift",
+      "privateForm": ".kai/engineering/reports/nightshift/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/reports/nightshift/<id>/",
+      "formats": ["markdown", "json", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "reports",
       "subtype": "releases",
       "privateForm": ".kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}",
       "publicForm": "docs/kai/engineering/reports/releases/<id>/",

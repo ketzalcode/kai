@@ -97,6 +97,7 @@ test('active engineering agents require explicit invocation', () => {
     'eng-lead-software',
     'eng-reviewer-code',
     'eng-lead-technical-writing',
+    'eng-nightshift',
   ]) {
     assert.match(readAgent(id), /^disable-model-invocation:\s*true$/m);
   }
@@ -322,11 +323,11 @@ test('README overview reflects the released engineering surface', () => {
   assert.match(overview, /lean, quality-first suite of specialized agents and skills/);
   assert.match(overview, /Kai keeps direct work direct/);
   assert.match(overview, /agent-to-agent software collaboration/);
-  assert.match(overview, /\|\s*5 agents\s*\|/);
-  assert.match(overview, /\|\s*12 skills\s*\|/);
+  assert.match(overview, /\|\s*6 agents\s*\|/);
+  assert.match(overview, /\|\s*13 skills\s*\|/);
   assert.match(
     overview,
-    /\| `kai-engineering` \| 5 \/ 12 \| Frontend and backend implementation, selective review, technical writing, and explicit delivery \|/,
+    /\| `kai-engineering` \| 6 \/ 13 \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
   );
   assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

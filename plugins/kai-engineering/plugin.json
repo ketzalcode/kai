@@ -1,7 +1,7 @@
 {
   "name": "kai-engineering",
-  "version": "22.0.0",
-  "description": "Explicit frontend and backend implementation, selective code review, technical writing, and delivery procedures over kai-core.",
+  "version": "22.1.0",
+  "description": "Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.",
   "agents": "agents",
   "skills": "skills"
 }
