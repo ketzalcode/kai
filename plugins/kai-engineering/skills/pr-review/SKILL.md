@@ -36,7 +36,6 @@ Risk signals: only concrete triggers visible in this change
 
 - Route assembled UI, API, CLI, or system acceptance to quality when
   applicable.
-- assembled UI, API, CLI, or system behavior may require quality review.
 - Route concrete security, privacy/compliance, and reliability triggers to
   their owners.
 - Use `research-before-coding` only for a bounded unresolved fact that could

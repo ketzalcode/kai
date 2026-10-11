@@ -147,7 +147,8 @@ test('pr-review skips docs and metadata-only changes', () => {
 
 test('pr-review routes assembled acceptance to quality', () => {
   const review = readSkill('pr-review');
-  assert.match(review, /assembled UI, API, CLI, or system behavior may require quality review/);
+  assert.match(review, /Route assembled UI, API, CLI, or system acceptance to quality when\s+applicable\./);
+  assert.doesNotMatch(review, /assembled UI, API, CLI, or system behavior may require quality review/);
 });
 
 test('pr-review handles stacked PR parent revisions', () => {
