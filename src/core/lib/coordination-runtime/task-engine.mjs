@@ -16,9 +16,7 @@ import {
 import {
   sameActor, requireRoleAvailable, requireActorAvailable, requireActionGrant,
   requireHostActionGrant, requireNamedAuthority, leaseIsLive, requireLease, requireActingAuthority,
-  requireLeasedActingAuthority,
 } from './authority.mjs';
-import {assertAlignedAncestors, hasStaleDirection} from './hierarchy-engine.mjs';
 import {
   TASK_NEEDS_CHANGE_REF,
   TASK_TERMINAL_STATES,
@@ -67,38 +65,6 @@ function requireKnownTaskRoles(body, authority) {
   }
   for (const requirement of body.review_requirements) {
     requireRoleAvailable(requirement.role, authority, 'review requirement');
-  }
-}
-
-function taskRecord(body, version = 1) {
-  return {
-    kind: 'task',
-    id: body.id,
-    subject: null,
-    version,
-    body,
-  };
-}
-
-function assertCurrentAlignment(tx, task, runtime) {
-  const feature = tx.get('feature', task.body.feature_id);
-  if (!feature) {
-    fail('EVIDENCE_GAP', `task/${task.id} has no current Feature ancestor`);
-  }
-  const epic = tx.get('epic', feature.body.epic_id);
-  if (!epic) {
-    fail('EVIDENCE_GAP', `feature/${feature.id} has no current Epic ancestor`);
-  }
-  return assertAlignedAncestors(tx, task, runtime.direction(epic.body.direction_ref));
-}
-
-function alignmentFailure(tx, task, runtime) {
-  try {
-    assertCurrentAlignment(tx, task, runtime);
-    return null;
-  } catch (error) {
-    if (error instanceof RuntimeError && error.code === 'EVIDENCE_GAP') return error;
-    throw error;
   }
 }
 
@@ -291,11 +257,7 @@ function requireTransition(tx, task, command, authority, to) {
   return null;
 }
 
-function transitionBody(tx, task, command, authority, runtime, to, at) {
-  if ((to !== 'blocked' && to !== 'dropped')
-    || hasStaleDirection(tx, task, runtime.direction)) {
-    assertCurrentAlignment(tx, task, runtime);
-  }
+function transitionBody(tx, task, command, authority, to, at) {
   const candidate = to === 'in-review'
     ? {
       ...task,
@@ -352,7 +314,7 @@ function putMessage(tx, task, command, {
     const parent = tx.get('message', parentId);
     if (!parent) fail('INVALID_INPUT', `parent message/${parentId} does not exist`);
     if (!subjectEquals(parent.subject, {kind: task.kind, id: task.id})) {
-      fail('INVALID_INPUT', `parent message/${parentId} belongs to another hierarchy subject`);
+      fail('INVALID_INPUT', `parent message/${parentId} belongs to another Task`);
     }
   }
   const body = {
@@ -382,13 +344,12 @@ function putMessage(tx, task, command, {
   return body;
 }
 
-function handleTaskCreate(current, tx, command, authority, runtime) {
+function handleTaskCreate(current, tx, command, authority) {
   if (current !== null) fail('VERSION_CONFLICT', `task/${command.recordId} exists`);
   const body = command.payload.body;
   if (body.state !== 'proposed') {
     fail('INVALID_INPUT', 'new Tasks must begin proposed');
   }
-  assertCurrentAlignment(tx, taskRecord(body), runtime);
   requireActionGrant(tx, command, authority, 'task.create');
   requireKnownTaskRoles(body, authority);
   if (body.producer_actor && sameActor(body.producer_actor, body.acceptance_actor)) {
@@ -398,8 +359,7 @@ function handleTaskCreate(current, tx, command, authority, runtime) {
   return body;
 }
 
-function handleTaskUpdate(current, tx, command, authority, runtime) {
-  assertCurrentAlignment(tx, current, runtime);
+function handleTaskUpdate(current, tx, command, authority) {
   requireActingAuthority(tx, current, command, authority, 'task.update');
   const changes = Object.hasOwn(command.payload, 'changes')
     ? command.payload.changes
@@ -423,11 +383,10 @@ function handleTaskUpdate(current, tx, command, authority, runtime) {
   return next;
 }
 
-function handleTaskPromote(current, tx, command, authority, runtime) {
+function handleTaskPromote(current, tx, command, authority) {
   if (current.body.state !== 'proposed') {
     fail('INVALID_INPUT', 'task.promote requires a proposed task');
   }
-  assertCurrentAlignment(tx, current, runtime);
   requireKnownTaskRoles(current.body, authority);
   requireNamedAuthority(tx, command, authority, 'task.promote',
     current.body.scope_authority);
@@ -482,8 +441,7 @@ function withProducer(body, actor) {
   return {producer_actor: actor, producing_actors: history};
 }
 
-function handleTaskGrant(current, tx, command, authority, runtime) {
-  assertCurrentAlignment(tx, current, runtime);
+function handleTaskGrant(current, tx, command, authority) {
   requireActionGrant(tx, command, authority, 'task.grant');
   requireKnownTaskRoles(current.body, authority);
   if (current.body.recovery_hold !== null) {
@@ -556,34 +514,19 @@ function handleTaskGrant(current, tx, command, authority, runtime) {
   };
 }
 
-function handleTaskTransition(current, tx, command, authority, runtime) {
+function handleTaskTransition(current, tx, command, authority) {
   return transitionBody(
     tx,
     current,
     command,
     authority,
-    runtime,
     command.payload.to,
     command.payload.at,
   );
 }
 
-function handleTaskHandoff(current, tx, command, authority, runtime) {
-  const staleDirection = hasStaleDirection(tx, current, runtime.direction);
-  if (staleDirection) {
-    requireLeasedActingAuthority(tx, current, command, authority, 'task.handoff');
-    if (command.payload.state !== null) {
-      fail('AUTHORITY_REQUIRED',
-        `Direction-stale task/${current.id} handoff must preserve execution state`);
-    }
-    if (!new Set([current.body.scope_authority, 'operator'])
-      .has(command.payload.toRole)) {
-      fail('AUTHORITY_REQUIRED',
-        `Direction-stale task/${current.id} may hand off only to a safe owner`);
-    }
-  } else {
-    requireActingAuthority(tx, current, command, authority, 'task.handoff');
-  }
+function handleTaskHandoff(current, tx, command, authority) {
+  requireActingAuthority(tx, current, command, authority, 'task.handoff');
   if (current.body.recovery_hold !== null) {
     fail('AUTHORITY_REQUIRED', 'operator resolution is required before handoff');
   }
@@ -595,17 +538,9 @@ function handleTaskHandoff(current, tx, command, authority, runtime) {
       current,
       command,
       authority,
-      runtime,
       command.payload.state,
       command.payload.createdAt,
     );
-  } else if (!staleDirection) {
-    const alignment = alignmentFailure(tx, current, runtime);
-    if (alignment && !new Set([current.body.scope_authority, 'operator'])
-      .has(command.payload.toRole)) {
-      fail('AUTHORITY_REQUIRED',
-        `Direction-stale task/${current.id} may hand off only to a safe owner`);
-    }
   }
   putMessage(tx, current, command, {
     messageId: command.payload.messageId,
@@ -634,8 +569,7 @@ function requireRestorationAuthority(task, command, authority) {
   }
 }
 
-function handleTaskRestore(current, tx, command, authority, runtime) {
-  assertCurrentAlignment(tx, current, runtime);
+function handleTaskRestore(current, tx, command, authority) {
   requireRestorationAuthority(current, command, authority);
   if (current.body.state !== 'blocked' || current.body.resume_state === null) {
     fail('INVALID_INPUT', 'task.restore requires a blocked task with resume_state');
@@ -674,10 +608,9 @@ function handleTaskRestore(current, tx, command, authority, runtime) {
   };
 }
 
-function handleQuestionOpen(current, tx, command, authority, runtime) {
+function handleQuestionOpen(current, tx, command, authority) {
   const task = current.kind === 'task';
   if (task) {
-    assertCurrentAlignment(tx, current, runtime);
     requireActingAuthority(tx, current, command, authority, 'question.open');
   } else {
     requireActionGrant(tx, command, authority, 'question.open');
@@ -766,9 +699,8 @@ function effectiveAnswers(tx, question, answerIds) {
   return answers.filter(answer => !replaced.has(answer.message_id));
 }
 
-function handleQuestionAnswer(current, tx, command, authority, runtime) {
+function handleQuestionAnswer(current, tx, command, authority) {
   const task = current.kind === 'task';
-  if (task) assertCurrentAlignment(tx, current, runtime);
   if (command.payload.kind !== 'answer') {
     fail('INVALID_INPUT', 'question.answer message kind must be "answer"');
   }
@@ -883,7 +815,7 @@ function recoveryEvidence(tx, task, command) {
   }
 }
 
-function handleAttemptRecover(current, tx, command, authority, runtime) {
+function handleAttemptRecover(current, tx, command, authority) {
   requireActionGrant(tx, command, authority, 'attempt.recover');
   if (TASK_TERMINAL_STATES.has(current.body.state)) {
     fail('INVALID_INPUT',
@@ -913,7 +845,6 @@ function handleAttemptRecover(current, tx, command, authority, runtime) {
     fail('AUTHORITY_REQUIRED', 'operator resolution is required before recovery');
   }
   if (command.payload.disposition === 'safe-to-resume' && command.payload.redispatch !== null) {
-    assertCurrentAlignment(tx, current, runtime);
     requireNoOpenQuestions(current);
     const dependencies = dependencyStatus(tx, current);
     if (dependencies.failed.length > 0) {

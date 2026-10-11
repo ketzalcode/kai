@@ -10,7 +10,7 @@ import {
 import {
   badPath, escapesRoot, inspectPrivateLanes, normalized, pathHasLink, resolvedProjectPath,
 } from '../workspace-path-safety.mjs';
-import {readWorkspaceManifest, validateSchema5Manifest} from '../workspace-resolve.mjs';
+import {readWorkspaceManifest, validateSchema6Manifest} from '../workspace-resolve.mjs';
 import {
   COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
@@ -53,7 +53,7 @@ export function workspaceManifest(root) {
     fail('SCHEMA_MISMATCH',
       'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard');
   }
-  const validation = validateSchema5Manifest(root, m);
+  const validation = validateSchema6Manifest(root, m);
   if (validation.errors.length) fail('INVALID_INPUT', validation.errors.join('; '));
   return m;
 }

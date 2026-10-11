@@ -119,7 +119,7 @@ export function buildReport(store, {subject}) {
       status: bindsSubject(record, itemSubject)
         && currentCriteria !== null
         && record.body.criteria_ref === currentCriteria
-        && (item.kind !== 'task' || contentEquals(record.body.content_ref, item.body.change_ref))
+        && contentEquals(record.body.content_ref, item.body.change_ref)
         ? 'current'
         : 'historical',
       integrity: 'not-rechecked', assets: [],
@@ -180,7 +180,7 @@ export function buildReport(store, {subject}) {
               && b.recovery.attempt_id === body.recovery_hold
             : matchesAcceptance(b, item, (recordKind, id) => tx.get(recordKind, id)));
         const actor = b.reviewer ?? b.authority ?? null;
-        const independent = actor === null ? null : (item.kind !== 'task' || !isProducingRun(body, actor))
+        const independent = actor === null ? null : !isProducingRun(body, actor)
           && !artifacts.some(a => contentEquals(a.content_ref, b.content_ref)
             && a.producer.runId === actor.runId);
         const status = !current ? 'historical' : effectiveIds === null ? 'conflict'
@@ -212,13 +212,11 @@ export function buildReport(store, {subject}) {
           if (recovery) {
             recoveryResolution(tx, item, record.id);
             verifyReferences({root}, tx, item, b.evidence_refs, {recovery: true, positive: false});
-          } else if (item.kind === 'task') {
+          } else {
             verifyVerdict(tx, item, b, actor);
             if (artifacts.some(a => a.status === 'current' && a.integrity === 'gap')) {
               throw new RuntimeError('EVIDENCE_GAP', 'Current subject artifact or asset has an integrity/validity gap.');
             }
-          } else {
-            verifyReferences({root}, tx, item, b.evidence_refs);
           }
         }, 'broken-claim');
         entry.integrity = verified.ok ? 'verified' : 'gap';
@@ -232,9 +230,11 @@ export function buildReport(store, {subject}) {
       && d.kind === 'completion' && d.decision === 'approved');
     if (completionClaims.length) {
       const completion = check('completion', () => completionApproval(tx, item), 'broken-claim');
-      const requiredReviews = item.kind === 'task'
-        ? check('required-reviews', () => requireReviews(tx, item), 'broken-claim')
-        : {ok: true};
+      const requiredReviews = check(
+        'required-reviews',
+        () => requireReviews(tx, item),
+        'broken-claim',
+      );
       if (!completion.ok || !requiredReviews.ok) {
         completionClaims.forEach(c => { c.integrity = 'gap'; });
       }
@@ -243,20 +243,19 @@ export function buildReport(store, {subject}) {
       addGap('completion', 'Recorded terminal state retained; current completion proof is missing or stale.');
     }
     const recordedPhase = body.state === 'blocked' ? body.resume_state : body.state;
-    if (item.kind === 'task'
-      && ['release-ready', 'deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
+    if (['release-ready', 'deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
       check('completion', () => completionApproval(tx, item), 'broken-claim');
       check('required-reviews', () => requireReviews(tx, item), 'broken-claim');
       check('release-evidence', () => requireReleaseEvidence(tx, item), 'broken-claim');
     }
-    if (item.kind === 'task' && ['deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
+    if (['deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
       check('deployment-start', () => requireOperatorApproval(tx, item, 'operator-deploy-start'), 'broken-claim');
     }
-    if (item.kind === 'task' && ['production-verification', 'shipped'].includes(recordedPhase)) {
+    if (['production-verification', 'shipped'].includes(recordedPhase)) {
       check('deployment-complete', () => requireOperatorApproval(tx, item, 'operator-deploy-complete'), 'broken-claim');
       check('deployment', () => requireDeploymentEvidence(tx, item, 'deployment'), 'broken-claim');
     }
-    if (item.kind === 'task' && recordedPhase === 'shipped') {
+    if (recordedPhase === 'shipped') {
       check('production-verification', () => requireDeploymentEvidence(tx, item, 'production-verification'), 'broken-claim');
     }
     const criteria = body.acceptance.map((text, index) => {
@@ -353,7 +352,7 @@ export function buildReport(store, {subject}) {
         ? `Waiting for ${dependency.task}: recorded ${dependency.state}; requires ${dependency.requires}.`
         : dependency.status === 'failed'
           ? `Dependency ${dependency.task} was dropped; recorded requirement ${dependency.requires} failed. Owner decision required.`
-          : `Dependency ${dependency.task} is missing; restore evidence before resolving its requirement.`;
+          : `Dependency ${dependency.task} is missing; restore evidence before resolving the dependency.`;
       addGap(ref, ask, dependency.status === 'pending' ? 'pending' : 'gap');
       if (!terminal.has(body.state)) blockers.push({ref, kind: 'dependency', status: dependency.status, ask});
     }
@@ -405,11 +404,11 @@ export function buildReport(store, {subject}) {
       && artifact.status === 'current'
       && artifact.integrity === 'verified'
       && acceptedReportArtifacts.has(artifact.id)
-      && (item.kind === 'task' || artifact.assets.some(asset =>
-          asset.validity === 'current'
-          && acceptedApprovalIds.has(asset.completion_approval_id)
-          && !new Set(['scratch', 'draft', 'discarded', 'retracted'])
-            .has(asset.disposition))));
+      && (artifact.assets.length === 0 || artifact.assets.some(asset =>
+        asset.validity === 'current'
+        && acceptedApprovalIds.has(asset.completion_approval_id)
+        && !new Set(['scratch', 'draft', 'discarded', 'retracted'])
+          .has(asset.disposition))));
     if (artifacts.length > reportArtifacts.length) {
       addGap('private-evidence', 'Private evidence metadata and bytes were withheld from the report.', 'pending');
     }

@@ -10,8 +10,8 @@ Done is an evidence-backed claim against the authorized acceptance criteria,
 not a synonym for code written, document drafted, review requested, or artifact
 published.
 
-Direct single-shot work needs no workspace, Direction, database, hierarchy
-record, lease, or report tree. Coordinated completion uses SQLite at
+Direct single-shot work needs no workspace, database, Task, lease, or report
+tree. Coordinated completion uses SQLite at
 `.kai/core/runtime/coordination.sqlite` as the **only coordination authority**.
 
 ## Six dimensions
@@ -23,12 +23,12 @@ record, lease, or report tree. Coordinated completion uses SQLite at
 | Safety | Security, privacy/compliance, reliability, rollback, and production risks are resolved or explicitly accepted by authority. |
 | Product and design | User-facing behavior has exact-revision acceptance from the declared independent authority. |
 | Publication | Every owed durable artifact followed its owning pack vocabulary, exact accepted hash, provenance, mirrored destination, and private cleanup. |
-| Coordination | Task lifecycle, evidence, questions, handoff, reviews, lease, parent roll-up, and next action are truthful in SQLite. |
+| Coordination | Task lifecycle, evidence, questions, handoff, reviews, lease, and next action are truthful in SQLite. |
 
 ## Review gates
 
-Use `review.record` and `approval.record` against the immutable `change_ref` or
-parent closure criteria reference. A changed revision invalidates stale review.
+Use `review.record` and `approval.record` against the immutable `change_ref`.
+A changed revision invalidates stale review.
 
 Typical independent roles include:
 
@@ -62,18 +62,6 @@ not authority.
 Kai never deploys by implication. A role may prepare commands and evidence, but
 only the operator or explicitly authorized host performs irreversible or
 production actions.
-
-## Hierarchy closure
-
-Task completion can make a Requirement eligible for `satisfied`; Requirement
-completion can make a Feature eligible for `delivered`; Feature completion can
-make an Epic eligible for `achieved`. Child completion never auto-closes a
-parent. Each parent completion authority accepts an exact criteria reference
-containing required child IDs and versions.
-
-Optional children do not block closure. Cancelled or superseded required
-children require an authority-approved required-child change; they do not count
-as delivered work.
 
 ## Hard rules
 

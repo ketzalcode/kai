@@ -6,23 +6,22 @@ tools: [read, execute, search]
 
 # Work Task
 
-A Task is the only executable hierarchy record. SQLite at
+A Task is a standalone executable A2A record. SQLite at
 `.kai/core/runtime/coordination.sqlite` is the **only coordination authority**.
 Read and mutate it only through
 `node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`.
 
 ## Required shape
 
-A Task has a typed `<pack>:task:<id>`, one same-pack `feature_id`, and non-empty
-same-Feature `satisfies[]`. It also records delivery class, state, scope and
-completion authorities, producer and acceptance actors, priority, next role,
+A Task has a typed `<pack>:task:<id>` and optional opaque `planning_refs[]`.
+It records delivery class, state, scope and completion authorities, producer
+and acceptance actors, next role,
 outcome, acceptance, artifact expectation and targets, context artifacts,
 touches, Task dependencies, lease, recovery hold, blocking questions, review
 requirements, immutable change reference, version, and timestamps.
 
-The Task contract never invents missing Epic, Feature, Requirement, authority,
-priority, acceptance, or artifact targets. Direct work remains direct and
-creates no Task.
+The Task contract never invents missing authority, acceptance, execution scope,
+or artifact targets. Direct work remains direct and creates no Task.
 
 ## Lifecycle
 
@@ -41,8 +40,7 @@ substitutes for required review, acceptance, evidence, or operator action.
 ## Commands and leases
 
 - `task.create` records an authority-approved proposal.
-- `task.promote` requires the named scope authority and active referenced
-  Requirements.
+- `task.promote` requires the named scope authority.
 - `task.grant` binds one holder, exact version, lease token, expiry, and allowed
   actions.
 - `task.update`, `task.transition`, and `task.handoff` require current authority,

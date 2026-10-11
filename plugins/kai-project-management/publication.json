@@ -1,0 +1,24 @@
+{
+  "pack": "project-management",
+  "skill": "project-management-workspace-publication",
+  "entries": [
+    {
+      "type": "direction",
+      "subtype": null,
+      "privateForm": ".kai/project-management/direction/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/project-management/direction/<id>/",
+      "formats": ["markdown", "markdown-single-file", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "plans",
+      "subtype": null,
+      "privateForm": ".kai/project-management/plans/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/project-management/plans/<id>/",
+      "formats": ["markdown", "json", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    }
+  ]
+}

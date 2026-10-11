@@ -8,9 +8,8 @@ export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 export const HEX_DIGEST = /^[0-9a-f]{64}$/i;
 export const GIT_OBJECT = /^[0-9a-f]{7,40}$/i;
 export const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
-export const EPIC_ID = new RegExp(`^epic:(?<slug>${SLUG})$`);
 const PACK_PATTERN = WORKSPACE_CONTRACT.packs.join('|');
-export const TYPED_ID = new RegExp(`^(?<pack>${PACK_PATTERN}):(?<kind>feature|requirement|task):(?<slug>${SLUG})$`);
+export const TYPED_ID = new RegExp(`^(?<pack>${PACK_PATTERN}):(?<kind>task):(?<slug>${SLUG})$`);
 
 export class RuntimeError extends Error {
   constructor(code, message, retryable = false) {
@@ -153,12 +152,6 @@ export function validateSubjectRef(subject, label = 'subject') {
 
 export function validateNullableSubject(subject, label) {
   if (subject !== null) validateSubjectRef(subject, label);
-}
-
-export function parseEpicId(value, label) {
-  const match = typeof value === 'string' ? value.match(EPIC_ID) : null;
-  if (!match) invalid(`${label} must match "epic:<slug>"`);
-  return match.groups;
 }
 
 export function parseTypedId(value, expectedKind, label) {

@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-onboarding
-description: "Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding."
+description: "Use when installing Kai packs, initializing a schema-6 workspace, or repairing its current private binding."
 tools: [execute, read, edit, search, ask_user]
 user-invocable: true
 argument-hint: "install packs, initialize workspace, or repair binding"
@@ -30,14 +30,14 @@ Apply `kai-core-operating-rules` before confirmation, Git changes, plugin
 changes, or other operator-only decisions.
 
 Apply `kai-core-workspace-paths` only for workspace initialization or repair,
-before resolving the project, placement, registry, Direction, publication root,
-or coordination database.
+before resolving the project, placement, registry, publication root, or
+coordination database.
 
 ## Initialize
 
-Require an absolute project root, `external` or `repo-local` placement, stable
-workspace/project IDs, and operator-supplied Direction. Inspect first and show
-exact creates, keeps, conflicts, registry changes, and managed blocks.
+Require an absolute project root, `external` or `repo-local` placement, and
+stable workspace/project IDs. Inspect first and show exact creates, keeps,
+conflicts, registry changes, and managed blocks.
 
 Obtain explicit approval before changing a non-empty target, registry binding,
 Git tracking, or project `AGENTS.md`.
@@ -59,9 +59,9 @@ node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
 node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
-The initializer creates only the schema-5 manifest, coordination database,
-`docs/kai/README.md`, and operator-supplied `docs/kai/DIRECTION.md`. It never
-seeds department or artifact directories.
+The initializer creates only the schema-6 manifest, Core coordination database,
+and `docs/kai/README.md`. It never initializes optional package runtimes or
+seeds package artifact directories.
 
 For `repo-local`, verify `.kai/` is ignored and untracked. For `external`,
 register the exact project/workspace pair and create no project-local `.kai/`.

@@ -16,12 +16,11 @@ inside this repository only.
 | --- | --- |
 | Role kinds, staying in lane, test ownership, human-only gates, shipping honesty, `@operator` | `kai-core-operating-rules` |
 | Acting on granted work: verify-before-write, collisions, handoffs, review routing | `kai-core-work-acting` |
-| Granting and reconciling executable work: planning, leases, recovery, and Task dispatch | `kai-core-work-granting` |
-| Epic, Feature, Requirement, and Task meanings and relationships | `kai-core-work-hierarchy` |
+| Granting and reconciling executable work: leases, recovery, and Task dispatch | `kai-core-work-granting` |
 | Executable Task schema, lifecycle, lease, and recovery rules | `kai-core-work-task` |
-| Scope authority, promotion, holds, reprioritization, and parent closure | `kai-core-work-stewardship` |
-| Workspace resolution, private schema-5 placement, Direction, and typed path grammar | `kai-core-workspace-paths`, `kai-core-workspace-onboarding` |
-| Pack-owned artifact vocabularies and formats | `kai-core-workspace-publication`, `engineering-workspace-publication`, `creative-workspace-publication` |
+| Workspace resolution, private schema-6 placement, and typed path grammar | `kai-core-workspace-paths`, `kai-core-workspace-onboarding` |
+| Direction, Epic, Feature, Requirement, priority, holds, dependencies, and closure | `project-management-work-hierarchy`, `project-management-work-stewardship` |
+| Pack-owned artifact vocabularies and formats | each package's `*-workspace-publication` skill |
 | Producing and closing durable assets | `kai-core-asset-producing`, `kai-core-asset-closing` |
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
@@ -41,11 +40,12 @@ operator to install or update `kai-core` before resuming coordinated work.
 
 Every shipped package uses task-local routes. The retired
 go-to-market and personal plugins are not compatibility aliases; do not
-reintroduce their eager declarations or dependency guards. Schema 5 has no
+reintroduce their eager declarations or dependency guards. Schema 6 has no
 generic personal lane. Unsupported workspaces are re-onboarded without
 importing historical private records.
 
-The install owners are `kai-core`, `kai-engineering`, and `kai-creative`.
+The install owners are `kai-core`, `kai-project-management`,
+`kai-engineering`, and `kai-creative`.
 Keep each source in one owning package. A capability package's
 baseline is core plus itself, with adequate supplied inputs rather than
 compulsory sibling producers. Naming-family tokens do not define install owners.

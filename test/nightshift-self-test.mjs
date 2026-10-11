@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {createHash, randomUUID} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 import {
   mkdirSync,
   mkdtempSync,
@@ -46,16 +46,16 @@ function plan(overrides = {}) {
     approvedAt: '2026-10-10T20:00:00.000Z',
     deadline: '2026-10-11T06:00:00.000Z',
     projectId: 'kai',
-    subject: {
-      kind: 'feature',
-      id: 'engineering:feature:nightshift',
-      version: 3,
+    goal: {
+      outcome: 'Deliver bounded unattended engineering work.',
+      acceptance: ['Every delivered slice satisfies its Task acceptance.'],
     },
-    direction: {
-      path: 'docs/kai/DIRECTION.md',
-      sha256: 'a'.repeat(64),
-      goal: 'Deliver bounded unattended engineering work.',
-    },
+    tasks: [
+      {id: 'engineering:task:api-contract', version: 2},
+      {id: 'engineering:task:ui-error', version: 1},
+      {id: 'engineering:task:docs-note', version: 1},
+    ],
+    planningProjection: null,
     base: {
       remote: 'origin',
       branch: 'main',
@@ -230,13 +230,12 @@ function workspaceFixture() {
   writeFileSync(join(workspace, '.kai', 'manifest.json'), `${JSON.stringify({
     plugin: 'kai-core',
     version: '22.0.0',
-    schema_version: 5,
+    schema_version: 6,
     scaffolded: '2026-10-10',
     workspace_id: `nightshift-${randomUUID()}`,
     placement: 'repo-local',
     workspace_root: '.',
     private_root: '.kai',
-    direction: 'docs/kai/DIRECTION.md',
     projects: [{
       id: 'kai',
       path: '.',
@@ -246,7 +245,6 @@ function workspaceFixture() {
   return {
     workspace,
     head,
-    directionHash: createHash('sha256').update(direction).digest('hex'),
   };
 }
 
@@ -333,6 +331,15 @@ test('run admission is bounded and contains no up-front slice or routing policy'
   assert.equal(Object.hasOwn(valid, 'agent'), false);
   assert.equal(Object.hasOwn(valid, 'model'), false);
   assert.equal(Object.hasOwn(valid, 'slices'), false);
+  assert.equal(valid.planningProjection, null);
+  assert.deepEqual(validatePlan(plan({
+    planningProjection: {
+      summary: 'Approved Requirement projection.',
+      references: ['project-management:requirement/engineering:requirement:nightshift@2'],
+    },
+  })).planningProjection.references, [
+    'project-management:requirement/engineering:requirement:nightshift@2',
+  ]);
 
   assert.throws(
     () => validatePlan(plan({agent: 'eng-builder-backend'})),
@@ -518,10 +525,6 @@ test('prepare is idempotent and report regeneration replaces the same draft', as
   try {
     const approved = plan({
       deadline: '2099-10-11T06:00:00.000Z',
-      direction: {
-        ...plan().direction,
-        sha256: fixture.directionHash,
-      },
       base: {
         ...plan().base,
         sha: fixture.head,
@@ -549,10 +552,6 @@ test('serial execution continues independent work after a blocker', async () => 
   try {
     const approved = plan({
       deadline: '2099-10-11T06:00:00.000Z',
-      direction: {
-        ...plan().direction,
-        sha256: fixture.directionHash,
-      },
       base: {
         ...plan().base,
         sha: fixture.head,

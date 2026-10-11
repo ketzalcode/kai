@@ -2,10 +2,9 @@
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {isAbsolute, resolve} from 'node:path';
 import {
-  HIERARCHY_KINDS,
   RECORD_KINDS,
   RuntimeError,
-  validateHierarchySubject,
+  validateTaskSubject,
 } from './lib/coordination-runtime/contract.mjs';
 
 const flags = {
@@ -16,11 +15,11 @@ const flags = {
   request: [], authorize: ['request', 'tool-call'], capture: ['tool-call'],
   receipt: ['request', 'tool-call'],
   prepare: [], delegate: ['capability'], claim: ['task', 'capability'],
-  capabilities: [], plan: ['kind', 'id'],
+  capabilities: [],
 };
 const booleans = new Set(['deep']);
 const inputVerbs = new Set(['apply', 'request', 'capture', 'prepare', 'delegate']);
-const hierarchyVerbs = new Set(['context', 'messages', 'export', 'plan']);
+const taskVerbs = new Set(['context', 'messages', 'export']);
 const invalid = message => { throw new RuntimeError('INVALID_INPUT', message); };
 
 function runtimeEntrypointPath() {
@@ -65,10 +64,10 @@ export function parseArguments(argv) {
   }
   if (options['max-bytes'] !== undefined && (options['max-bytes'] < 1 || options['max-bytes'] > 24 * 1024)) invalid('--max-bytes must be 1..24576');
   if (options['recent-limit'] !== undefined && options['recent-limit'] > 8) invalid('--recent-limit must be 0..8');
-  if (hierarchyVerbs.has(verb)) {
+  if (taskVerbs.has(verb)) {
     if (options.kind === undefined) invalid('--kind is required');
     if (options.id === undefined) invalid('--id is required');
-    validateHierarchySubject({kind: options.kind, id: options.id}, `${verb} subject`);
+    validateTaskSubject({kind: options.kind, id: options.id}, `${verb} subject`);
   }
   if (verb === 'detail') {
     if (options.kind === undefined) invalid('--kind is required');
@@ -76,13 +75,13 @@ export function parseArguments(argv) {
     if (!RECORD_KINDS.has(options.kind) || new Set(['initiative', 'item']).has(options.kind)) {
       invalid('detail kind is unsupported');
     }
-    if (HIERARCHY_KINDS.has(options.kind)) {
-      validateHierarchySubject({kind: options.kind, id: options.id}, 'detail subject');
+    if (options.kind === 'task') {
+      validateTaskSubject({kind: options.kind, id: options.id}, 'detail subject');
     }
   }
   if (verb === 'claim') {
     if (options.task === undefined) invalid('--task is required');
-    validateHierarchySubject({kind: 'task', id: options.task}, 'claim Task');
+    validateTaskSubject({kind: 'task', id: options.task}, 'claim Task');
   }
   return {verb, options};
 }

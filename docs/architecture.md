@@ -2,155 +2,120 @@
 
 # Shipped architecture
 
-Kai ships three packages from `plugins/`. Everything under `incubator/` is
-inactive: it is not discovered, validated as a pack, generated, catalogued, or
-installable.
+Kai ships four packages from `plugins/`. Everything under `incubator/` is
+inactive and non-installable.
 
 ## Package topology
 
 ```text
-  kai-engineering                         kai-creative
-  +-------------------------------+       +-------------------------------+
-  | 6 agents                      |       | 3 agents                      |
-  | engineering judgment          |       | design and media judgment     |
-  | 1 JavaScript entry point      |       | 3 JavaScript entry points     |
-  +---------------+---------------+       +---------------+---------------+
-                  |                                       |
-                  +-------------------+-------------------+
-                                      |
-                                      v
-  +-----------------------------------------------------------------------+
-  | kai-core                                                              |
-  | 0 agents; shared skills, workspace and coordination runtime             |
-  | 4 JavaScript entry points and reusable templates                       |
-  +-----------------------------------------------------------------------+
+                  optional
+  kai-project-management --------+
+  0 agents; planning runtime      |
+                                  v
+  kai-engineering -----------> kai-core <----------- kai-creative
+  6 agents; delivery          0 agents; Task/A2A      3 agents; design/media
 ```
 
-Core has no department dependency. Engineering and Creative may depend on
-Core, but not on each other. The build derives active ownership from the three
-package directories and rejects collisions or forbidden cross-package
-references.
+- Core has no dependency on another package.
+- Project Management may reference Core concepts and opaque Core Task IDs.
+- Engineering and Creative depend only on Core.
+- No agent requires Project Management.
+- No runtime imports or opens another package's database.
+
+## Authority boundary
+
+| Owner | Durable authority |
+| --- | --- |
+| `kai-core` | Workspace, standalone Tasks, grants, leases, collisions, recovery, questions, messages, handoffs, reviews, evidence, activity, assets |
+| `kai-project-management` | Direction, Epic, Feature, Requirement, priority, holds, planning dependencies, scope/completion authority, parent closure, planning views |
+| Department | Supplied approved domain scope, implementation, review, and package publication |
+
+Core's Task schema contains no planning record or lifecycle rule. A Task may
+carry opaque `planning_refs`, but Core does not interpret them.
+
+## Runtime boundary
+
+```text
+.kai/core/runtime/coordination.sqlite
+  standalone Task execution and A2A records
+
+.kai/project-management/runtime/project.sqlite
+  optional planning records and planning events
+```
+
+Project Management's `handoff` command produces a proposed Core Task body from
+approved Requirement scope. The caller submits it separately to Core. There is
+no mirrored table, migration, old-record import, compatibility alias, or
+cross-database transaction.
 
 ## One authority per fact
 
-| Fact | Edited authority | Consumers |
-| --- | --- | --- |
-| Workspace schema and locations | `WORKSPACE_CONTRACT` in `src/core/lib/workspace-layout.mjs` | resolver, doctor, runtime, tests, generated scripts |
-| Path containment and link safety | `src/core/lib/workspace-path-safety.mjs` | private writes and publication |
-| Coordination records and commands | coordination registry in `src/core/lib/coordination-runtime/schema.mjs` | store, engines, evidence, views, host, CLI |
-| Publication vocabulary | `plugins/<pack>/publication.json` | publication skills, path validation, generated references |
-| Package ownership | `plugins/kai-{core,engineering,creative}/` | build, marketplace, catalog |
-| Release version | `package.json` | root/package manifests, locks, marketplace |
-| Consumer runtime | `src/core/` and `src/creative/` | committed bundled scripts |
+| Fact | Edited authority |
+| --- | --- |
+| Workspace schema and locations | `WORKSPACE_CONTRACT` in `src/core/lib/workspace-layout.mjs` |
+| Core records and commands | `src/core/lib/coordination-runtime/schema.mjs` |
+| Project planning runtime | `src/project-management/project.mjs` |
+| Publication vocabulary | `plugins/<pack>/publication.json` |
+| Package ownership | `plugins/kai-{core,project-management,engineering,creative}/` |
+| Release version | `package.json` |
 
-Markdown explains these contracts. It is not parsed as a second schema.
+Markdown explains these contracts. Validators do not parse prose as a second
+schema.
 
 ## Build boundary
 
-Contributors edit source; consumers execute committed output:
+Contributors edit `plugins/`, `src/`, and package declarations. `npm run build`
+generates root/package manifests, marketplace metadata, catalog content, and
+bundled scripts. Consumers execute:
 
 ```text
-AUTHORITATIVE SOURCE
-
-plugins/<pack>/agents/
-plugins/<pack>/skills/
-plugins/<pack>/publication.json
-src/core/
-src/engineering/
-src/creative/
-package.json
-          |
-          | npm run build
-          v
-COMMITTED CONSUMER ARTIFACTS
-
-plugin.json
-.github/plugin/marketplace.json
-plugins/<pack>/.claude-plugin/plugin.json
-plugins/<pack>/plugin-lock.json
 plugins/kai-core/scripts/
+plugins/kai-project-management/scripts/project.mjs
 plugins/kai-engineering/scripts/
 plugins/kai-creative/scripts/
-docs/reference/agents-and-skills.md
 ```
 
-`tools/build.mjs` is the single build entry point. It validates structured
-sources, renders publication and catalog material, writes every version surface,
-and bundles stable ESM runtimes. `npm run build:check` proves the committed
-outputs match a fresh calculation. The clean-consumer test proves the generated
-packages run without checkout dependencies.
+All shipped runtimes use Node built-ins only.
 
 ## Consumer workspace
 
-Kai creates state only for durable coordinated work:
-
 ```text
 project/
-|-- .kai/                                  private and ignored
+|-- .kai/                                      private and ignored
 |   |-- manifest.json
-|   |-- core/runtime/coordination.sqlite  only coordination authority
-|   `-- <pack>/<type>/<id>/
-|       |-- drafts/
-|       |-- evidence/
-|       `-- scratch/
-`-- docs/kai/                              accepted project knowledge
-    |-- README.md
-    |-- DIRECTION.md
-    `-- <pack>/<type>/<id>/...
+|   |-- core/runtime/coordination.sqlite
+|   |-- project-management/runtime/project.sqlite  optional
+|   `-- <pack>/<type>/<id>/{drafts,evidence,scratch}/
+`-- docs/kai/                                  accepted project knowledge
 ```
 
-Pack directories are lazy. Direct answers and ordinary repository changes do
-not initialize Kai, read Direction, create hierarchy records, or acquire a
-lease.
+Schema 6 is a clean break. Unsupported workspaces are re-onboarded. Installing
+a package creates no workspace, and Core onboarding does not initialize the
+optional Project Management database.
 
-## Coordination and assets
+## Department operation
 
-```text
-docs/kai/DIRECTION.md
-`-- Current Goal
-    `-- Epic
-        `-- Core / Engineering / Creative Feature
-            `-- Requirement
-                `-- Task
-```
+Engineering and Creative accept a directly supplied approved brief or a
+standalone Core Task. If an operator supplies Project Management projection
+references, a department may use them as context. Their absence is not a
+blocker.
 
-Task is the only executable and leased kind. The SQLite store owns durable
-state, transactions, optimistic versions, leases, messages, evidence, and
-events. Status, context, plans, reports, and exports are views.
-
-Execution and asset lifecycle are independent. A completed Task remains
-terminal when a published asset later becomes stale or superseded. Revalidation
-requires new authorized work. A durable publication binds an existing hierarchy
-subject, acting authority, exact private revision, acceptance authority, hash,
-provenance, and a destination allowed by the owning package's
-`publication.json`. Producers do not self-accept team-facing publications.
+Nightshift admits an approved goal plus a bounded set of Core Tasks. It may
+retain a supplied planning projection, but its runner never opens or requires
+the Project Management database.
 
 ## Host capabilities
-
-The declarative agents, skills, and contracts are the same on every host. Live
-tools differ:
 
 | Capability | Copilot CLI | Copilot coding agent |
 | --- | --- | --- |
 | Agents and skills | Yes | Yes |
 | Local Node/SQLite runtime | Yes | Runner-dependent |
-| Live peer subagents | Yes | No; use the durable record |
-| Localhost browser automation | With a configured Playwright MCP server | Public URLs only when configured |
-| Web search and fetch | Built in | Repository-tool dependent |
-| Human-receipt journal for gated writes | Available in supported CLI sessions | Not assumed |
+| Live peer subagents | Yes | No; use durable Core records |
+| Localhost browser automation | Configured Playwright MCP | Public URLs when configured |
+| Human-receipt journal | Supported CLI sessions | Not assumed |
 
 Missing capabilities narrow the workflow or produce `UNSUPPORTED_HOST`; they
-never become inferred success. Browser skills require an MCP server registered
-under the `playwright` key. Windows runtime and path behavior is not covered by
-the Linux nightly.
-
-## Repository instructions
-
-An installed plugin's root `AGENTS.md` is not loaded into a consumer project.
-Shared product rules therefore ship as task-local skills. During workspace
-onboarding, the operator may separately install Kai's managed repository block
-into the project's own `AGENTS.md`. The installer preserves all bytes outside
-the markers and never stages the file without separate authorization.
+never become inferred success.
 
 ---
 

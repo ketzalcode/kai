@@ -1,7 +1,6 @@
 # Project Management Plugin Boundary
 
-**Status:** Approved direction; implementation follows the Core performance
-refactor in #254
+**Status:** Implemented for the 23.0.0 schema-6 break
 **Date:** 2026-10-11
 **Scope:** Core A2A coordination, durable planning hierarchy, package
 dependencies, workspace persistence, and Nightshift integration

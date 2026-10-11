@@ -50,7 +50,7 @@ overwrite the old decision.
 
 ## Hierarchy closure
 
-Closing an asset does not close its Task, Requirement, Feature, or Epic.
+Closing an asset does not close its Task.
 Closing a hierarchy parent does not publish an asset automatically. Each
 closure uses its own named authority and exact criteria reference.
 

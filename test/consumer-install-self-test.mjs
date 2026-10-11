@@ -19,28 +19,15 @@ import {pathToFileURL, fileURLToPath} from 'node:url';
 import {PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const fixtureRoot = join(root, 'test', 'fixtures', 'schema5-consumer');
+const fixtureRoot = join(root, 'test', 'fixtures', 'schema6-consumer');
 const scratchRoot = mkdtempSync(join(tmpdir(), 'kai-consumer-install-'));
 const fixtureNames = ['all-packs'];
 const publicationSkills = {
   core: 'kai-core-workspace-publication',
+  'project-management': 'project-management-workspace-publication',
   engineering: 'engineering-workspace-publication',
   creative: 'creative-workspace-publication',
 };
-const direction = [
-  '# Vision',
-  'A composable consumer workspace.',
-  '',
-  '# Mission',
-  'Prove generated packs operate without the Kai checkout.',
-  '',
-  '# Current Goal',
-  'Exercise lazy schema-5 composition.',
-  '',
-  '# Out of Scope',
-  '- Eager department directories.',
-  '',
-].join('\n');
 let failures = 0;
 const ok = (condition, message, detail = '') => {
   if (condition) {
@@ -167,6 +154,7 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     ['kai-core/scripts/coordinate.mjs', ['direct']],
     ['kai-core/scripts/work-status.mjs', ['--root', consumerRoot, '--json']],
     ['kai-core/scripts/workspace-doctor.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-project-management/scripts/project.mjs', ['inspect', '--root', consumerRoot]],
     ['kai-engineering/scripts/nightshift.mjs', ['--help']],
     ['kai-creative/scripts/demo-format.mjs', ['--placements']],
     [
@@ -282,12 +270,11 @@ async function runFixture(fixtureName) {
     git(projectRoot, ['init', '--quiet']);
     writeFileSync(join(projectRoot, '.gitignore'), '/.kai/\n');
     mkdirSync(join(projectRoot, 'docs', 'kai'), {recursive: true});
-    writeFileSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
 
     const doctorPath = join(installedRoot, 'kai-core', 'scripts', 'workspace-doctor.mjs');
     const doctor = await import(`${pathToFileURL(doctorPath).href}?fixture=${fixtureName}`);
     if (!ok(typeof doctor.initializeWorkspace === 'function',
-      'generated Core exports the schema-5 standalone initializer',
+      'generated Core exports the schema-6 standalone initializer',
       `exports: ${Object.keys(doctor).sort().join(', ')}`)) {
       return;
     }
@@ -298,26 +285,26 @@ async function runFixture(fixtureName) {
       manifest: {
         plugin: 'kai-core',
         version: plugin.version,
-        schema_version: 5,
+        schema_version: 6,
         scaffolded: '2026-10-02',
         workspace_id: `consumer-${fixtureName}`,
         placement: 'repo-local',
         workspace_root: '.',
         private_root: '.kai',
-        direction: 'docs/kai/DIRECTION.md',
         projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
       },
     });
     if (!ok(initialized.ok === true,
-      'generated Core initializes a schema-5 consumer workspace',
+      'generated Core initializes a schema-6 consumer workspace',
       JSON.stringify(initialized))) {
       return;
     }
     ok(existsSync(join(projectRoot, '.kai', 'core', 'runtime', 'coordination.sqlite')),
       'initialization creates only the fixed Core runtime store');
-    ok(!existsSync(join(projectRoot, '.kai', 'engineering'))
+    ok(!existsSync(join(projectRoot, '.kai', 'project-management'))
+      && !existsSync(join(projectRoot, '.kai', 'engineering'))
       && !existsSync(join(projectRoot, '.kai', 'creative')),
-    'initialization creates no department directories');
+    'initialization creates no optional package directories');
     probeEntrypoints(installedRoot, fixture.packs, projectRoot);
     assertPathMutationParity({doctor, projectRoot});
 

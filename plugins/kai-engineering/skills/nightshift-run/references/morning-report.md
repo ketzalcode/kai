@@ -8,7 +8,7 @@ Markdown is a human-readable projection, never coordination authority.
 
 ## Goal and approved scope
 
-<Current Goal, Feature and Requirements, base revision, and approved limits>
+<Approved goal, bounded Tasks, optional planning projection, base revision, and approved limits>
 
 ## Delivered pull requests
 

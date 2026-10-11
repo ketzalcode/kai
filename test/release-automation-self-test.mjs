@@ -26,9 +26,11 @@ const generatedVersions = {
   'plugin.json': '20.0.0',
   'marketplace.metadata': '20.0.0',
   'marketplace.kai-core': '20.0.0',
+  'marketplace.kai-project-management': '20.0.0',
   'marketplace.kai-engineering': '20.0.0',
   'marketplace.kai-creative': '20.0.0',
   'plugins/kai-core/plugin.json': '20.0.0',
+  'plugins/kai-project-management/plugin.json': '20.0.0',
   'plugins/kai-engineering/plugin.json': '20.0.0',
   'plugins/kai-creative/plugin.json': '20.0.0',
 };

@@ -5,16 +5,16 @@
     "url": "https://github.com/ketzalcode"
   },
   "metadata": {
-    "description": "Kai core, engineering, and creative. Other capability packages are incubated and do not ship.",
-    "version": "22.3.0",
+    "description": "Kai core, optional project management, engineering, and creative. Other capability packages are incubated and do not ship.",
+    "version": "23.0.0",
     "installSurface": "packs"
   },
   "plugins": [
     {
       "name": "kai-core",
       "source": "./plugins/kai-core",
-      "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "22.3.0",
+      "description": "kai-core: shared operating contracts, schema-6 workspace machinery, and standalone Task/A2A execution.",
+      "version": "23.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -34,10 +34,33 @@
       ]
     },
     {
+      "name": "kai-project-management",
+      "source": "./plugins/kai-project-management",
+      "description": "Optional agent-free Direction, Epic, Feature, and Requirement planning over standalone kai-core Tasks.",
+      "version": "23.0.0",
+      "author": {
+        "name": "ketzalcode",
+        "url": "https://github.com/ketzalcode"
+      },
+      "homepage": "https://github.com/ketzalcode/kai",
+      "repository": "https://github.com/ketzalcode/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "planning",
+        "project-management",
+        "workflow-automation"
+      ]
+    },
+    {
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.",
-      "version": "22.3.0",
+      "version": "23.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -60,7 +83,7 @@
       "name": "kai-creative",
       "source": "./plugins/kai-creative",
       "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
-      "version": "22.3.0",
+      "version": "23.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"

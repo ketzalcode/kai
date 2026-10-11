@@ -31,6 +31,7 @@ const CATALOG = 'docs/reference/agents-and-skills.md';
 const MARKETPLACE_REPOSITORY = 'https://github.com/ketzalcode/kai';
 const MARKETPLACE_KEYWORDS = Object.freeze({
   core: ['saas', 'engineering', 'workflow-automation'],
+  'project-management': ['planning', 'project-management', 'workflow-automation'],
   engineering: ['engineering', 'security', 'reliability'],
   creative: ['design', 'creative', 'media'],
 });

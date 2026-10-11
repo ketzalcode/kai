@@ -4,7 +4,7 @@ import {
   criteriaRef,
   subjectEquals,
   subjectRef,
-  validateHierarchySubject,
+  validateTaskSubject,
 } from './contract.mjs';
 import {effectiveApprovals} from './acceptance-verdicts.mjs';
 import {
@@ -34,7 +34,7 @@ function assertNonEmptyString(value, label) {
 }
 
 function validateProjectionOptions(subject, maxBytes, recentLimit) {
-  validateHierarchySubject(subject, 'context subject');
+  validateTaskSubject(subject, 'context subject');
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
     invalid('context maxBytes must be a positive safe integer');
   }
@@ -126,7 +126,7 @@ function unresolvedQuestions(view) {
   const terminal = TERMINAL.has(view.record.body.state);
   return view.questions.map(entry => {
     const question = entry.record;
-    if (!question) gap('hierarchy subject references a missing question');
+    if (!question) gap('Task references a missing question');
     if (!bindsSubject(question, subject)
       || (!terminal && question.body.status !== 'open')
       || (!terminal && waiting.has(question.id) && question.body.blocking !== true)) {
@@ -491,7 +491,7 @@ export function readMessages(store, {
   beforeSeq = null,
   limit = 50,
 }) {
-  validateHierarchySubject(subject, 'message subject');
+  validateTaskSubject(subject, 'message subject');
   assertNonEmptyString(threadId, 'message threadId');
   if (!Number.isSafeInteger(basisVersion) || basisVersion < 1) {
     invalid('message basisVersion must be a positive safe integer');

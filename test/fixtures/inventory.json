@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 9,
-    "skills": 41
+    "skills": 42
   },
   "agents": [
     "creative-lead-design",
@@ -27,7 +27,6 @@
     "kai-core-asset-producing",
     "kai-core-contract-v1",
     "kai-core-create-agent",
-    "kai-core-create-epic",
     "kai-core-create-skill",
     "kai-core-definition-of-done",
     "kai-core-no-self-remediation",
@@ -37,8 +36,6 @@
     "kai-core-work-acting",
     "kai-core-work-activity",
     "kai-core-work-granting",
-    "kai-core-work-hierarchy",
-    "kai-core-work-stewardship",
     "kai-core-work-task",
     "kai-core-workspace-onboarding",
     "kai-core-workspace-paths",
@@ -52,6 +49,10 @@
     "pr-review",
     "pr-review-comments",
     "pr-sizing",
+    "project-management-create-epic",
+    "project-management-work-hierarchy",
+    "project-management-work-stewardship",
+    "project-management-workspace-publication",
     "research-before-coding",
     "software-development",
     "video-align-narration",
@@ -69,10 +70,6 @@
     {
       "name": "kai-core-create-agent",
       "argument_hint": "agent purpose or existing agent path"
-    },
-    {
-      "name": "kai-core-create-epic",
-      "argument_hint": "approved outcome and target workspace"
     },
     {
       "name": "kai-core-create-skill",
@@ -101,6 +98,10 @@
     {
       "name": "pr-sizing",
       "argument_hint": "optional completed diff or delivery goal"
+    },
+    {
+      "name": "project-management-create-epic",
+      "argument_hint": "approved outcome and target workspace"
     },
     {
       "name": "research-before-coding",

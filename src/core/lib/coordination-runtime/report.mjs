@@ -1,6 +1,6 @@
 import {relative} from 'node:path';
 import {
-  RuntimeError, canonicalJson, subjectEquals, validateHierarchySubject,
+  RuntimeError, canonicalJson, subjectEquals, validateTaskSubject,
 } from './contract.mjs';
 import {workspaceManifest} from './evidence-content.mjs';
 import {privateAdmission} from '../workspace-git-privacy.mjs';
@@ -26,7 +26,7 @@ function sameSubject(left, right) {
 }
 
 export function writeReport({root, subject, view, target}) {
-  validateHierarchySubject(subject, 'report subject');
+  validateTaskSubject(subject, 'report subject');
   const manifest = workspaceManifest(root);
   const privacy = privateAdmission(root);
   if (privacy.errors.length) throw new RuntimeError('INVALID_INPUT', privacy.errors.join('; '));

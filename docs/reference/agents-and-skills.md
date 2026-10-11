@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **41 skills**.
+The repository ships **9 agents** and **42 skills**.
 
-The default marketplace supplies **9 agents** and **41 skills** through core, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **42 skills** through core, optional project management, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -17,7 +17,6 @@ deliberately absent from this catalog: they are not installed, not loaded,
 and not available through any install path.
 
 - **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.
-- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).
 
 ## Agents
 
@@ -63,33 +62,41 @@ Selective independent code review. Implementers retain ownership of their change
 Skills are methods and contracts. Most are not invoked directly —
 an acting agent loads each one on demand, at the exact instruction that needs it.
 
-### Workspace & direction
+### Workspace
 
-Resolve private schema-5 workspaces, initialize Direction, and validate core publication vocabulary.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path. |
-| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding. |
-| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records. |
-| [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
-| [`kai-core-create-epic`](../../plugins/kai-core/skills/kai-core-create-epic/SKILL.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Task planning. |
-
-### Hierarchy & stewardship
-
-Define hierarchy meaning, authority, Task execution, acting, and granting.
+Resolve private schema-6 workspaces and validate Core publication vocabulary.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`kai-core-work-hierarchy`](../../plugins/kai-core/skills/kai-core-work-hierarchy/SKILL.md) | `kai-core` | Use when reading, proposing, or validating coordinated Epic, Feature, Requirement, or Task structure. |
-| [`kai-core-work-stewardship`](../../plugins/kai-core/skills/kai-core-work-stewardship/SKILL.md) | `kai-core` | Use when a named authority proposes, activates, prioritizes, holds, reprioritizes, or closes hierarchy scope. |
+| [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, coordination database, or typed private/public artifact path. |
+| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-6 workspace, or repairing its current private binding. |
+| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-6 workspace without importing historical records. |
+| [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable coordination decisions or reports. |
+
+### Task execution
+
+Define standalone Task authority, execution, acting, and granting.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
 | [`kai-core-work-task`](../../plugins/kai-core/skills/kai-core-work-task/SKILL.md) | `kai-core` | Use when creating, promoting, granting, executing, handing off, reviewing, restoring, or closing a coordinated Task. |
 | [`kai-core-work-acting`](../../plugins/kai-core/skills/kai-core-work-acting/SKILL.md) | `kai-core` | Use when an actor is about to read or mutate granted coordinated work, record evidence, ask a question, hand off, or submit review. |
 | [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | `kai-core` | Use when an authorized grantor plans executable Tasks, issues or reconciles grants and leases, launches a role, or handles recovery. |
 
+### Project management
+
+Own Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
+| [`project-management-create-epic`](../../plugins/kai-project-management/skills/project-management-create-epic/SKILL.md) | `kai-project-management` | Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Core Task planning. |
+| [`project-management-work-hierarchy`](../../plugins/kai-project-management/skills/project-management-work-hierarchy/SKILL.md) | `kai-project-management` | Use when reading, proposing, validating, or handing off Direction, Epic, Feature, and Requirement scope. |
+| [`project-management-work-stewardship`](../../plugins/kai-project-management/skills/project-management-work-stewardship/SKILL.md) | `kai-project-management` | Use when a named authority creates, activates, prioritizes, holds, releases, or closes Project Management scope. |
+| [`project-management-workspace-publication`](../../plugins/kai-project-management/skills/project-management-workspace-publication/SKILL.md) | `kai-project-management` | Use when accepted Direction or planning knowledge may be published from Project Management. |
+
 ### Pack publication
 
-Own the department vocabularies that validate typed private work and accepted public knowledge.
+Own package vocabularies that validate typed private work and accepted public knowledge.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |

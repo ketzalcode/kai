@@ -33,7 +33,7 @@ setup needed.
 
 ## What ships
 
-Three packages. That is the entire shipped surface.
+Four packages. Project Management is optional and agent-free.
 
 ```text
    kai-engineering                      kai-creative
@@ -54,24 +54,35 @@ Three packages. That is the entire shipped surface.
   | kai-core                                                            |
   |                                                                      |
   |  0 agents                                                            |
-  | 21 skills                                                            |
+  | 18 skills                                                            |
   |  4 executable entry points                                           |
   | templates/ (decision, spec, report, publication)                     |
   |                                                                      |
-  | shared operating contract, workspace machinery, and the coordination |
-  | runtime (scripts/coordinate.mjs)                                     |
+  | standalone Task execution, workspace machinery, and the A2A runtime  |
   +----------------------------------------------------------------------+
+
+  +-----------------------------------------------------------------------+
+  | kai-project-management (optional)                                     |
+  | 0 agents; 4 skills; 1 executable entry point                          |
+  | Direction, Epic, Feature, Requirement, priority, holds, dependencies, |
+  | closure, planning views, and standalone Task handoff                   |
+  +-----------------------------------------------------------------------+
+                         |
+                         | depends conceptually on Core
+                         v
+                      kai-core
 ```
 
 The arrows are the whole dependency rule, and it is enforced, not just
 documented: `referenceErrors` in `tools/lib/pack-plan.mjs` fails the build if a
-department pack loads a skill owned by another department, and `kai-core` may
-reach no department at all. That is why a `kai-core`-only install always
-resolves, and why you can install just the departments you want.
+department pack loads a skill owned by another package, and `kai-core` may
+reach no capability or department at all. Project Management may reach Core;
+Core, Engineering, and Creative do not depend on Project Management.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 0 / 21 | Shared skills, workspace machinery, coordination runtime |
+| `kai-core` | 0 / 18 | Shared skills, workspace machinery, standalone Task/A2A runtime |
+| `kai-project-management` | 0 / 4 | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff |
 | `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -111,16 +122,17 @@ copilot plugin marketplace browse kai-plugins
 
 ### 2. Install the packages
 
-`kai-core` first — the departments depend on it:
+`kai-core` first. Project Management and departments build on it:
 
 ```text
 copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-project-management@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
 
-Core alone is a complete install. Add only the departments you want; skipping
-one costs you that department's agents and nothing else.
+Core alone is a complete install. Project Management is optional. Add only the
+capabilities and departments you want.
 
 ### 3. Verify it worked
 
@@ -146,7 +158,7 @@ If nothing kai-related appears, the plugin loaded into the old session only.
 For local development, load a checkout without installing it:
 
 ```powershell
-copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
+copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-project-management --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
 ```
 
 The cloud coding agent must be configured by its repository owner to load the
@@ -203,6 +215,7 @@ nothing new to find:
 ```text
 copilot plugin marketplace update kai-plugins
 copilot plugin update kai-core@kai-plugins
+copilot plugin update kai-project-management@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
 copilot plugin update kai-creative@kai-plugins
 ```
@@ -236,55 +249,53 @@ and untracked). Those are the only private placements. Accepted project
 knowledge publishes separately under `docs/kai/`.
 
 **4. For coordinated delivery**, ask the owning department lead. Core supplies
-the grant, lease, hierarchy, handoff, and evidence methods; it does not insert a
-generic coordinating agent between the operator and the domain owner.
+standalone Tasks, grants, leases, handoffs, and evidence. Install Project
+Management only when durable Direction-to-Requirement planning is useful.
 
-**[Workspace contract →](docs/workspaces.md)** ·
-**[See a finished feature →](examples/e2e-feature-delivery/)**
+**[Workspace contract →](docs/workspaces.md)**
 
 ## Workspace and coordination model
 
-Schema 5 separates private operations from accepted project knowledge:
+Schema 6 separates private operations from accepted project knowledge:
 
 ```text
 project/
 ├─ .kai/                                      # always private
 │  ├─ manifest.json
 │  ├─ core/runtime/coordination.sqlite        # authoritative coordination store
+│  ├─ project-management/runtime/project.sqlite # optional planning authority
 │  └─ <pack>/<type>/<id>/
 │     ├─ drafts/                              # created on first valid write
 │     ├─ evidence/                            # private and never published
 │     └─ scratch/                             # disposable; cannot publish
 └─ docs/kai/                                  # accepted, Git-suitable knowledge
    ├─ README.md
-   ├─ DIRECTION.md
    └─ <pack>/<type>/<id>/...                  # exact accepted revision only
 ```
 
 Installing or initializing a pack creates no empty department or artifact
-directories. Core, Engineering, and Creative each own a fixed publication
-vocabulary. A valid first write creates only its exact pack/type/ID/lifecycle
-path; unknown types have no fallback lane. Repository-native code, tests,
+directories. Each package owns a fixed publication vocabulary. A valid first
+write creates only its exact pack/type/ID/lifecycle path; unknown types have no
+fallback lane. Repository-native code, tests,
 configuration, migrations, and ordinary documentation stay where the
 repository already keeps them.
 
-`docs/kai/DIRECTION.md` is operator-owned and contains Vision, Mission, one
-Current Goal, and Out of Scope. Coordinated work binds to its exact revision:
+When installed, Project Management owns this private hierarchy:
 
 ```text
-Direction Current Goal
+Direction
 └─ Epic
-   └─ Core / Engineering / Creative Feature
+   └─ <pack> Feature
       └─ Requirement
-         └─ Task
+         └─ opaque standalone Core Task references
 ```
 
-That is the five-level alignment chain. Epic, Feature, and Requirement express
-outcomes and authority; Task is the only executable, leased work kind. Direct
-single-shot work creates none of these records, reads no Direction, and
-initializes no workspace.
+Core knows none of those record types. A standalone Core Task keeps execution
+authority, dependencies, touched areas, evidence, review, leases, recovery, and
+lifecycle. Optional `planning_refs` are opaque context. The runtimes never edit
+each other's databases and use no cross-database transaction.
 
-Kai supports only schema 5. An unsupported workspace is rejected and
+Kai supports only schema 6. An unsupported workspace is rejected and
 re-onboarded through `kai-core-workspace-reonboard`: accepted `docs/kai/`
 knowledge is preserved, the old `.kai/` becomes an ignored timestamped backup,
 and no historical database record is imported.
@@ -318,9 +329,7 @@ review. Release and production actions remain repository- and operator-owned.
 ```
 
 Each role fires only when its kind of judgment is needed; several are skippable
-on small work. See it end to end in
-**[`examples/e2e-feature-delivery/`](examples/e2e-feature-delivery/)**, a
-committed, CI-validated workspace.
+on small work.
 
 **[Current architecture and authority map →](docs/architecture.md)**
 
@@ -354,13 +363,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v22.3.0` is this checkout's prepared metadata version - not a tag, a release,
+`v23.0.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
-| Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **9 agents and 41 skills** |
+| Packages | `kai-core`, `kai-project-management`, `kai-engineering`, `kai-creative` |
+| Surface | **9 agents and 42 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 
@@ -371,7 +380,7 @@ a publication, or a host-verification claim.
 | **Install it and finish one real thing** | [Install](#install) and [First five minutes](#first-five-minutes) |
 | **See the shipped architecture** | [Architecture](docs/architecture.md) — package topology, generated JavaScript, workspace layout, and work hierarchy |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
-| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the three packages supply |
+| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the four packages supply |
 | **See what is parked and not shipping** | [Incubator](incubator/README.md) — the five capability packages and the components held out of the active tree |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/architecture.md#host-capabilities) — what differs, and how it degrades |
 | **Change Kai itself** | [Development process](docs/development-process.md) and [Plugin structure](docs/reference/plugin-structure.md) |

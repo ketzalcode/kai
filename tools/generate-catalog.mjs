@@ -61,29 +61,38 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Workspace & direction',
-    blurb: 'Resolve private schema-5 workspaces, initialize Direction, and validate core publication vocabulary.',
+    title: 'Workspace',
+    blurb: 'Resolve private schema-6 workspaces and validate Core publication vocabulary.',
     members: [
       'kai-core-workspace-paths',
       'kai-core-workspace-onboarding',
       'kai-core-workspace-reonboard',
       'kai-core-workspace-publication',
-      'kai-core-create-epic',
     ],
   },
   {
     kind: 'skill',
-    title: 'Hierarchy & stewardship',
-    blurb: 'Define hierarchy meaning, authority, Task execution, acting, and granting.',
+    title: 'Task execution',
+    blurb: 'Define standalone Task authority, execution, acting, and granting.',
     members: [
-      'kai-core-work-hierarchy', 'kai-core-work-stewardship',
       'kai-core-work-task', 'kai-core-work-acting', 'kai-core-work-granting',
     ],
   },
   {
     kind: 'skill',
+    title: 'Project management',
+    blurb: 'Own Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff.',
+    members: [
+      'project-management-create-epic',
+      'project-management-work-hierarchy',
+      'project-management-work-stewardship',
+      'project-management-workspace-publication',
+    ],
+  },
+  {
+    kind: 'skill',
     title: 'Pack publication',
-    blurb: 'Own the department vocabularies that validate typed private work and accepted public knowledge.',
+    blurb: 'Own package vocabularies that validate typed private work and accepted public knowledge.',
     members: [
       'engineering-workspace-publication', 'creative-workspace-publication',
     ],
@@ -205,7 +214,7 @@ function build(items) {
   out.push('');
   out.push(`The repository ships **${agents} agents** and **${skills} skills**.`);
   out.push('');
-  out.push(`The default marketplace supplies **${agents} agents** and **${skills} skills** through core, engineering, and creative (${invocable} skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.`);
+  out.push(`The default marketplace supplies **${agents} agents** and **${skills} skills** through core, optional project management, engineering, and creative (${invocable} skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.`);
   out.push('');
   out.push('Each description is the source agent or skill\'s own `description:`.');
   out.push('Capabilities parked under [`incubator/`](../../incubator/README.md) are');
@@ -213,7 +222,6 @@ function build(items) {
   out.push('and not available through any install path.');
   out.push('');
   out.push('- **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.');
-  out.push('- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).');
   out.push('');
 
   for (const kind of ['agent', 'skill']) {

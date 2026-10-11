@@ -24,11 +24,10 @@ import {
   readWorkspaceManifest,
   registryPath,
   resolveWorkspaceRoot,
-  validateSchema5Manifest,
+  validateSchema6Manifest,
 } from './lib/workspace-resolve.mjs';
 import {exactPath, inspectPrivateLanes, pathHasLink} from './lib/workspace-path-safety.mjs';
 import {inspectGitPrivacy} from './lib/workspace-git-privacy.mjs';
-import {readDirection} from './lib/direction.mjs';
 import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './lib/workspace-layout.mjs';
 import {closeStore, openStore} from './lib/coordination-runtime/store.mjs';
 
@@ -50,14 +49,14 @@ const FORBIDDEN_ROOTS = [
   '.kai/shared',
 ];
 
-function schema5WorkspaceValidation(root, manifest, {
+function schema6WorkspaceValidation(root, manifest, {
   env = process.env,
   allowUnregisteredExternal = false,
   requireActivated = true,
 } = {}) {
   const errors = [];
   const warnings = [];
-  const shape = validateSchema5Manifest(root, manifest, {env, allowUnregisteredExternal});
+  const shape = validateSchema6Manifest(root, manifest, {env, allowUnregisteredExternal});
   errors.push(...shape.errors);
   if (shape.errors.length) return {errors, warnings, projects: shape.projects};
 
@@ -79,24 +78,18 @@ function schema5WorkspaceValidation(root, manifest, {
     }
   }
 
-  try {
-    readDirection({workspaceRoot: root, manifest});
-  } catch (error) {
-    errors.push(`${error.code ?? 'INVALID_DIRECTION'}: ${error.message}`);
-  }
-
   const privateRoot = join(root, '.kai');
   if (!existsSync(privateRoot)) {
-    if (requireActivated) errors.push('schema-5 workspace is missing required directory ".kai"');
+    if (requireActivated) errors.push('schema-6 workspace is missing required directory ".kai"');
   } else if (!lstatSync(privateRoot).isDirectory()
     || pathHasLink(root, privateRoot) || !exactPath(privateRoot)) {
-    errors.push('schema-5 private root ".kai" must be an exact unlinked directory');
+    errors.push('schema-6 private root ".kai" must be an exact unlinked directory');
   } else if (!requireActivated && readdirSync(privateRoot).length > 0) {
-    errors.push('schema-5 initialization requires an absent or empty .kai directory');
+    errors.push('schema-6 initialization requires an absent or empty .kai directory');
   }
   for (const path of FORBIDDEN_ROOTS) {
     if (existsSync(join(root, ...path.split('/')))) {
-      errors.push(`schema-5 workspace contains retired generic root "${path}"`);
+      errors.push(`schema-6 workspace contains retired generic root "${path}"`);
     }
   }
   const lanes = inspectPrivateLanes(root, ['.kai']);
@@ -115,10 +108,10 @@ function schema5WorkspaceValidation(root, manifest, {
   const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
   let store;
   if (!existsSync(databasePath)) {
-    errors.push(`RECOVERY_REQUIRED: schema-5 workspace is missing required store "${COORDINATION_DATABASE}"`);
+    errors.push(`RECOVERY_REQUIRED: schema-6 workspace is missing required store "${COORDINATION_DATABASE}"`);
   } else if (pathHasLink(root, databasePath) || !exactPath(databasePath)
     || !lstatSync(databasePath).isFile()) {
-    errors.push(`RECOVERY_REQUIRED: schema-5 store "${COORDINATION_DATABASE}" must be an exact unlinked file`);
+    errors.push(`RECOVERY_REQUIRED: schema-6 store "${COORDINATION_DATABASE}" must be an exact unlinked file`);
   } else {
     try {
       store = openStore({path: databasePath, mode: 'read'});
@@ -133,7 +126,7 @@ function schema5WorkspaceValidation(root, manifest, {
     ? shape.projects[0]
     : shape.projects.find(project => project.project.id === 'default');
   if (!selected) {
-    errors.push('schema-5 workspace with multiple projects requires one "default" project');
+    errors.push('schema-6 workspace with multiple projects requires one "default" project');
   } else {
     const readme = join(selected.publicationRootAbsolute, 'README.md');
     if (!existsSync(readme)) {
@@ -170,7 +163,7 @@ export function initializeWorkspace({
   if (existsSync(manifestPath)) {
     return {ok: false, code: 'VERSION_CONFLICT', reason: '.kai/manifest.json already exists'};
   }
-  const validation = schema5WorkspaceValidation(root, manifest, {
+  const validation = schema6WorkspaceValidation(root, manifest, {
     env,
     requireActivated: false,
   });
@@ -232,7 +225,7 @@ export function initializeWorkspace({
       writeFileSync(readmePath, README_CONTENT, {flag: 'wx'});
       wroteReadme = true;
     }
-    const activated = schema5WorkspaceValidation(root, manifest, {env, requireActivated: true});
+    const activated = schema6WorkspaceValidation(root, manifest, {env, requireActivated: true});
     if (activated.errors.length) {
       throw Object.assign(new Error(activated.errors.join('; ')), {code: 'INVALID_INPUT'});
     }
@@ -272,7 +265,7 @@ export function checkWorkspace(root, options = {}) {
   if (result.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
     return {errors: [`SCHEMA_MISMATCH: ${UNSUPPORTED_SCHEMA}`], warnings: []};
   }
-  const checked = schema5WorkspaceValidation(root, result.manifest, {
+  const checked = schema6WorkspaceValidation(root, result.manifest, {
     env: options.env ?? process.env,
     allowUnregisteredExternal: options.allowUnregisteredExternal ?? false,
     requireActivated: true,

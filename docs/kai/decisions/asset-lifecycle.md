@@ -8,7 +8,7 @@ created: 2026-08-28
 revision: 4
 disposition:
   status: published
-  reason: Accepted lifecycle contract updated for workspace schema 5
+  reason: Accepted lifecycle contract updated for workspace schema 6
 completion:
   authority: operator
   verdict: accepted

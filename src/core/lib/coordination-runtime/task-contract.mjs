@@ -31,8 +31,7 @@ const TASK_BODY_FIELDS = new Set([
   'schema_version',
   'id',
   'pack',
-  'feature_id',
-  'satisfies',
+  'planning_refs',
   'title',
   'delivery_class',
   'state',
@@ -42,7 +41,6 @@ const TASK_BODY_FIELDS = new Set([
   'producer_actor',
   'producing_actors',
   'acceptance_actor',
-  'priority',
   'next_role',
   'outcome',
   'acceptance',
@@ -65,7 +63,7 @@ const TASK_BODY_FIELDS = new Set([
 
 const TASK_UPDATE_FIELDS = new Set([
   'title',
-  'priority',
+  'planning_refs',
   'next_role',
   'outcome',
   'acceptance',
@@ -125,20 +123,12 @@ function validateLease(value, label) {
   assertTimestamp(value.expires_at, `${label}.expires_at`);
 }
 
-function validateTaskSatisfies(value, label, pack) {
-  assertStringArray(value, label, {nonEmpty: true});
-  for (const [index, id] of value.entries()) {
-    const parsed = parseTypedId(id, 'requirement', `${label}[${index}]`);
-    if (parsed.pack !== pack) invalid(`${label} must stay within the task pack`);
-  }
-}
-
 export function validateTaskBody(body, label = 'task') {
   assertExactKeys(body, TASK_BODY_FIELDS, label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
 
   for (const key of [
-    'id', 'title', 'pack', 'feature_id', 'scope_authority', 'completion_authority', 'outcome',
+    'id', 'title', 'pack', 'scope_authority', 'completion_authority', 'outcome',
   ]) {
     assertNonEmptyString(body[key], `${label}.${key}`);
   }
@@ -155,11 +145,7 @@ export function validateTaskBody(body, label = 'task') {
   if (!PACKS.has(body.pack)) invalid(`${label}.pack is unsupported`);
   const taskId = parseTypedId(body.id, 'task', `${label}.id`);
   if (taskId.pack !== body.pack) invalid(`${label}.pack must match its typed id`);
-  const featureId = parseTypedId(body.feature_id, 'feature', `${label}.feature_id`);
-  if (featureId.pack !== body.pack) {
-    invalid(`${label}.feature_id must stay within the task pack`);
-  }
-  validateTaskSatisfies(body.satisfies, `${label}.satisfies`, body.pack);
+  assertStringArray(body.planning_refs, `${label}.planning_refs`);
 
   validateNullableActor(body.producer_actor, `${label}.producer_actor`);
   if (!Array.isArray(body.producing_actors)) invalid(`${label}.producing_actors must be an array`);
@@ -170,9 +156,6 @@ export function validateTaskBody(body, label = 'task') {
     invalid(`${label}.producing_actors must retain the current producer`);
   }
   validateNullableActor(body.acceptance_actor, `${label}.acceptance_actor`);
-  if (!Number.isSafeInteger(body.priority) || body.priority < 0) {
-    invalid(`${label}.priority must be a non-negative safe integer`);
-  }
   assertNullableString(body.next_role, `${label}.next_role`);
   assertStringArray(body.acceptance, `${label}.acceptance`, {nonEmpty: true});
 

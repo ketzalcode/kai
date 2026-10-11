@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-reonboard
-description: "Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records."
+description: "Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-6 workspace without importing historical records."
 tools: [execute, read, edit, search, ask_user]
 ---
 
@@ -94,7 +94,7 @@ Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
 4. Rename `<workspace-root>/.kai/` atomically to the resolved sibling backup.
 5. Do not open any file beneath the retired directory after the rename.
 6. Run `kai-core-workspace-onboarding` with the same resolved placement and
-   target projects to create a new schema-5 workspace.
+   target projects to create a new schema-6 workspace.
 7. Run the current workspace doctor and coordination inspect commands.
 
 If onboarding fails, preserve both `docs/kai/` and the retired backup. Report
@@ -105,7 +105,7 @@ the failure; do not restore or import historical private state automatically.
 ```text
 Workspace re-onboarding: complete | blocked | partial
 Retired private root: <path or none>
-Current workspace: schema 5 | absent
+Current workspace: schema 6 | absent
 Public docs: preserved
 Records imported: none
 Package state: verified | uncertain

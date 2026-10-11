@@ -6,15 +6,16 @@ The active documentation describes only the current system.
 
 | Page | Use it for |
 | --- | --- |
-| [Architecture](architecture.md) | Three-package topology, authority map, build boundary, consumer runtime, assets, and host capabilities |
-| [Workspaces](workspaces.md) | Current schema 5, onboarding, re-onboarding, private paths, publication, and coordination |
+| [Architecture](architecture.md) | Four-package topology, authority map, build boundary, consumer runtime, assets, and host capabilities |
+| [Workspaces](workspaces.md) | Current schema 6, onboarding, re-onboarding, private paths, split runtimes, publication, and coordination |
 | [Development process](development-process.md) | Fast-ship profile, validation levels, nightly checks, version/build workflow, and Monday releases |
 | [Plugin structure](reference/plugin-structure.md) | Repository layout, contributor authoring rules, build mechanics, and semantic versioning |
-| [Agents & skills](reference/agents-and-skills.md) | Generated catalog of the active three-package surface |
+| [Agents & skills](reference/agents-and-skills.md) | Generated catalog of the active four-package surface |
 | [Approved design](designs/development-system-simplification.md) | Durable rationale and exit criteria for the current development architecture |
 | [Project Management boundary](designs/project-management-plugin.md) | Approved follow-up split between Core A2A execution and optional durable planning |
 
-Kai ships `kai-core`, `kai-engineering`, and `kai-creative`. Five other
+Kai ships `kai-core`, optional `kai-project-management`, `kai-engineering`, and
+`kai-creative`. Five other
 capability packages remain inactive under [`incubator/`](../incubator/README.md).
 
 `docs/kai/` demonstrates accepted project publication. Private drafts,

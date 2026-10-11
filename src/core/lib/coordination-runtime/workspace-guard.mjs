@@ -4,14 +4,13 @@ import {RuntimeError} from './contract.mjs';
 import {exactPath, pathHasLink} from '../workspace-path-safety.mjs';
 import {
   readWorkspaceManifest,
-  validateSchema5Manifest,
+  validateSchema6Manifest,
 } from '../workspace-resolve.mjs';
 import {
   COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
 } from '../workspace-layout.mjs';
 import {inspectGitPrivacy} from '../workspace-git-privacy.mjs';
-import {readDirection} from '../direction.mjs';
 
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 
@@ -27,13 +26,8 @@ export function readWorkspaceContract(root, {
       'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard');
   }
   if (pathHasLink(root, result.path)) fail('INVALID_INPUT', 'workspace manifest cannot traverse links');
-  const validation = validateSchema5Manifest(root, manifest, {env});
+  const validation = validateSchema6Manifest(root, manifest, {env});
   if (validation.errors.length) fail('INVALID_INPUT', validation.errors.join('; '));
-  try {
-    readDirection({workspaceRoot: root, manifest});
-  } catch (error) {
-    fail(error.code ?? 'INVALID_INPUT', error.message);
-  }
   return manifest;
 }
 
@@ -57,14 +51,14 @@ export function assertWorkspaceWrite(path, {
       'coordination writes require the exact current workspace database');
   }
   const manifest = join(root, '.kai', 'manifest.json');
-  if (!existsSync(manifest)) fail('RECOVERY_REQUIRED', 'workspace coordination writes require a schema 5 manifest');
+  if (!existsSync(manifest)) fail('RECOVERY_REQUIRED', 'workspace coordination writes require a schema 6 manifest');
   if (pathHasLink(root, manifest) || !exactPath(manifest) || !lstatSync(manifest).isFile()) {
     fail('INVALID_INPUT', 'coordination manifest must be an exact unlinked regular file');
   }
   const parsed = readWorkspaceContract(root, {env});
-  if (!existsSync(path)) fail('RECOVERY_REQUIRED', 'schema-5 coordination database is missing');
+  if (!existsSync(path)) fail('RECOVERY_REQUIRED', 'schema-6 coordination database is missing');
   if (pathHasLink(root, path) || !exactPath(path) || !lstatSync(path).isFile()) {
-    fail('INVALID_INPUT', 'coordination database must be the exact unlinked schema-5 regular file');
+    fail('INVALID_INPUT', 'coordination database must be the exact unlinked schema-6 regular file');
   }
   if (privateCheck && requirePrivate) {
     const privacy = inspectGitPrivacy(root, parsed.placement);

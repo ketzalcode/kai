@@ -11,10 +11,6 @@ import {
   readMessageOperation,
 } from './store.mjs';
 import {requireActorAvailable} from './authority.mjs';
-import {
-  currentDirectionForStore,
-  parentHandlers,
-} from './hierarchy-engine.mjs';
 import {taskHandlers} from './task-engine.mjs';
 
 export {
@@ -28,7 +24,6 @@ function fail(code, message, retryable = false) {
 }
 
 const handlers = new Map([
-  ...parentHandlers,
   ...taskHandlers,
 ]);
 
@@ -65,9 +60,7 @@ export function applyCommand(store, command, authority) {
     return applyOperation(store, command, (current, tx) => {
       bindEvidenceTransaction(store, tx);
       const handler = handlers.get(handlerKey);
-      return handler(current, tx, command, authority, {
-        direction: directionRef => currentDirectionForStore(store, directionRef),
-      });
+      return handler(current, tx, command, authority);
     });
   } catch (error) {
     if (command.payload?.messageId

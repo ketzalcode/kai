@@ -3,7 +3,7 @@
 //
 // Answers one question: **where must I intervene?**
 //
-// It reads the transactionally consistent typed hierarchy store, then prints
+// It reads the transactionally consistent Task store, then prints
 // only what needs attention. Healthy work is counted, not listed.
 //
 // HONESTY CONTRACT
@@ -31,12 +31,10 @@ import { resolveWorkspaceRoot, readWorkspaceManifest } from './lib/workspace-res
 import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './lib/workspace-layout.mjs';
 import {
   closeStore,
-  listAllRecords,
   openStore,
   readSnapshot,
 } from './lib/coordination-runtime/store.mjs';
-import {currentDirectionForStore} from './lib/coordination-runtime/hierarchy-engine.mjs';
-import {hierarchyStatus} from './lib/coordination-runtime/hierarchy-view.mjs';
+import {taskStatus} from './lib/coordination-runtime/task-view.mjs';
 
 // Severity order drives both the print order and the exit code.
 const SECTIONS = [
@@ -69,24 +67,7 @@ function installedRoles(env = process.env) {
   return [...roles].sort();
 }
 
-function hierarchyNodes(status) {
-  const nodes = [];
-  for (const epic of status.epics) {
-    nodes.push(epic);
-    for (const pack of epic.packs) {
-      for (const feature of pack.features) {
-        nodes.push(feature);
-        for (const requirement of feature.requirements) {
-          nodes.push(requirement);
-          nodes.push(...requirement.tasks);
-        }
-      }
-    }
-  }
-  return nodes.filter(node => !node.missing);
-}
-
-function collectHierarchy(root, now, roles, database) {
+function collectTasks(root, now, roles, database) {
   const path = join(root, ...database.split('/'));
   if (!existsSync(path)) {
     return {ok: false, reason: `coordination database is missing at ${database}`};
@@ -95,12 +76,10 @@ function collectHierarchy(root, now, roles, database) {
   try {
     store = openStore({path, mode: 'read'});
     const status = readSnapshot(store, () => {
-      const [epic] = listAllRecords(store, {kind: 'epic'});
-      const direction = epic ? currentDirectionForStore(store, epic.body.direction_ref) : null;
-      return hierarchyStatus(store, {direction, roles});
+      return taskStatus(store, {roles});
     });
     const findings = [];
-    const nodes = hierarchyNodes(status);
+    const nodes = status.tasks;
     for (const node of nodes) {
       const item = `${node.kind}/${node.id}`;
       for (const attention of node.attention.reasons) {
@@ -109,7 +88,7 @@ function collectHierarchy(root, now, roles, database) {
           item,
           tier: 'derived',
           headline: attention.message,
-          why: `Derived ${attention.code} condition from the transactionally consistent hierarchy snapshot.`,
+          why: `Derived ${attention.code} condition from the transactionally consistent Task snapshot.`,
           path: database,
         });
       }
@@ -119,18 +98,18 @@ function collectHierarchy(root, now, roles, database) {
           item,
           tier: 'derived',
           headline: `installed role "${staffing.role}" is unavailable`,
-          why: `Session staffing gap for ${staffing.responsibilities.join(', ')}; the hierarchy record was not changed.`,
+          why: `Session staffing gap for ${staffing.responsibilities.join(', ')}; the Task was not changed.`,
           path: database,
         });
       }
     }
-    const hierarchyIds = new Set(nodes.map(node => `${node.kind}/${node.id}`));
+    const taskIds = new Set(nodes.map(node => `${node.kind}/${node.id}`));
     const flagged = new Set(findings
       .map(finding => finding.item)
-      .filter(item => hierarchyIds.has(item)));
+      .filter(item => taskIds.has(item)));
     return {
       ok: true,
-      hierarchy: true,
+      task_store: true,
       generated_at: new Date(now).toISOString(),
       workspace: basename(root),
       git: gitContext(root),
@@ -157,7 +136,7 @@ function collectHierarchy(root, now, roles, database) {
 export function collect(root, now = Date.now(), {roles = []} = {}) {
   const manifest = readWorkspaceManifest(root);
   if (manifest.ok && manifest.manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
-    return collectHierarchy(root, now, roles, COORDINATION_DATABASE);
+    return collectTasks(root, now, roles, COORDINATION_DATABASE);
   }
   return {
     ok: false,
@@ -192,8 +171,7 @@ export function render(r) {
 
   L.push('');
   if (!r.findings.length) L.push('Nothing needs you. No exception found in the recorded state.');
-  const total = r.hierarchy ? r.totals.records : r.totals.items;
-  L.push(`${total} ${r.hierarchy ? 'hierarchy record(s)' : 'item(s)'}: ${r.totals.flagged} flagged, ${r.totals.healthy} without a finding (${r.totals.terminal} terminal).`);
+  L.push(`${r.totals.records} Task record(s): ${r.totals.flagged} flagged, ${r.totals.healthy} without a finding (${r.totals.terminal} terminal).`);
   if (r.live) {
     L.push(r.live.open
       ? `Activity: ${r.live.open} run(s) open${r.live.overdue ? `, ${r.live.overdue} past its declared deadline` : ''} — ${r.live.roles.join(', ')}. Role attribution is self-reported.`

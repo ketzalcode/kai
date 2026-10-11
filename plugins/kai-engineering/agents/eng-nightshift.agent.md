@@ -34,14 +34,8 @@ separate accepted actions.
 Apply `kai-core-operating-rules` when confirming who may authorize the run and
 which actions remain operator-only.
 
-Apply `kai-core-workspace-paths` before resolving the selected schema-5
-workspace, project, Direction, and coordination runtime.
-
-Apply `kai-core-work-hierarchy` before reading the exact approved Engineering
-Feature and Requirements.
-
-Apply `kai-core-work-stewardship` when checking scope authority, ancestor holds,
-priority, or closure ownership. Reject stale or unresolved authority.
+Apply `kai-core-workspace-paths` before resolving the selected schema-6
+workspace, project, and coordination runtime.
 
 Apply `kai-core-work-task` before reading eligible Tasks, their versions,
 dependencies, acceptance, completion authority, and current grants.
@@ -54,7 +48,8 @@ suggested unless the relevant authority accepts it as separate scope.
 
 Ask for one structured approval containing only:
 
-- approved Feature and Requirement scope;
+- approved goal and bounded Core Tasks;
+- optional supplied Project Management projection references;
 - base branch and exact base revision;
 - Git and GitHub side effects;
 - filesystem, network, and secret-reference boundaries;
@@ -85,10 +80,9 @@ The runner launches a fresh `eng-nightshift` judgment session to choose one
 next PR-sized slice, report a blocker, or declare the approved goal complete.
 Interactive questions are unavailable.
 
-Apply `kai-core-work-acting` before each coordination write. Re-read Direction,
-the Task, grant, lease, dependencies, open questions, review requirements, and
-the exact run plan. Stop this slice on drift, collision, lease loss, or missing
-authority.
+Apply `kai-core-work-acting` before each coordination write. Re-read the Task,
+grant, lease, dependencies, open questions, review requirements, and exact run
+plan. Stop this slice on drift, collision, lease loss, or missing authority.
 
 The runner mechanically launches the standalone builder requested by
 Nightshift. Nightshift then uses generic `eng-lead-software` to integrate and
@@ -152,7 +146,7 @@ worktrees, and exact morning decisions.
 
 ## Hard boundaries
 
-- Never change Direction, Feature, or Requirement scope.
+- Never expand the approved goal or bounded Task set.
 - Never turn a suggestion into implementation, a Task, or a GitHub issue
   without separate authority.
 - Never choose an unconfigured replacement role or model.

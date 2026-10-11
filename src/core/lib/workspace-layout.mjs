@@ -8,20 +8,20 @@ import {
 } from './workspace-path-safety.mjs';
 
 export const WORKSPACE_CONTRACT = Object.freeze({
-  schemaVersion: 5,
+  schemaVersion: 6,
   privateRoot: '.kai',
   publicationRoot: 'docs/kai',
-  directionPath: 'docs/kai/DIRECTION.md',
   coordinationDatabase: '.kai/core/runtime/coordination.sqlite',
-  packs: Object.freeze(['core', 'creative', 'engineering']),
+  projectDatabase: '.kai/project-management/runtime/project.sqlite',
+  packs: Object.freeze(['core', 'project-management', 'creative', 'engineering']),
   lifecycles: Object.freeze(['drafts', 'evidence', 'scratch']),
 });
 
 export const WORKSPACE_SCHEMA_VERSION = WORKSPACE_CONTRACT.schemaVersion;
 export const PRIVATE_ROOT = WORKSPACE_CONTRACT.privateRoot;
 export const PUBLICATION_ROOT = WORKSPACE_CONTRACT.publicationRoot;
-export const DIRECTION_PATH = WORKSPACE_CONTRACT.directionPath;
 export const COORDINATION_DATABASE = WORKSPACE_CONTRACT.coordinationDatabase;
+export const PROJECT_DATABASE = WORKSPACE_CONTRACT.projectDatabase;
 
 function artifactRoute({pack, type, subtype = null, id}) {
   return [
@@ -134,10 +134,6 @@ export function archivedArtifactDirectory({pack, type, subtype = null, id}) {
 
 export function publicationDirectory({pack, type, subtype = null, id}) {
   return assertDerivedPath(path.join(PUBLICATION_ROOT, ...artifactRoute({pack, type, subtype, id})), 'publication path');
-}
-
-export function directionPath() {
-  return assertDerivedPath(DIRECTION_PATH, 'direction path');
 }
 
 export function workspaceRootFromCoordinationDatabase(databasePath) {
