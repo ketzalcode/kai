@@ -4603,7 +4603,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[22.2.0]: https://github.com/ketzalcode/kai/compare/v22.1.0...v22.2.0
+[22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
 [22.0.0]: https://github.com/ketzalcode/kai/compare/v21.0.0...v22.0.0
 [21.0.0]: https://github.com/ketzalcode/kai/compare/v20.0.1...v21.0.0
