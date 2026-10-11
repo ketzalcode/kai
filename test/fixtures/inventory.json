@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 21,
-    "skills": 39
+    "agents": 20,
+    "skills": 41
   },
   "agents": [
     "creative-lead-design",
@@ -10,7 +10,7 @@
     "eng-advisor-investigation",
     "eng-builder-platform",
     "eng-builder-software",
-    "eng-lead-architecture",
+    "eng-lead-software",
     "eng-lead-technical-writing",
     "eng-reviewer-code",
     "eng-reviewer-privacy-compliance",
@@ -21,7 +21,6 @@
     "workflow-epic-init",
     "workflow-incident-response",
     "workflow-proactive-scan",
-    "workflow-pull-request",
     "workflow-ship",
     "workflow-weekly-pulse",
     "workflow-workspace-init"
@@ -62,6 +61,8 @@
     "mockups-html",
     "onboard-to-codebase",
     "pr-delivery",
+    "pr-review",
+    "pr-review-comments",
     "pr-sizing",
     "research-before-coding",
     "video-align-narration",
@@ -93,8 +94,12 @@
       "argument_hint": "optional focus, e.g. frontend only or auth subsystem"
     },
     {
+      "name": "pr-review-comments",
+      "argument_hint": "verified finding(s), PR, or review output"
+    },
+    {
       "name": "pr-sizing",
-      "argument_hint": "optional feature description"
+      "argument_hint": "optional completed diff or delivery goal"
     },
     {
       "name": "research-before-coding",

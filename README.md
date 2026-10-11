@@ -346,13 +346,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v20.0.1` is this checkout's prepared metadata version — not a tag, a release,
+`v21.0.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 39 skills** |
+| Surface | **20 agents and 41 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 
