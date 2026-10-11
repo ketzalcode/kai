@@ -52,7 +52,7 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Intake & delivery',
-    blurb: 'Bounded investigation, PR preparation, and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.',
+    blurb: 'Bounded investigation and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.',
     members: ['eng-advisor-investigation', 'workflow-ship'],
   },
   {
