@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 9,
-    "skills": 46
+    "skills": 41
   },
   "agents": [
     "creative-lead-design",
@@ -30,15 +30,10 @@
     "kai-core-create-epic",
     "kai-core-create-skill",
     "kai-core-definition-of-done",
-    "kai-core-design-grounding",
-    "kai-core-fleet-observation",
-    "kai-core-issue-analysis",
     "kai-core-no-self-remediation",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
     "kai-core-scope-discipline",
-    "kai-core-web-content-extraction",
-    "kai-core-web-evaluation",
     "kai-core-work-acting",
     "kai-core-work-activity",
     "kai-core-work-granting",
@@ -82,10 +77,6 @@
     {
       "name": "kai-core-create-skill",
       "argument_hint": "skill purpose or existing skill path"
-    },
-    {
-      "name": "kai-core-fleet-observation",
-      "argument_hint": ""
     },
     {
       "name": "kai-core-workspace-onboarding",

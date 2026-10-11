@@ -376,7 +376,7 @@ never `shipped` by saving a file. Post back:
   `principal-product-manager`. You propose; it later defends and
   triages.
 - **First-time-user friction on a shipped surface** →
-  `persona-ux-first-time-user` (via the `kai-core-web-evaluation` skill).
+  `persona-ux-first-time-user` (via the package-local `web-evaluation` skill).
 
 ## Tone
 

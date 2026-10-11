@@ -30,18 +30,17 @@ import {
 } from '../src/core/lib/loader-contract.mjs';
 import {
   PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  HOOKS_FILE, HOOKS_OWNER,
   packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
   normalizeLF,
   collectReferences, referenceErrors, packProviders,
-  planAssets, assetOwnershipErrors, hooksAssignmentErrors,
-  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  planAssets, assetOwnershipErrors,
+  generatedKeyErrors, generatedRuntimeErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  parseGeneratedKey, agentRoutingErrors,
+  agentRoutingErrors,
   publicationSkillForPack, publicationEntrypointDeclaration, publicationRoutingErrors,
   ACTIVITY_EXEMPT, ACTING_EXEMPT,
-  hookAssetsIn, agentSourceFile, skillSourceFile,
+  agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
 } from './lib/pack-plan.mjs';
 
@@ -318,19 +317,6 @@ function selfTest() {
   ])).some(error => /imports bare module/.test(error.msg)),
   'external runtime import is rejected');
 
-  const observer = 'scripts/observe-subagent.mjs';
-  ok(hooksAssignmentErrors({
-    owners: [HOOKS_OWNER],
-    hookAssets: [observer],
-    assets: new Map([[observer, {
-      asset: observer,
-      consumers: [],
-      packs: new Set(['engineering']),
-      owner: 'engineering',
-    }]]),
-  }).some(error => /owned by kai-engineering/.test(error.msg)),
-  'hooks owned by the wrong package are rejected');
-
   ok(sourceFileErrors({agents: [], skills: []})
     .filter(error => /active (?:agent|skill) source corpus is empty/.test(error.msg)).length === 2,
   'empty active corpus is rejected');
@@ -373,13 +359,6 @@ function gateCollision() {
   ];
 }
 
-// The scripts hooks.json runs, read out of the file itself so the gate cannot
-// drift from what the host would execute.
-function liveHookAssets() {
-  const path = join(ROOT, HOOKS_FILE);
-  return existsSync(path) ? hookAssetsIn(readFileSync(path, 'utf8')) : [];
-}
-
 // A department installed with kai-core and nothing else: every reference
 // resolves, every invoked script travels with the pack that invokes it, and
 // hooks has one owner. There is one agent shape now, so there is no guard block
@@ -388,10 +367,6 @@ function gatePartialInstall() {
   const files = materializePacks({ root: ROOT, version: GATE_VERSION });
   const refs = collectReferences(ROOT);
   const assets = planAssets(refs);
-  const claimants = [...files.keys()]
-    .map((key) => parseGeneratedKey(key))
-    .filter((entry) => entry && entry.kind === 'hooks')
-    .map((entry) => entry.pack);
   return [
     ...generatedKeyErrors(files),
     ...generatedRuntimeErrors(files),
@@ -402,12 +377,6 @@ function gatePartialInstall() {
       // same way the generator does or it reports every asset as missing.
       exists: (asset) => sourceAssetIndex(ROOT).has(asset),
     }),
-    ...hooksAssignmentErrors({
-      owners: [...new Set([HOOKS_OWNER, ...claimants])],
-      hookAssets: liveHookAssets(),
-      assets,
-    }),
-    ...hookAssetReferenceErrors(readFileSync(join(ROOT, HOOKS_FILE), 'utf8')),
   ].map((e) => `${e.file}: ${e.msg}`);
 }
 

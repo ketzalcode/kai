@@ -27,9 +27,9 @@ If core is unavailable, a bounded sketch from supplied evidence may continue,
 but not coordinated work or `.kai` state. Tell the operator to install or
 update core before coordinated design resumes.
 
-Apply `kai-core-design-grounding` when the sketch depends on the app's current
-components, hierarchy, or patterns. Scoped supplied evidence is enough for
-the bounded choice; ASCII needs no invented visual tokens.
+Read scoped supplied or repository-native evidence when the sketch depends on
+current components, hierarchy, or patterns. ASCII needs no invented visual
+tokens.
 Apply `kai-core-scope-discipline` when an alternative changes the approved
 scope. Show an unadopted proposal as such; do not silently make it the choice.
 

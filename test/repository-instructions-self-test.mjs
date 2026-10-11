@@ -59,7 +59,7 @@ test('the exact managed-region check rejects boundary-byte drift', () => {
 });
 
 test('onboarding covers absent and existing AGENTS.md without staging it', () => {
-  assert.match(onboarding, /If `AGENTS\.md` does not exist, create it/);
-  assert.match(onboarding, /replace only the marked Kai region/);
+  assert.match(onboarding, /If\s+`AGENTS\.md` does not exist, create it/);
+  assert.match(onboarding, /replace\s+only\s+the\s+marked\s+Kai\s+region/);
   assert.match(onboarding, /never stage or commit/i);
 });

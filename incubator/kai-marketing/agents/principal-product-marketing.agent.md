@@ -134,10 +134,9 @@ paths; persistence needs a resolved workspace, not an invented one.
 For interactive app flows, consume and cite a supplied `product-map.md` with
 its actual author, date and coverage. If missing or stale, request the required
 facts or mark the flow unknown; do not re-walk the app or invent a mapping item.
-For authorized live public surfaces, Load `kai-core-web-evaluation` before
-browser intake for read-only safety, login pause and indexed evidence. Load
-`kai-core-web-content-extraction` only when harvesting readable public copy.
-Supplied maps, media and notes need neither browser nor extraction. Copy only
+Live browser intake is unavailable while this package is incubated. Use
+supplied maps, media, notes, and public copy, and keep missing live coverage
+explicit. Copy only
 consented, non-secret assets into
 `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/media/` and catalog it into
 `media_manifest.json`. Record each auth-gated or unavailable area in

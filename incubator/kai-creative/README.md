@@ -1,4 +1,4 @@
-# Incubated creative capture
+# Incubated creative components
 
 `demo-capture.mjs` is the capture half of the demo seam: it drives a declared
 screenplay, records it, and writes down the second each action really happened
@@ -53,6 +53,7 @@ command can become active again.
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
 | `demo-capture` | command | `src/creative/demo-capture.mjs` | inactive |
+| `design-grounding` | skill | `plugins/kai-core/skills/kai-core-design-grounding/SKILL.md` | inactive; no longer a Core collaboration contract |
 
 ## Re-entry
 

@@ -26,12 +26,18 @@ executable release actions beyond recording state. Re-entry also needs measured
 evidence that the capability should be an agent rather than an explicit skill
 or host command.
 
+`fleet-observation` is parked with its former hook and scripts because the host
+does not emit lifecycle events for Kai custom agents. Re-entry requires observed
+host support that makes absence and participation claims reliable.
+
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
 | `workflow-doc-review` | agent | `plugins/kai-engineering/agents/workflow-doc-review.agent.md` | inactive |
 | `eng-lead-architecture` | agent | `plugins/kai-engineering/agents/eng-lead-architecture.agent.md` | inactive; re-entry tracked by #249 |
 | `eng-builder-platform` | agent | `plugins/kai-engineering/agents/eng-builder-platform.agent.md` | inactive; requires repository-learning redesign |
 | `workflow-ship` | agent | `plugins/kai-engineering/agents/workflow-ship.agent.md` | inactive; requires meaningful release actions |
+| `issue-analysis` | skill | `plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md` | inactive; needs an active Engineering issue/feedback owner |
+| `fleet-observation` | skill + hook/scripts | `plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md` | inactive; current host cannot observe Kai agents |
 | `doc-review-rigor` | skill | `plugins/kai-engineering/skills/doc-review-rigor/SKILL.md` | inactive |
 | `review-security-privacy` | skill | `plugins/kai-engineering/skills/review-security-privacy/SKILL.md` | inactive |
 | `review-rollout-operability` | skill | `plugins/kai-engineering/skills/review-rollout-operability/SKILL.md` | inactive |

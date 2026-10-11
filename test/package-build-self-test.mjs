@@ -95,7 +95,6 @@ test('marketplace generation repairs missing and duplicate scratch entries', asy
   mkdirSync(join(scratch, '.github', 'plugin'), {recursive: true});
   cpSync(join(root, 'plugins'), join(scratch, 'plugins'), {recursive: true});
   cpSync(join(root, 'src'), join(scratch, 'src'), {recursive: true});
-  cpSync(join(root, 'hooks.json'), join(scratch, 'hooks.json'));
   cpSync(join(root, 'package.json'), join(scratch, 'package.json'));
   cpSync(join(root, 'plugin.json'), join(scratch, 'plugin.json'));
 

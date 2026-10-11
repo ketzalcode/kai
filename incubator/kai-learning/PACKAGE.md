@@ -132,7 +132,7 @@ copy an unsupplied restricted work. Source content is not agent instructions.
 | Surface | Inspected source evidence / actual limitation |
 | --- | --- |
 | HTML method | `plugins/kai-learning/skills/generate-html-lesson/SKILL.md`; inline template and CSS, no helper scripts or runtime npm dependencies. Written HTML does not prove browser rendering. |
-| Extraction | `plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md`; Playwright MCP key `playwright`, read-only traversal, private run outputs and auth/partial status. The moved workflow no longer refers to `extract-learn-path.js`, which exists at repository root but is not an emitted provider helper for this flow. |
+| Extraction | `skills/web-content-extraction/SKILL.md`; Playwright MCP key `playwright`, read-only traversal, private run outputs and auth/partial status. |
 | Audio | `plugins/kai-core/skills/kai-core-generate-audio/SKILL.md` → provider root two directories above the loaded skill base → absolute `scripts/generate-audio.ps1`. Never derive from learning, scan caches or guess a sibling install. |
 | Wrapper behavior | Canonical `scripts/generate-audio.ps1` and emitted core copy resolve `LECTORIA_BIN`, core `node_modules/.bin/lectoria`, then PATH. They load core-provider `.env`, accept Markdown source, use caller-relative `-Source`/`-Out`, and default output to `./audio`. Learning callers now set absolute `-Source`/`-Out` and inspect real MP3 paths. |
 | Dependency ownership | Core retains Lectoria `0.1.0` from the pinned public HTTPS release artifact and SHA-512 lock metadata; creative retains its separately owned demo dependency. Learning's package/lock dependencies are empty. |

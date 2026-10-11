@@ -1,5 +1,5 @@
 ---
-name: kai-core-issue-analysis
+name: issue-analysis
 description: "Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner."
 tools: [execute, read, search, ask_user, web]
 ---

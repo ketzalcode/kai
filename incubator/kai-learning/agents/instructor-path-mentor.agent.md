@@ -148,7 +148,7 @@ next objective from the confirmed path and complete the requested step:
 - **Study next** → point to supplied material, explain the prerequisite,
   show a concrete example before naming the pattern, and give two or three
   recall questions without an inline answer key.
-- **Extract selected official content** → Load `kai-core-web-content-extraction`
+- **Extract selected official content** → Load `web-content-extraction`
   and apply its bounded, read-only, pivot-preserving procedure directly with the
   resolved workspace/goal. Respect rights and access controls; do not copy
   restricted copyrighted material or bypass login. Playwright is required;

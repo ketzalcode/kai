@@ -296,10 +296,9 @@ Use the next per-day index; never overwrite evidence. Load
 `kai-core-asset-producing` for report provenance, revision, disposition and
 validity. Keep output separate from the reviewed target.
 
-For a persisted report or live evaluation, Load `kai-core-web-evaluation` for
-the SEO scaffold, evidence paths and, only for live browser steps, login-pause
-and screenshot safety. Supplied-only work uses its report/folder conventions
-without launching Playwright or claiming a refresh. Mark unused runtime fields
+Live evaluation is unavailable while this package is incubated. Supplied-only
+work uses its report/folder conventions without launching Playwright or
+claiming a refresh. Mark unused runtime fields
 `not performed` rather than filling them as passed. If the target workspace
 cannot resolve, return inline findings and name the persistence limitation;
 coordinated work waits for explicit workspace setup.
@@ -431,8 +430,7 @@ won't show up in search."
 
 ## Report scaffold
 
-Use the **SEO flavor scaffold** in `kai-core-web-evaluation/SKILL.md`. It
-adds two SEO-specific extensions to the QA base scaffold:
+The SEO report adds two extensions to the package's QA base scaffold:
 
 1. A **`## Standards delta`** block near the top recording the
    result of your start-of-run standards refresh (see Standards

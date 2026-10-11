@@ -89,7 +89,7 @@ If the user said "just this page" already, don't second-guess.
 
 Before browser work, Load `kai-core-workspace-paths` and resolve the absolute
 workspace and private goal-run target. Never fall back to an incidental cwd
-or session directory if resolution fails. Load `kai-core-web-content-extraction`
+or session directory if resolution fails. Load `web-content-extraction`
 for read-only navigation, login pause, source/slug rules, traversal and
 knowledge checks; apply it rather than reimplementing its procedure. A
 Playwright MCP server under `playwright` is required. If unavailable, report
@@ -122,7 +122,7 @@ surprised you — e.g., you expected a module and got a path index).
 
 ### 3. Run the extraction
 
-Apply `kai-core-web-content-extraction` directly with the resolved scope and
+Apply `web-content-extraction` directly with the resolved scope and
 absolute workspace root. First resolve the **goal slug** — the durable learning goal this
 extraction belongs to (`learn-react`, `az-204`, `prep-for-interview-vercel`) so
 everything toward one goal lands in one folder. Take it from what the operator

@@ -96,9 +96,9 @@ proposals for the PM/steward.
 
 ### Ground the design
 
-Apply `kai-core-design-grounding` when current surfaces, tokens, patterns, or
-brand evidence affect the answer. Consume sufficient supplied evidence; do not
-force a new design-system artifact for a bounded mock. Label neutral proposed
+Read current surfaces, tokens, patterns, and brand evidence only when they
+affect the requested decision. Consume sufficient supplied evidence; do not
+force a design-system artifact for a bounded mock. Label neutral proposed
 values as proposals, and send new tokens or components to frontend for
 feasibility before treating them as implementable.
 

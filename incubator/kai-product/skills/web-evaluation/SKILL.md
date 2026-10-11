@@ -1,5 +1,5 @@
 ---
-name: kai-core-web-evaluation
+name: web-evaluation
 description: "Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports."
 publication-entrypoint: kai-core-workspace-publication
 tools: [playwright, execute, edit, read, ask_user]

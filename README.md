@@ -54,9 +54,8 @@ Three packages. That is the entire shipped surface.
   | kai-core                                                            |
   |                                                                      |
   |  0 agents                                                            |
-  | 26 skills                                                            |
-  |  6 executable entry points                                           |
-  | hooks.json (subagent observation)                                    |
+  | 21 skills                                                            |
+  |  4 executable entry points                                           |
   | templates/ (decision, spec, report, publication)                     |
   |                                                                      |
   | shared operating contract, workspace machinery, and the coordination |
@@ -72,7 +71,7 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 0 / 26 | Shared skills, workspace machinery, coordination runtime |
+| `kai-core` | 0 / 21 | Shared skills, workspace machinery, coordination runtime |
 | `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -159,9 +158,8 @@ same package directories. Host tooling differs; see
 Most of Kai needs no external runtime. Browser inspection and applicable video
 operations need tools that Kai does not ship.
 
-**Playwright MCP.** `creative-lead-design`, `kai-core-web-evaluation`, and
-`kai-core-web-content-extraction` expect an MCP server registered under the
-exact key `playwright`. For Copilot CLI, add this entry to
+**Playwright MCP.** `creative-lead-design` expects an MCP server registered
+under the exact key `playwright`. For Copilot CLI, add this entry to
 `~/.copilot/mcp-config.json`:
 
 ```json
@@ -330,10 +328,9 @@ committed, CI-validated workspace.
 
 Read this before installing, not after.
 
-- **No MCP servers are shipped.** Three components use `playwright` and drive a
-  real browser through an MCP server you register yourself:
-  `creative-lead-design`, `kai-core-web-evaluation`, and
-  `kai-core-web-content-extraction`. Everything else works without it.
+- **No MCP servers are shipped.** `creative-lead-design` can drive a real
+  browser through a `playwright` MCP server you register yourself. Everything
+  else works without it.
 - **No audio or speech synthesis.** Removed entirely in 14.0.0, together with
   the last npm runtime dependency. Supplied narration can still be placed and
   mixed by `video-align-narration`; kai does not generate speech.
@@ -352,20 +349,18 @@ Read this before installing, not after.
   package owned the only provider of a judgment, kai routes that work to
   `@operator` rather than to a substitute role that does not exist. See
   [`incubator/README.md`](incubator/README.md).
-- **Kai holds no plan to compare a run against.** The fleet observer reports
-  what a log actually recorded and never names roles that "should" have fired.
 - **Running the repository's own tests needs Node
   `^22.22.2 || ^24.15.0 || >=26.0.0`.** Installing the plugin does not.
 
 ## Status
 
-`v22.2.0` is this checkout's prepared metadata version - not a tag, a release,
+`v22.3.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **9 agents and 46 skills** |
+| Surface | **9 agents and 41 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

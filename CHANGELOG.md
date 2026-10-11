@@ -4,6 +4,29 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [22.3.0] - 2026-10-11
+
+### Changed
+
+- Reduced active Core from 26 to 21 skills by keeping only shared workspace,
+  coordination, authority, communication, and asset-lifecycle capabilities.
+- Made workspace onboarding load only the selected installation or
+  initialization reference instead of one 300-line combined procedure.
+- Simplified work granting to load Task, hierarchy, stewardship, and workspace
+  contracts only at the branch that needs them.
+- Simplified Epic creation around named approval and deterministic runtime
+  refusals instead of replaying the full coordination contract in prose.
+- Updated active Creative guidance to use supplied and repository-native design
+  evidence without requiring a Core-owned design-system method.
+
+### Removed
+
+- Incubated design grounding, web evaluation, web content extraction, issue
+  analysis, and fleet observation under their domain owners.
+- Removed the unsupported fleet-observation hook, two shipped observer
+  executables, npm commands, consumer smoke cases, and hook-specific validation
+  machinery. The host does not expose reliable Kai-agent lifecycle events.
+
 ## [22.2.0] - 2026-10-11
 
 ### Added
@@ -4618,6 +4641,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
 [22.0.0]: https://github.com/ketzalcode/kai/compare/v21.0.0...v22.0.0

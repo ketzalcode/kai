@@ -12,6 +12,7 @@ The active documentation describes only the current system.
 | [Plugin structure](reference/plugin-structure.md) | Repository layout, contributor authoring rules, build mechanics, and semantic versioning |
 | [Agents & skills](reference/agents-and-skills.md) | Generated catalog of the active three-package surface |
 | [Approved design](designs/development-system-simplification.md) | Durable rationale and exit criteria for the current development architecture |
+| [Project Management boundary](designs/project-management-plugin.md) | Approved follow-up split between Core A2A execution and optional durable planning |
 
 Kai ships `kai-core`, `kai-engineering`, and `kai-creative`. Five other
 capability packages remain inactive under [`incubator/`](../incubator/README.md).

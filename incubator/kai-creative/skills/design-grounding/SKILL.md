@@ -1,5 +1,5 @@
 ---
-name: kai-core-design-grounding
+name: design-grounding
 description: "Use when design, frontend, or visual-identity work needs evidence of an app's settled visual language, or when a design-system reference is explicitly requested."
 tools: [read, edit, search]
 ---
