@@ -23,15 +23,14 @@ authority**. Stewardship mutations use typed `epic.*`, `feature.*`, and
 | Activate a Requirement | Feature owner only |
 | Propose a Task | Requirement scope authority or delegated specialist |
 | Promote a Task to ready | Requirement scope authority |
-| Grant a Task | Chief of Staff or the authorized lone-actor route |
+| Grant a Task | named authorized grantor or authorized lone-actor route |
 | Close a parent | that record's completion authority |
 
 Any role may make a suggestion. A suggestion stays **conversational** until
 named authority approval and creates no durable proposal before that decision.
 
-The Chief of Staff grants Tasks. It does not acquire authority to invent or
-rewrite Epic, Feature, or Requirement scope, priority, relationships,
-authorities, or acceptance.
+A grantor does not acquire authority to invent or rewrite Epic, Feature, or
+Requirement scope, priority, relationships, authorities, or acceptance.
 
 ## Promotion and focus
 

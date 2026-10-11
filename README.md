@@ -53,7 +53,7 @@ Three packages. That is the entire shipped surface.
   +----------------------------------------------------------------------+
   | kai-core                                                            |
   |                                                                      |
-  |  1 agent                                                             |
+  |  0 agents                                                            |
   | 26 skills                                                            |
   |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
@@ -72,7 +72,7 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 1 / 26 | Shared contracts, workspace machinery, requested coordination |
+| `kai-core` | 0 / 26 | Shared skills, workspace machinery, coordination runtime |
 | `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -237,9 +237,9 @@ Initialize this repository as a kai workspace.
 and untracked). Those are the only private placements. Accepted project
 knowledge publishes separately under `docs/kai/`.
 
-**4. For coordinated delivery**, ask `director-chief-of-staff`. It sequences
-approved Tasks and handoffs; it does not take any specialist's acceptance authority,
-and it is not a prerequisite for ordinary direct work.
+**4. For coordinated delivery**, ask the owning department lead. Core supplies
+the grant, lease, hierarchy, handoff, and evidence methods; it does not insert a
+generic coordinating agent between the operator and the domain owner.
 
 **[Workspace contract →](docs/workspaces.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
@@ -365,7 +365,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **10 agents and 46 skills** |
+| Surface | **9 agents and 46 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

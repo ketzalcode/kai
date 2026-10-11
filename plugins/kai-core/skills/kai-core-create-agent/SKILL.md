@@ -50,7 +50,8 @@ Record:
 - execution profile, model, and tools.
 
 Choose the provider whose absence should make the role unavailable. Keep Core
-independent of departments. Keep a reusable resource unaware of higher-level
+independent of departments and agent-free: Core owns shared skills and runtime,
+not a coordinating persona. Keep a reusable resource unaware of higher-level
 callers.
 
 ## Use progressive disclosure

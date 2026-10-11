@@ -4,6 +4,7 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
+  agentTaxonomyErrors,
   collectReferences,
   hoistedSkillRouteErrors,
   referenceCycleErrors,
@@ -54,6 +55,17 @@ test('active agents use responsibility identities rather than workflow prefixes'
   assert.deepEqual(
     sourceAgentFiles(root).filter(entry => entry.id.startsWith('workflow-')),
     [],
+  );
+});
+
+test('Core remains an agent-free skills and runtime package', () => {
+  assert.deepEqual(
+    sourceAgentFiles(root).filter(entry => entry.pack === 'core'),
+    [],
+  );
+  assert.deepEqual(
+    agentTaxonomyErrors({id: 'core-coordinator-delivery', pack: 'core'}),
+    ['kai-core is an agent-free skills and runtime package'],
   );
 });
 

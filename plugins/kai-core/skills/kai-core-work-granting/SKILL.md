@@ -53,10 +53,9 @@ prepared context.
 
 ## Authority boundary
 
-Chief of Staff and other grantors grant Tasks only. They cannot invent or
-rewrite Epic, Feature, or Requirement scope, priority, relationships,
-authorities, acceptance, or publication targets. If those are absent, return
-to the named scope authority.
+Grantors grant Tasks only. They cannot invent or rewrite Epic, Feature, or
+Requirement scope, priority, relationships, authorities, acceptance, or
+publication targets. If those are absent, return to the named scope authority.
 
 Role installation is capability, not authority. A missing role is a staffing
 gap; do not mutate the durable record to pretend otherwise.

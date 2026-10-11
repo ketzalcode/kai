@@ -429,9 +429,19 @@ for (const m of manifests) {
   catch (e) { err(m.rel, `invalid JSON: ${e.message}`); continue; }
   // Installable plugin paths must resolve relative to their own manifest.
   if (!m.isRoot) {
+    const pack = PUBLISHED_PACKS.find(candidate => packPluginName(candidate) === pj.name);
     for (const key of ['agents', 'skills']) {
-      if (!pj[key]) err(m.rel, `missing "${key}" path`);
-      else if (!existsSync(join(m.dir, pj[key]))) err(m.rel, `"${key}" path "${pj[key]}" does not exist`);
+      const hasSource = pack === undefined
+        || (key === 'agents'
+          ? agentFiles.some(entry => entry.pack === pack)
+          : skillFiles.some(entry => entry.pack === pack));
+      if (hasSource && !pj[key]) {
+        err(m.rel, `missing "${key}" path`);
+      } else if (!hasSource && pj[key]) {
+        err(m.rel, `declares "${key}" path but the package ships no ${key}`);
+      } else if (pj[key] && !existsSync(join(m.dir, pj[key]))) {
+        err(m.rel, `"${key}" path "${pj[key]}" does not exist`);
+      }
     }
   }
   if (!pj.version) err(m.rel, 'missing "version"');

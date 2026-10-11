@@ -114,7 +114,7 @@ SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
 hierarchy record and no report tree.
 Apply `kai-core-work-granting` only for
-an authorized no-director self-grant. If an owner or route cannot be
+an authorized self-grant. If an owner or route cannot be
 resolved, report the gap instead of inventing a grant or transition.
 
 Apply `kai-core-peer-communication` for the actual handoff.

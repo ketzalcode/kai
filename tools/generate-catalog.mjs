@@ -31,12 +31,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = [
   {
     kind: 'agent',
-    title: 'Direction',
-    blurb: 'Delivery coordination, on explicit request. Nothing has to be routed through it.',
-    members: ['director-chief-of-staff'],
-  },
-  {
-    kind: 'agent',
     title: 'Engineering',
     blurb: 'Implement bounded frontend and backend work, explicitly coordinate a complete change, or run approved unattended delivery.',
     members: [

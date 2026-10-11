@@ -13,7 +13,6 @@
 // that a host could look up a model name.
 
 export const ROLE_FAMILY_PACK = Object.freeze({
-  core: 'core',
   eng: 'engineering',
   creative: 'creative',
 });

@@ -1,13 +1,12 @@
 {
   "counts": {
-    "agents": 10,
+    "agents": 9,
     "skills": 46
   },
   "agents": [
     "creative-lead-design",
     "creative-lead-video",
     "creative-operator-demo-production",
-    "director-chief-of-staff",
     "eng-builder-backend",
     "eng-builder-frontend",
     "eng-lead-software",

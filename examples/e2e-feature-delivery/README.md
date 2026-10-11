@@ -93,6 +93,6 @@ Initialize this repository as a kai workspace.
 Then: I need users to be able to export a saved report as CSV.
 ```
 
-The front door (`director-chief-of-staff`) will route to the PM for the brief,
-the architect for the decision, and engineering for implementation — producing
-the same kind of records you see above.
+Use `kai-core-create-epic` for the approved outcome, then ask the owning
+department lead to grant and coordinate its accepted Tasks. Core provides the
+records and runtime without inserting a generic front-door agent.

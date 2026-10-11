@@ -896,7 +896,6 @@ import { createHash as createHash2 } from "node:crypto";
 
 // src/core/lib/agent-model-policy.mjs
 var ROLE_FAMILY_PACK = Object.freeze({
-  core: "core",
   eng: "engineering",
   creative: "creative"
 });

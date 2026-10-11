@@ -66,9 +66,12 @@ The active durable-role provider families are:
 
 | Family | Package | Responsibility |
 | --- | --- | --- |
-| `core` | `kai-core` | Shared contracts, workspace machinery, and explicitly requested coordination |
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation |
 | `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production |
+
+`kai-core` is deliberately agent-free. It supplies shared skills, workspace
+machinery, and coordination runtime to department agents and direct skill
+invocations.
 
 Use full responsibility words in scope: `frontend`, `backend`, and `software`,
 not `fe`, `be`, or `swe`. Choose the posture with this first-match rule:

@@ -36,6 +36,8 @@ follow semantic versioning.
   procedures now ship as user-invocable skills rather than `workflow-*` agents.
 - Removed `workflow` and `procedure` from the supported
   `kai-agent-models-v4` agent taxonomy.
+- Removed `director-chief-of-staff` and made `kai-core` an agent-free shared
+  skills, workspace, and coordination-runtime package.
 
 ## [22.1.0] - 2026-10-10
 

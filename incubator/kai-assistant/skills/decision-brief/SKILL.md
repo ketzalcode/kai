@@ -148,7 +148,7 @@ kind of choice it is. One line either way.>
 
 ## Your move
 - **Personal decision:** <the single choice> → on your go-ahead this skill privately records your choice in the brief (`Status: decided`); it never executes the choice for you — you act on it yourself.
-- **Thread decision:** <the single choice> → once decided, **@<owning role or Chief of Staff> records the `@operator` ANSWER on the thread** and restores the item per `kai-core-work-acting`.
+- **Thread decision:** <the single choice> → once decided, **@<owning role> records the `@operator` ANSWER on the thread** and restores the item per `kai-core-work-acting`.
 - **Deploy gate:** go → **you deploy** (kai never deploys), then hand the run evidence to `workflow-ship CONFIRM-START`; defer → stays `release-ready` with a recorded reason; cancel → lifecycle-authorized drop.
 - <any dependent action you can green-light, and who runs it>
 
@@ -184,7 +184,7 @@ the authorized role — **never** by this skill or its caller writing
 coordination. Two paths:
 
 **Thread decision.** The operator states the choice. The
-`director-chief-of-staff` or owning role transcribes an `ANSWER` to
+owning role transcribes an `ANSWER` to
 `.kai/state/threads/<item-id>.md` with the answerer as `@operator` and
 `provenance: operator`, carrying only the sanitized selected option and minimal
 team-relevant rationale — never a `.kai/personal/` path or private reasoning. Per
@@ -269,7 +269,7 @@ Your move: <the single decision + who records it on your go-ahead>
 - ❌ Treating a stale `status: open` line as an open decision when a matching
   `ANSWER` exists.
 - ❌ Writing the outcome into `.kai/state/` yourself, or dispatching it there,
-  instead of leaving it for the Chief of Staff or owning role to record
+  instead of leaving it for the owning role to record
   themselves.
 - ❌ Storing the brief anywhere but the selected workspace's ignored `.kai/personal/`.
 - ❌ Rewriting or deleting a closed/superseded decision or consultation

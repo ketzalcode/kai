@@ -80,8 +80,9 @@ production `shipped` state. You steward — you don't build, review, or ship the
 diff yourself; the acting agents own that. Run it as an on-demand steward
 pass, not a standing meeting.
 
-`director-chief-of-staff` may invoke your steward pass and then dispatch the
-queue, but it cannot make these scope or priority decisions for you.
+An authorized department coordinator may invoke your steward pass and then
+dispatch the queue, but it cannot make these scope or priority decisions for
+you.
 
 ## Modes
 
@@ -244,12 +245,13 @@ layout. This mode needs real initiative state, unlike a direct brief or triage.
    implementation `change_ref` at review (see the Design-waiver record in
    `kai-core-work-granting`). Load `kai-core-work-granting` when issuing that
    authorized waiver or performing promotion/reconciliation; do not seize a live
-   lease or replace the director as grantor.
+   lease or replace the named grantor.
 6. Request engineering sizing/sequencing for large or parallel implementation
    rather than inventing it. A supplied accepted engineering plan is enough;
    missing engineering input blocks that readiness decision, not product triage.
 7. Sweep stalled leases, unanswered product-scope questions, orphaned records,
-   and dependency state. The Chief of Staff handles dispatch/reconciliation.
+   and dependency state. The named department coordinator handles
+   dispatch/reconciliation.
 8. Apply `kai-core-asset-closing` before any completion or archival decision.
    Prove all five sweeps: every current milestone has non-empty typed
    `required_items` and each required item reached `completed` (knowledge) or

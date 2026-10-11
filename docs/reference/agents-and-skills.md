@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **10 agents** and **46 skills**.
+The repository ships **9 agents** and **46 skills**.
 
-The default marketplace supplies **10 agents** and **46 skills** through core, engineering, and creative (16 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **46 skills** through core, engineering, and creative (16 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -20,14 +20,6 @@ and not available through any install path.
 - **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).
 
 ## Agents
-
-### Direction
-
-Delivery coordination, on explicit request. Nothing has to be routed through it.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | `kai-core` | Coordinates approved Kai work by planning, granting, reconciling, and handing off executable Tasks without inventing product or hierarchy authority. |
 
 ### Engineering
 

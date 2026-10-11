@@ -944,6 +944,9 @@ export function agentTaxonomyErrors({ id, pack }) {
       ? []
       : [`named capability agent \`${id}\` belongs to ${packPluginName(namedCapability.pack)}, not ${packPluginName(pack)}`];
   }
+  if (pack === 'core') {
+    return ['kai-core is an agent-free skills and runtime package'];
+  }
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
     return RETIRED_AGENT_IDS.has(id)
       ? []
@@ -975,7 +978,7 @@ export function agentTaxonomyErrors({ id, pack }) {
 export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
   if (NAMED_CAPABILITY_AGENTS[id]) return true;
-  if (['director', 'principal'].includes(family)) return true;
+  if (family === 'principal') return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
 
