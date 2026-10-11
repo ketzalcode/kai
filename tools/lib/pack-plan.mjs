@@ -407,7 +407,7 @@ export { packPluginName, PACK_ORDER };
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
-  engineering: 'Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.',
+  engineering: 'Explicit frontend and backend implementation, selective code review, technical writing, and delivery procedures over kai-core.',
 };
 
 function packDescription(pack) {

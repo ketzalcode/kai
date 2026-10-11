@@ -10,10 +10,10 @@ they materially improve correctness, context isolation, or delivery quality.
 The goal is a high-performing engineering system: small roles, relevant
 context, proportionate confidence, and fast shipping.
 
-Kai is an open-source plugin for the **GitHub Copilot CLI**. It adds a team of
-specialist agents — implementation, technical investigation, independent review,
-and delivery — that each own a piece of judgment, and a durable work record
-that survives the session.
+Kai is an open-source plugin for the **GitHub Copilot CLI**. Its focused agents
+own frontend implementation, backend implementation, coordination, selective
+review, technical writing, and creative work. Durable coordination is available
+when direct work is not enough.
 
 **Who it is for.** Developers and small teams already using the Copilot CLI who
 want a reviewer that disagrees with them, a scope owner that pushes back, and a
@@ -25,8 +25,9 @@ and media helpers. There is no framework to learn and no service to run. Kai
 contains no employer-specific knowledge and **ships no MCP servers**.
 
 **Smallest first success:** install `kai-core` and `kai-engineering`
-(see [Install](#install)), start a new session, and ask `eng-builder-software`
-for one change. No workspace setup needed.
+(see [Install](#install)), start a new session, and ask
+`eng-builder-frontend` or `eng-builder-backend` for one change. No workspace
+setup needed.
 
 ---
 
@@ -37,12 +38,12 @@ Three packages. That is the entire shipped surface.
 ```text
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
-  | 13 agents                      |   |  3 agents                      |
-  |  9 skills                      |   |  7 skills                      |
+  |  5 agents                      |   |  3 agents                      |
+  | 12 skills                      |   |  7 skills                      |
   |  0 executable entry points     |   |  3 executable entry points     |
-  | implementation, technical      |   | UI/UX, visual identity,        |
-  | investigation, independent     |   |                                |
-  | review, and delivery           |   | video and demo production      |
+  | frontend/backend, selective     |   | UI/UX, visual identity,        |
+  | review, writing, explicit       |   |                                |
+  | coordination and delivery      |   | video and demo production      |
   +--------------------------------+   +--------------------------------+
                   |                                    |
                   |             depends on             |
@@ -72,7 +73,7 @@ resolves, and why you can install just the departments you want.
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
 | `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 9 | Implementation, technical investigation, independent review, and delivery |
+| `kai-engineering` | 5 / 12 | Frontend and backend implementation, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
 Counts come from `plugins/` and are checked against the generated
@@ -152,10 +153,10 @@ same package directories. Host tooling differs; see
 Most of Kai needs no external runtime. Browser inspection and applicable video
 operations need tools that Kai does not ship.
 
-**Playwright MCP.** `creative-lead-design`, `eng-reviewer-quality`,
-`kai-core-web-evaluation`, and `kai-core-web-content-extraction` expect an MCP
-server registered under the exact key `playwright`. For Copilot CLI, add this
-entry to `~/.copilot/mcp-config.json`:
+**Playwright MCP.** `creative-lead-design`, `kai-core-web-evaluation`, and
+`kai-core-web-content-extraction` expect an MCP server registered under the
+exact key `playwright`. For Copilot CLI, add this entry to
+`~/.copilot/mcp-config.json`:
 
 ```json
 {
@@ -214,8 +215,8 @@ automatically. If the current runtime rejects an old workspace, follow
 **2. Ask directly for the capability.** Most work needs no setup at all:
 
 ```text
-Ask eng-builder-software to implement these supplied requirements as one
-coherent change, including the tests for its changed behavior.
+Ask eng-builder-backend to implement these supplied API requirements as one
+coherent change, including focused tests and named manual scenarios.
 ```
 
 **3. Initialize a workspace only if you need durable state.** Coordinated work
@@ -286,33 +287,30 @@ and no historical database record is imported.
 
 ## What you actually get
 
-**Roles that own judgment, not one assistant that agrees with you.** Engineering
-owns implementation, `eng-reviewer-security` and `eng-reviewer-quality` review
-independently, `creative-lead-design` owns interaction. A role that disagrees
-with you says so.
+**Small roles with explicit purpose.** Frontend and backend builders apply
+shared coding preferences plus only their relevant domain standards. The
+software lead coordinates only when multiple bounded assignments add value.
+`eng-reviewer-code` provides a fresh review only when requested or materially
+justified. Direct work stays direct.
 
 **A durable record instead of a chat log.** Coordinated work lives in a store
 reached through `scripts/coordinate.mjs`; drafts and evidence stay private until
 you deliberately publish them. Close the session, come back next week, and the
 state is still authoritative — readable by you and by the next agent.
 
-**Only you ship.** No agent merges, deploys, pushes, tags, or awards itself
-`shipped`. `workflow-ship` assesses release readiness and records the
-`release-ready` → `deploying` → `shipped` transitions; the operator performs
-every deployment and production action, and production verification is recorded
-before anything is called shipped.
+**You control lifecycle transitions.** Review, PR creation, merge, release, and
+deployment are separate explicit actions. A merge request reads live repository
+gates and merges only when authorized; it does not restart development or
+review. Release and production actions remain repository- and operator-owned.
 
 ```text
-  you ─► director-chief-of-staff ─► scope ─► design ─► engineering
-                                                            │
-   ┌────────────────────────────────────────────────────────┘
-   │  quality · security · reliability review, bound to a revision
-   ▼
-  workflow-ship ─► release-ready verdict + recorded transitions ─► you deploy
-                                                        │
-   ┌────────────────────────────────────────────────────┘
-   ▼
-  production verification ─► shipped
+  clear request ----> frontend/backend builder ----> evidence handoff
+       |
+       +-- explicit coordination ----> software lead ----> PR delivery
+                                                |
+                                                +-- selective review
+
+  explicit merge ----> live repository gates ----> merge or exact blocker
 ```
 
 Each role fires only when its kind of judgment is needed; several are skippable
@@ -326,18 +324,16 @@ committed, CI-validated workspace.
 
 Read this before installing, not after.
 
-- **No MCP servers are shipped.** Four components declare `playwright` and drive
-  a real browser through an MCP server you register yourself —
-  `creative-lead-design`, `eng-reviewer-quality`, and the
-  `kai-core-web-evaluation` and `kai-core-web-content-extraction` skills.
-  Everything else works without it. Register that server under the
-  `playwright` key before invoking those components.
+- **No MCP servers are shipped.** Three components use `playwright` and drive a
+  real browser through an MCP server you register yourself:
+  `creative-lead-design`, `kai-core-web-evaluation`, and
+  `kai-core-web-content-extraction`. Everything else works without it.
 - **No audio or speech synthesis.** Removed entirely in 14.0.0, together with
   the last npm runtime dependency. Supplied narration can still be placed and
   mixed by `video-align-narration`; kai does not generate speech.
-- **Kai does not ship for you.** Merging, deploying, publishing and sending are
-  human actions by design. An agent that cannot get a human gate says so instead
-  of proceeding.
+- **Kai does not infer shipping authority.** Merge requires an explicit
+  instruction and live repository approval. Deploying, publishing, and sending
+  remain human or repository-owned actions.
 - **The cloud coding agent is not a full host.** The coordination runtime cannot
   assume local scripts, localhost browser access, peer subagents, or a human
   receipt journal. See
@@ -363,7 +359,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **20 agents and 41 skills** |
+| Surface | **13 agents and 44 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

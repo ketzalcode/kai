@@ -610,6 +610,11 @@ solely to preserve history.
 
 ## Superpowers and methodology
 
+> **Superseded on 2026-10-10:** See
+> [`lean-engineering-workflow.md`](lean-engineering-workflow.md). Kai now owns a
+> lightweight implementation workflow and does not require Superpowers. The
+> section below records the earlier decision only.
+
 Keep Superpowers installed and unchanged outside this repository. Kai's loaded
 `AGENTS.md` instructions limit its use inside this repository.
 

@@ -214,7 +214,7 @@ export function seedTask(store, overrides = {}) {
     resume_state: null,
     scope_authority: 'eng-lead-software',
     completion_authority: 'eng-reviewer-code',
-    producer_actor: {role: 'eng-builder-software', runId: 'producer-run'},
+    producer_actor: {role: 'eng-builder-backend', runId: 'producer-run'},
     acceptance_actor: {role: 'eng-reviewer-code', runId: 'acceptance-run'},
     priority: 1,
     next_role: null,
@@ -276,10 +276,10 @@ export function seedRecord(store, record) {
 export function authority(actor, action, {
   roles = [
     'eng-lead-software',
-    'eng-builder-software',
+    'eng-builder-backend',
+    'eng-builder-frontend',
     'eng-reviewer-code',
-    'eng-reviewer-quality',
-    'workflow-ship',
+    'eng-lead-technical-writing',
   ],
   recordKind = 'task',
   recordId = fixtureIds.task,
@@ -301,7 +301,7 @@ export function command(kind, overrides = {}) {
   return {
     operationId: randomUUID(),
     kind,
-    actor: {role: 'eng-builder-software', runId: 'builder-run'},
+    actor: {role: 'eng-builder-backend', runId: 'builder-run'},
     recordKind: 'task',
     recordId: fixtureIds.task,
     expectedVersion: 1,

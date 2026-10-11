@@ -319,21 +319,14 @@ test('README overview reflects the released engineering surface', () => {
     .replace(/\r\n/g, '\n');
   const overview = readme.slice(0, readme.indexOf('\n## Install'));
 
-  assert.doesNotMatch(
-    overview,
-    /specialist agents — implementation, architecture, independent review, delivery/,
-  );
+  assert.match(overview, /lean, quality-first suite of specialized agents and skills/);
+  assert.match(overview, /Kai keeps direct work direct/);
+  assert.match(overview, /agent-to-agent software collaboration/);
+  assert.match(overview, /\|\s*5 agents\s*\|/);
+  assert.match(overview, /\|\s*12 skills\s*\|/);
   assert.match(
     overview,
-    /specialist agents — implementation, technical investigation, independent review,\s+and delivery/,
+    /\| `kai-engineering` \| 5 \/ 12 \| Frontend and backend implementation, selective review, technical writing, and explicit delivery \|/,
   );
-  assert.match(overview, /\|\s*9 skills\s*\|/);
-  assert.match(
-    overview,
-    /\| `kai-engineering` \| 13 \/ 9 \| Implementation, technical investigation, independent review, and delivery \|/,
-  );
-  assert.doesNotMatch(
-    overview,
-    /\| `kai-engineering` \| 13 \/ 7 \| Implementation, architecture, independent review, delivery \|/,
-  );
+  assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

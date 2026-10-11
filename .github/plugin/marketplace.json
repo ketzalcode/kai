@@ -36,7 +36,7 @@
     {
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
-      "description": "Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.",
+      "description": "Explicit frontend and backend implementation, selective code review, technical writing, and delivery procedures over kai-core.",
       "version": "21.0.0",
       "author": {
         "name": "ketzalcode",
@@ -52,8 +52,8 @@
         "agents",
         "skills",
         "engineering",
-        "security",
-        "reliability"
+        "frontend",
+        "backend"
       ]
     },
     {

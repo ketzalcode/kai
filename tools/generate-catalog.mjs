@@ -44,24 +44,9 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Engineering',
-    blurb: 'Integrate complete software changes and implement bounded application or platform work.',
+    blurb: 'Implement bounded frontend and backend work, or explicitly coordinate a complete software change.',
     members: [
-      'eng-lead-software', 'eng-builder-software', 'eng-builder-platform',
-    ],
-  },
-  {
-    kind: 'agent',
-    title: 'Intake & delivery',
-    blurb: 'Bounded investigation and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.',
-    members: ['eng-advisor-investigation', 'workflow-ship'],
-  },
-  {
-    kind: 'agent',
-    title: 'Trust & reliability',
-    blurb: 'Independent judgment on security, privacy, reliability, and live incidents.',
-    members: [
-      'eng-reviewer-security', 'eng-reviewer-privacy-compliance', 'eng-reviewer-reliability',
-      'workflow-incident-response',
+      'eng-lead-software', 'eng-builder-frontend', 'eng-builder-backend',
     ],
   },
   {
@@ -81,9 +66,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Implementation & system review',
-    blurb: 'Independent code review and browser/API/CLI/system acceptance. Implementers retain ownership of their regression tests.',
-    members: ['eng-reviewer-code', 'eng-reviewer-quality'],
+    title: 'Implementation review',
+    blurb: 'Selective independent code review. Implementers retain ownership of their changed-behavior tests.',
+    members: ['eng-reviewer-code'],
   },
   {
     kind: 'agent',
@@ -137,9 +122,11 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Engineering craft',
-    blurb: 'Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.',
+    blurb: 'Lean development, shared and domain coding standards, bounded evidence, explicit delivery, and useful visuals.',
     members: [
-      'coding-standards', 'research-before-coding',
+      'software-development', 'coding-standards',
+      'frontend-coding-standards', 'backend-coding-standards',
+      'research-before-coding',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
       'onboard-to-codebase', 'build-diagrams',
     ],

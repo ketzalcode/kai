@@ -17,7 +17,7 @@ import {
 } from './coordination-runtime-fixture.mjs';
 
 export const NOW = '2026-09-16T12:00:00.000Z';
-export const builder = {role: 'eng-builder-software', runId: 'producer-run'};
+export const builder = {role: 'eng-builder-backend', runId: 'producer-run'};
 export const reviewer = {role: 'eng-reviewer-code', runId: 'report-reviewer'};
 export const reportSubject = Object.freeze({kind: 'task', id: fixtureIds.task});
 export const runDirectory = '.kai/engineering/reports/report-fixture/scratch';
@@ -232,7 +232,7 @@ export function seedHostAttempt(store, observations = [], overrides = {}) {
     subject_version: 1,
     actor: {role: 'eng-lead-software', runId: 'lead-run'},
     target: builder,
-    agent_id: 'kai-engineering:eng-builder-software',
+    agent_id: 'kai-engineering:eng-builder-backend',
     profile: 'execution',
     requested_model: 'claude-sonnet-5',
     requested_effort: null,
