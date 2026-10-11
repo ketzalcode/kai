@@ -31,12 +31,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = [
   {
     kind: 'agent',
-    title: 'Workspace foundation',
-    blurb: 'Set a workspace up and keep its structure honest.',
-    members: ['workflow-workspace-init', 'workflow-epic-init'],
-  },
-  {
-    kind: 'agent',
     title: 'Direction',
     blurb: 'Delivery coordination, on explicit request. Nothing has to be routed through it.',
     members: ['director-chief-of-staff'],
@@ -62,7 +56,7 @@ const CATEGORIES = [
     blurb: 'Design and video judgment from supplied needs and evidence, plus bounded demo production from approved direction and existing media.',
     members: [
       'creative-lead-design', 'creative-lead-video',
-      'workflow-creative-demo-production',
+      'creative-operator-demo-production',
     ],
   },
   {
@@ -70,14 +64,6 @@ const CATEGORIES = [
     title: 'Implementation review',
     blurb: 'Selective independent code review. Implementers retain ownership of their changed-behavior tests.',
     members: ['eng-reviewer-code'],
-  },
-  {
-    kind: 'agent',
-    title: 'Private workspace signals',
-    blurb: 'Core-owned weekly synthesis and explicitly requested signal scans.',
-    members: [
-      'workflow-weekly-pulse', 'workflow-proactive-scan',
-    ],
   },
   {
     kind: 'skill',
@@ -88,6 +74,7 @@ const CATEGORIES = [
       'kai-core-workspace-onboarding',
       'kai-core-workspace-reonboard',
       'kai-core-workspace-publication',
+      'kai-core-create-epic',
     ],
   },
   {
@@ -155,14 +142,7 @@ const CATEGORIES = [
     blurb: 'Browser-run plumbing, content methods, and the claim safety creative content rests on.',
     members: [
       'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'content-grounding',
-      'kai-core-pulse-digest',
     ],
-  },
-  {
-    kind: 'skill',
-    title: 'Operator signals',
-    blurb: 'Core\'s own reading of what the team records need a human for, plus the runner-invoked notification contract.',
-    members: ['kai-core-proactive-scan'],
   },
 ];
 

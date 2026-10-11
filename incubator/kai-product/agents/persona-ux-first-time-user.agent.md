@@ -129,7 +129,7 @@ report scaffold and gitignore. For initiative-linked work, Load
 
 - Resolve the `<descriptor>` (target slug or work-item key).
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
-  `workflow-workspace-init` for the target workspace.
+  `kai-core-workspace-onboarding` for the target workspace.
 - Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-ux-<descriptor>/`.
 - Stub `report.md` from the **UX scaffold** (not the QA one) with
   header populated.

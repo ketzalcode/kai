@@ -6,7 +6,7 @@ was deliberately *not* built.
 
 This is a **fixture, not a template**: don't copy it into your repo. Read it to
 see what the state you'll produce actually looks like, then run
-`workflow-workspace-init` in your own workspace.
+`kai-core-workspace-onboarding` in your own workspace.
 
 It is validated in CI:
 

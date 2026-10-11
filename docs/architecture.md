@@ -21,7 +21,7 @@ installable.
                                       v
   +-----------------------------------------------------------------------+
   | kai-core                                                              |
-  | 5 agents; shared contracts; workspace and coordination runtime         |
+  | 1 agent; shared contracts; workspace and coordination runtime          |
   | 6 JavaScript entry points; hooks and reusable templates                |
   +-----------------------------------------------------------------------+
 ```

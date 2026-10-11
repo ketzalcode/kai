@@ -122,7 +122,7 @@ load nothing and review context-free.
 outputs default to the **library** zone. If the review runs as coordinated work,
 apply `kai-core-work-item` to claim its item and record the verdict against it.
 Apply `kai-core-work-acting` before you write the working draft at the path
-above — the `.kai/runs/` is gitignored by `workflow-workspace-init`, so you
+above — the `.kai/runs/` is gitignored by `kai-core-workspace-onboarding`, so you
 never manage `.gitignore` yourself. Apply `kai-core-asset-producing` before you
 publish the accepted review
 to `<project-root>/<publication-root>/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`

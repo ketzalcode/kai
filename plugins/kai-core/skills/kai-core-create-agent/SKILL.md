@@ -24,6 +24,9 @@ Prefer, in order:
 3. a skill when the missing capability is reusable method;
 4. a new agent only for a recurring responsibility with an independent lane.
 
+A bounded procedure belongs in a user-invocable skill. Never create a
+`workflow-*` agent to wrap steps that the skill can execute directly.
+
 A new agent must have:
 
 - a repeated trigger recognizable from its description;

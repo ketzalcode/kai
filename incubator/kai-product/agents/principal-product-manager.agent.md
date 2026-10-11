@@ -367,7 +367,7 @@ triage artifact to classify its disposition, provenance, revision and validity.
 the **local** (working) zone — a triage is situational, tied to a specific
 surface snapshot, not a durable decision record. Write it at the path above;
 the `.kai/runs/` root is gitignored by
-`workflow-workspace-init`, so you never manage `.gitignore` yourself. If a
+`kai-core-workspace-onboarding`, so you never manage `.gitignore` yourself. If a
 triage is worth distributing, the operator passes `--share` and you promote
 the curated copy to
 `<project-root>/<publication-root>/qa-findings/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md`

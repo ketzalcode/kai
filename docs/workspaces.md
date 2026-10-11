@@ -50,7 +50,7 @@ Directory presence records actual use.
 
 ## Onboarding
 
-`workflow-workspace-init` creates only:
+`kai-core-workspace-onboarding` creates only:
 
 ```text
 .kai/manifest.json

@@ -8,7 +8,7 @@ import {randomUUID} from 'node:crypto';
 const roles = ['director-chief-of-staff', 'eng-lead-software',
   'eng-builder-backend', 'eng-builder-frontend', 'eng-reviewer-code',
   'eng-lead-technical-writing',
-  'creative-lead-design', 'creative-lead-video', 'workflow-creative-demo-production'];
+  'creative-lead-design', 'creative-lead-video', 'creative-operator-demo-production'];
 const host = createNativeHost({
   env: process.env,
   discover: async ({role}) => ({

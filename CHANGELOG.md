@@ -11,6 +11,8 @@ follow semantic versioning.
 - Added `kai-core-create-agent`, a lean authoring guide that requires a role to
   earn its permanent context cost, define one authority lane, and keep reusable
   method in task-local skills.
+- Added the user-invocable `kai-core-create-epic` procedure and made workspace
+  onboarding directly invocable without a wrapper agent.
 - Added validation that rejects agent paragraphs collecting three or more Core
   skill routes as eager preflight.
 
@@ -23,6 +25,17 @@ follow semantic versioning.
   each contract. Direct work still bypasses coordinated setup.
 - Documented Kai's progressive-disclosure contract and its Agent Skills and
   GitHub custom-agent basis.
+- Renamed demo production to `creative-operator-demo-production`, reflecting
+  its real stateful production responsibility and `operations` profile.
+
+### Removed
+
+- Removed `workflow-proactive-scan`, `workflow-weekly-pulse`, their unowned
+  Core skills, and the stale personal-lane proactive runner example.
+- Removed `workflow-workspace-init` and `workflow-epic-init`; bounded
+  procedures now ship as user-invocable skills rather than `workflow-*` agents.
+- Removed `workflow` and `procedure` from the supported
+  `kai-agent-models-v4` agent taxonomy.
 
 ## [22.1.0] - 2026-10-10
 

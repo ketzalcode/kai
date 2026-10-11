@@ -87,15 +87,15 @@ test('current inspection responses expose no migration shim or initiative compat
   assert.doesNotMatch(store, /recordKind === 'initiative'/);
 });
 
-test('workspace initialization loads acting immediately before mutation', () => {
-  const workflow = readFileSync(
-    new URL('../plugins/kai-core/agents/workflow-workspace-init.agent.md', import.meta.url),
+test('workspace onboarding loads acting immediately before mutation', () => {
+  const onboarding = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md', import.meta.url),
     'utf8',
   );
-  const approval = workflow.indexOf('Obtain explicit approval');
-  const acting = workflow.indexOf('Apply `kai-core-work-acting`');
-  const mutation = workflow.indexOf('Run the confirmed standalone initializer');
-  assert.ok(approval !== -1, 'workflow must retain the approval gate');
+  const approval = onboarding.indexOf('Obtain explicit approval');
+  const acting = onboarding.indexOf('Apply `kai-core-work-acting`');
+  const mutation = onboarding.indexOf('Run the confirmed standalone initializer');
+  assert.ok(approval !== -1, 'onboarding must retain the approval gate');
   assert.ok(acting > approval, 'acting must load after approval');
   assert.ok(mutation > acting, 'acting must load immediately before the initializer mutation');
 });

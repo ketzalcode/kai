@@ -45,10 +45,8 @@ neither holds `agent`, `read_agent`, or `write_agent` tools.
 | `extract-writing-style` | Builds or refreshes the voice profile, on explicit request, from a consented corpus |
 | `write-in-user-voice` | Applies supplied or approved stored preferences to a draft while preserving facts, claim strength, and uncertainty |
 
-`personal-agenda` reads `kai-core-proactive-scan`'s **Operator signals** section
-when — and only when — a team-aware agenda is requested. That is an
-interpretation of existing records. It does not run the scan or ack phases, emit
-a notification payload, or advance the delivery ledger.
+Team-aware agenda synthesis is deferred until re-entry assigns it to a current
+active capability.
 
 ## Private state
 
@@ -84,7 +82,6 @@ is an observed result.
 | "Write this as me" with an approved voice profile | Direct voice-method use and facts preserved | Sending, publishing, or exposing unrelated private history |
 | "Brief this team decision" with an answered QUESTION | Recognize the matching ANSWER and distinguish resolved from pending | Treating stale QUESTION status as an open decision |
 | "Compare these supplied options" with a missing fact | Separate evidence, assumptions, and missing information | Invented role consensus or automatic consultation |
-| Core scan with assistant absent | Interpret its records through the core signal section | Loading assistant skills or requiring the old director |
 
 A source walkthrough is useful, but it is not an execution. Treat the table as
 the contract this package is supposed to meet, not as evidence it does.
@@ -99,7 +96,7 @@ the contract this package is supposed to meet, not as evidence it does.
 | Decision briefing | **Preserved and broadened** in `decision-brief`: it now accepts an ordinary personal decision with no coordination item, and no longer consults roles or writes back to team state. |
 | Voice application | **Shared locally.** `write-in-user-voice` is new and is loaded directly by both agents; `persona-self` no longer holds a private copy of the procedure, and an ordinary draft no longer hops through `persona-self`. |
 | Voice extraction | **Moved** with its schema and opt-in sample selection; it now serves both agents and uses `kai-core-workspace-paths`. |
-| Operator-signal authority | **Retained in core** (`kai-core-proactive-scan` → *Operator signals*). Core has no reverse dependency on this package. |
+| Team-aware agenda synthesis | **Deferred.** Re-entry must assign it to a current active capability without restoring proactive delivery machinery. |
 | Existing private records | **Retained, unmigrated, undeleted** — including consultation records from the retired method. |
 
 ## Known limitations
@@ -132,13 +129,6 @@ the contract this package is supposed to meet, not as evidence it does.
   host as separate, approved follow-up work.
 - **Deferred suites.** Baseline installs, the full validator, and the rest of
   `npm test` were deliberately not run for this change.
-- **Cross-package referrals in core are descriptions, not dependencies.**
-  `workflow-weekly-pulse` still *offers* to hand a post candidate to
-  `persona-self` on the user's explicit go-ahead, exactly as it offers
-  `principal-engineer-career-mentor`. With `kai-assistant` absent, that offer
-  has no target; the pulse itself still renders. That degradation is not
-  verified at runtime either.
-
 ---
 
 **Next:** [Incubator index](../README.md) ·

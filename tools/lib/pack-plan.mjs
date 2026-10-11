@@ -975,7 +975,7 @@ export function agentTaxonomyErrors({ id, pack }) {
 export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
   if (NAMED_CAPABILITY_AGENTS[id]) return true;
-  if (['director', 'principal', 'workflow'].includes(family)) return true;
+  if (['director', 'principal'].includes(family)) return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
 

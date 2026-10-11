@@ -923,7 +923,6 @@ var NAMED_CAPABILITY_AGENTS = Object.freeze({
   })
 });
 var KIND_AGENT_PROFILES = Object.freeze({
-  workflow: Object.freeze(["procedure"]),
   persona: Object.freeze(["simulation"]),
   instructor: Object.freeze(["teaching"])
 });
@@ -936,12 +935,10 @@ var ROLE_PROFILE_MODELS = Object.freeze({
   operations: "claude-sonnet-5",
   coordination: "claude-sonnet-5",
   advisory: "claude-sonnet-5",
-  procedure: "claude-sonnet-5",
   teaching: "claude-sonnet-5",
   simulation: "claude-sonnet-5"
 });
 var KIND_AGENT_FAMILIES = Object.freeze([
-  "workflow",
   "persona",
   "instructor"
 ]);

@@ -197,7 +197,7 @@ and its authorized context.
 
 - Resolve the `<descriptor>` (target slug or work-item key).
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
-  `workflow-workspace-init` for the target workspace.
+  `kai-core-workspace-onboarding` for the target workspace.
 - Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-trainer-<descriptor>/`.
 - Stub `report.md` from the friction-points scaffold (same shape as
   the UX agent's) with header populated.

@@ -1,23 +1,19 @@
 {
   "counts": {
-    "agents": 14,
+    "agents": 10,
     "skills": 46
   },
   "agents": [
     "creative-lead-design",
     "creative-lead-video",
+    "creative-operator-demo-production",
     "director-chief-of-staff",
     "eng-builder-backend",
     "eng-builder-frontend",
     "eng-lead-software",
     "eng-lead-technical-writing",
     "eng-nightshift",
-    "eng-reviewer-code",
-    "workflow-creative-demo-production",
-    "workflow-epic-init",
-    "workflow-proactive-scan",
-    "workflow-weekly-pulse",
-    "workflow-workspace-init"
+    "eng-reviewer-code"
   ],
   "skills": [
     "backend-coding-standards",
@@ -31,6 +27,8 @@
     "kai-core-asset-closing",
     "kai-core-asset-producing",
     "kai-core-contract-v1",
+    "kai-core-create-agent",
+    "kai-core-create-epic",
     "kai-core-create-skill",
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
@@ -39,8 +37,6 @@
     "kai-core-no-self-remediation",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
-    "kai-core-proactive-scan",
-    "kai-core-pulse-digest",
     "kai-core-scope-discipline",
     "kai-core-web-content-extraction",
     "kai-core-web-evaluation",
@@ -77,12 +73,24 @@
       "argument_hint": ""
     },
     {
+      "name": "kai-core-create-agent",
+      "argument_hint": "agent purpose or existing agent path"
+    },
+    {
+      "name": "kai-core-create-epic",
+      "argument_hint": "approved outcome and target workspace"
+    },
+    {
       "name": "kai-core-create-skill",
       "argument_hint": "skill purpose or existing skill path"
     },
     {
       "name": "kai-core-fleet-observation",
       "argument_hint": ""
+    },
+    {
+      "name": "kai-core-workspace-onboarding",
+      "argument_hint": "install packs, initialize workspace, or repair binding"
     },
     {
       "name": "mockups-ascii",

@@ -53,8 +53,8 @@ Three packages. That is the entire shipped surface.
   +----------------------------------------------------------------------+
   | kai-core                                                            |
   |                                                                      |
-  |  5 agents                                                            |
-  | 27 skills                                                            |
+  |  1 agent                                                             |
+  | 26 skills                                                            |
   |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
@@ -72,7 +72,7 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 27 | Shared contracts, workspace machinery, requested coordination |
+| `kai-core` | 1 / 26 | Shared contracts, workspace machinery, requested coordination |
 | `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -232,7 +232,7 @@ across several roles, resumed across sessions, needs somewhere to live:
 Initialize this repository as a kai workspace.
 ```
 
-`workflow-workspace-init` asks where private state goes: **external** (no
+`kai-core-workspace-onboarding` asks where private state goes: **external** (no
 `.kai/` in the repository) or **repo-local** (the whole `.kai/` tree is ignored
 and untracked). Those are the only private placements. Accepted project
 knowledge publishes separately under `docs/kai/`.
@@ -365,7 +365,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **14 agents and 47 skills** |
+| Surface | **10 agents and 46 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

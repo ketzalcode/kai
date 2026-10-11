@@ -193,7 +193,7 @@ Some issues should not be built. Reporting that is a **successful outcome**:
   has a better answer;
 - **several issues wearing one hat** — propose the split;
 - **not issue-shaped at all** — it is really an Epic proposal, and belongs to
-  `workflow-epic-init`; or it cannot be framed until someone has explored
+  `kai-core-create-epic`; or it cannot be framed until someone has explored
   the live product; or it carries a security or privacy
   dimension that its owner should see before an approach is chosen.
 

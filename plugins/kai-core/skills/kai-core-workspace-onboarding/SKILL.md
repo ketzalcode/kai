@@ -2,13 +2,24 @@
 name: kai-core-workspace-onboarding
 description: "Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding."
 tools: [execute, read, edit, search, ask_user]
+user-invocable: true
+argument-hint: "install packs, initialize workspace, or repair binding"
 ---
 
 # Workspace onboarding
 
-This skill materializes `kai-core-workspace-paths`.
-`workflow-workspace-init` executes it. Other roles may inspect the result but
-must not scaffold a partial workspace.
+This explicit procedure materializes `kai-core-workspace-paths`. Other roles
+may inspect the result but must not scaffold a partial workspace.
+
+Invoke `kai-core-contract-v1` immediately before the first other Core skill.
+If Core is unavailable or incompatible, answer direct workspace questions only;
+scaffold no `.kai` state and tell the operator to install or update `kai-core`.
+
+Apply `kai-core-operating-rules` before confirmation, re-onboarding, Git, or
+operator-only decisions.
+
+Apply `kai-core-workspace-paths` before resolving any project, placement,
+workspace, registry, Direction, publication root, or coordination database.
 
 ## Pack installation mode
 
@@ -164,9 +175,14 @@ bytes. Onboarding validates them and never invents or silently replaces them.
 
 Inspect the project, registry, `.gitignore`, publication root, and any existing
 workspace first. Show exact creates, keeps, conflicts, registry changes, and
-managed blocks. Do not mutate a non-empty target without explicit approval.
+managed blocks. Obtain explicit approval before changing a non-empty target,
+registry binding, Git tracking, or project `AGENTS.md`.
 
-Pass the exact approved schema-5 manifest to the standalone initializer:
+Apply `kai-core-work-acting` after approval and immediately before the first
+filesystem or registry mutation.
+
+Run the confirmed standalone initializer with the exact approved schema-5
+manifest:
 
 ```text
 node "<kai-plugin>/scripts/workspace-doctor.mjs" --initialize --root "<workspace-root>" --confirm

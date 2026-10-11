@@ -55,10 +55,12 @@ Choose the kind from the responsibility, not from a title:
 | --- | --- | --- |
 | Durable role | Holds standing judgment or execution responsibility across requests. | `<family>-<posture>-<scope>` |
 | Named capability role | Holds a standing product entry point whose capability name is clearer than a posture label. | `<family>-<capability>`; exact ID, pack, and profiles are registered in `NAMED_CAPABILITY_AGENTS` |
-| Workflow | Runs a bounded procedure with a defined completion condition. | `workflow-<outcome>` |
 | Persona | Represents a user or stakeholder viewpoint without delivery authority. | `persona-<viewpoint>` |
 | Instructor | Teaches or structures learning for the operator. | `instructor-<teaching-scope>` |
 | Skill | Supplies reusable method without an independent authority lane. | `<kebab-case>`; core skills use `kai-core-*` |
+
+A bounded procedure is a user-invocable skill, not a `workflow-*` agent. Keep an
+agent only when the capability needs a durable identity or authority lane.
 
 The active durable-role provider families are:
 
@@ -92,7 +94,7 @@ A new durable role earns a permanent slot only when every row has evidence:
 | Cost justified | Reduced ambiguity exceeds the permanent context and coordination cost |
 
 If any row fails, strengthen an existing agent, add reusable method to a skill,
-or use a bounded workflow instead.
+or use a bounded user-invocable procedure instead.
 
 ### Dependency direction
 
@@ -139,7 +141,7 @@ Use `kai-core-create-agent` for a new or materially revised role and
 ### Execution profiles and models
 
 Agent model policy is deterministic and versioned as
-`kai-agent-models-v3`. Declare exactly one
+`kai-agent-models-v4`. Declare exactly one
 `**Primary profile:** <profile>` line and use the exact quoted model:
 
 | Profile | Allowed posture or kind | Required model |
@@ -152,7 +154,6 @@ Agent model policy is deterministic and versioned as
 | `operations` | `operator` | `claude-sonnet-5` |
 | `coordination` | `coordinator` | `claude-sonnet-5` |
 | `advisory` | `advisor` | `claude-sonnet-5` |
-| `procedure` | `workflow` | `claude-sonnet-5` |
 | `teaching` | `instructor` | `claude-sonnet-5` |
 | `simulation` | `persona` | `claude-sonnet-5` |
 

@@ -252,7 +252,7 @@ Resolve the selected Kai workspace root through `kai-core-workspace-paths` and i
 `.kai/manifest.json` sentinel. The output path is the absolute
 `<workspace-root>/.kai/personal/identity/voice.md`; never resolve it from an
 incidental or nested cwd. If the workspace is not initialized, report that the
-profile cannot be stored and route to `workflow-workspace-init`. Also route
+profile cannot be stored and route to `kai-core-workspace-onboarding`. Also route
 there when required personal paths are missing or when legacy `.persona-self/`,
 `.kai/local.json`, or manifest `workspace_kind` state is unresolved. This skill
 never scaffolds or migrates workspace structure itself.
@@ -441,7 +441,7 @@ Default storage location is `.kai/personal/identity/voice.md` — gitignored
 on creation. The skill must:
 
 - **Require the initialized `.kai/personal/identity/` path and privacy contract.**
-  If missing or invalid, route to `workflow-workspace-init`; do not create paths
+  If missing or invalid, route to `kai-core-workspace-onboarding`; do not create paths
   or edit `.gitignore` from this skill.
 - **Never upload the profile** anywhere. No telemetry, no remote
   sync, no LLM training opt-in.

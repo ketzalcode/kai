@@ -1,6 +1,6 @@
 ---
 name: personal-agenda
-description: "Personal task and agenda method. Use when capturing, updating, or prioritizing the user's own tasks, or rendering their what-needs-you view from the inbox and, on request, team signals."
+description: "Personal task and agenda method. Use when capturing, updating, or prioritizing the user's own tasks, or rendering their what-needs-you view from the inbox."
 tools: [execute, read, edit, search]
 ---
 
@@ -11,10 +11,6 @@ This skill is the **plumbing** for one question the user asks constantly:
 ranked, forward-looking agenda from it. It decides nothing and does nothing;
 the calling agent does the talking and, only with the user's confirmation, the
 acting.
-
-Sister skill to `kai-core-pulse-digest`: that one is **retrospective** ("what happened
-this week"); this one is **forward** ("what needs you next"). They never
-overlap — the agenda surfaces open loops, not a week's narrative.
 
 A ⛔ decision line only *names* the pending choice. When the user wants to
 actually decide it, the calling agent packages the decision — options,
@@ -29,7 +25,7 @@ Kai workspace (see `kai-core-workspace-initiative`). Two files, mirroring how
 | File | Role | Analogue |
 |------|------|----------|
 | `.kai/personal/inbox.md` | **authoritative** — the tasks and reminders *you* own, not tied to any coordination item | `.kai/state/items/` |
-| `.kai/personal/agenda.md` | **derived** — the ranked "what needs you" view, re-rendered each run from the inbox plus any requested signals and nudges | `.kai/state/BOARD.md` |
+| `.kai/personal/agenda.md` | **derived** — the ranked "what needs you" view, re-rendered each run from the inbox plus requested nudges | `.kai/state/BOARD.md` |
 
 Both are gitignored (the `.kai/personal/` lane is ignored wholesale). You never
 commit them, and you never write agenda/inbox state anywhere else.
@@ -43,65 +39,26 @@ resolve against that workspace. If no workspace is selected, the personal lane
 has no home: report the missing persistence prerequisite and answer without
 writing. Never initialize one from here.
 
-Coordination **signals** are optional and off by default (see Source A). When
-the user asks for them, they come from the selected workspace's `.kai/state/`,
-plus an additional enabled root in `.kai/personal/workspaces.md` only when they
-asked for that root too. Resolve and validate the registry per
-`kai-core-workspace-initiative`; label every surfaced line with its workspace.
-When the user names a new Kai root, the calling agent confirms its label and
-records it in the registry before reading it. Never write into a linked
-workspace from here.
+Team-aware agenda synthesis is deferred while this package is incubated. Do not
+read or reinterpret coordination state until re-entry assigns that method to a
+current active capability.
 
 ## Sources
 
-One default source, plus two the user turns on for a given render:
+One default source plus optional cadence nudges:
 
-### A. Team signals (requested, read-only, from `.kai/state/`)
-
-Included only when the user asked for a team-aware agenda. A plain "what's on
-my list" renders the personal inbox alone — no `.kai/state/` traversal, no
-linked-root sweep.
-
-Surface only what genuinely needs **the operator** — the human who owns vision,
-final business boundaries, requested replies/actions, and the deploy button.
-Routine scope promotion and priority remain steward-owned.
-
-When interpreting team signals for this section, load `kai-core-proactive-scan`
-and apply only its **Operator signals** section — this skill consumes that
-section and does not reinterpret or duplicate its rules (the open-question,
-`kind`, release-ready-gate, overdue, blocking-association, and missing-input
-distinctions all live there). Loading it here does not execute the scan or
-ack phases, and does not emit a notification payload or advance the delivery
-ledger — those stay `kai-core-proactive-scan`'s own read-only interpretation,
-used only for this on-demand rendering. Map each signal it identifies to
-exactly one agenda section:
-
-| Signal (`kai-core-proactive-scan` → Operator signals) | Section |
-|---|---|
-| Decision awaiting the operator | ⛔ Decisions |
-| Question addressed to the operator | ✉️ Awaiting reply |
-| Action only the operator can perform | ⚡ Actions |
-| Ready for the operator to ship | 🚀 Ready to ship |
-| Blocked on the operator | ⛔, ✉️, or ⚡ (classify by the blocking question's `kind`) |
-| Overdue operator request | raise within its existing section |
-
-If `.kai/state/` is absent (no team workspace), skip section A and say so —
-never fabricate team signals. A root that failed to read is a gap, not a clear.
-
-### B. Personal inbox (`.kai/personal/inbox.md`)
+### A. Personal inbox (`.kai/personal/inbox.md`)
 
 The tasks and reminders you own directly, and the default source of every
 render. This is the one input you type into; everything else is derived.
 Schema below.
 
-### C. Cadence nudges (requested)
+### B. Cadence nudges (requested)
 
 Freshness checks against the selected workspace, each a gentle "you're due".
 Included when the user asked for nudges or for the full agenda; never as a
 side effect of a task capture or a single-list render:
 
-- **Weekly pulse** — newest `.kai/runs/pulse/<YYYY-Www>/` older than 7 days →
-  nudge `workflow-weekly-pulse`.
 - **Career check-in** — the cadence stated in `.kai/personal/identity/career-goals.md`
   (or last career run) overdue → nudge `principal-engineer-career-mentor`.
 - **Voice profile** — `.kai/personal/identity/voice.md` missing or stale → nudge
@@ -282,15 +239,14 @@ first, then your own commitments, then cadence. Each line = source + exact path
 - (t-2026-0144) <title> · waiting_on:<owner> · chase:<remind_at> → **nudge <owner>** (their deliverable; your follow-up) · `.kai/personal/inbox.md`
 
 ## 🔔 Nudges
-- Weekly pulse due (last run <YYYY-Www>) → `workflow-weekly-pulse`
 - Career check-in overdue → `principal-engineer-career-mentor`
 
 ## Cleared since last render   (optional)
 - <what dropped off and why — shipped, answered, done, dismissed>
 ```
 
-Only Source A populates ⛔/✉️/⚡/🚀 (coordination). **Snoozed** tasks never
-appear until `snooze_until` matures them into ✅ Your tasks. A **waiting** task's
+**Snoozed** tasks never appear until `snooze_until` matures them into ✅ Your
+tasks. A **waiting** task's
 underlying deliverable is *theirs* — only the due chase is your follow-up, and it
 rises only at its `remind_at`. A **proposed** task is a suggestion, never a
 commitment, cleared by an explicit accept or dismiss.
@@ -354,7 +310,7 @@ When a render finishes:
   without explicit operator confirmation.
 - ❌ Writing agenda or inbox anywhere but `.kai/personal/`, or committing them.
 - ❌ Inventing a decision or question the `.kai/state/` records don't show.
-- ❌ Re-narrating the week — that's `kai-core-pulse-digest`; the agenda is open loops only.
+- ❌ Re-narrating team activity; the agenda is a personal open-loop view.
 - ❌ Ordering by recency instead of who's-blocked-and-by-when.
 - ❌ Surfacing a `snoozed` task before its `snooze_until`, or a `proposed` task
   as if it were a commitment.

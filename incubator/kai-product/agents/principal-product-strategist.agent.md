@@ -180,7 +180,7 @@ exploration or an unrelated surface, load nothing and work context-free.
 catalog, keeping source register, evidence basis, disposition and validity
 explicit. Write the
 working draft at the path above — the
-`.kai/runs/` is gitignored by `workflow-workspace-init`,
+`.kai/runs/` is gitignored by `kai-core-workspace-onboarding`,
 so you never manage `.gitignore` yourself — then publish the accepted catalog
 to
 `<project-root>/<publication-root>/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`

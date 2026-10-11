@@ -7,6 +7,7 @@ import {
   collectReferences,
   hoistedSkillRouteErrors,
   referenceCycleErrors,
+  sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
 
@@ -46,6 +47,14 @@ test('create-agent keeps roles focused and routes shared context just in time', 
   assert.match(body, /invoke `kai-core-contract-v1`\s+immediately before that Core skill/);
   assert.match(body, /Do not add an `\*\*Inherits:\*\*` line/);
   assert.match(body, /A conditional route is still just in time/);
+  assert.match(body, /Never create a\s+`workflow-\*` agent/);
+});
+
+test('active agents use responsibility identities rather than workflow prefixes', () => {
+  assert.deepEqual(
+    sourceAgentFiles(root).filter(entry => entry.id.startsWith('workflow-')),
+    [],
+  );
 });
 
 test('authoring validation rejects collected Core preflight routes', () => {
