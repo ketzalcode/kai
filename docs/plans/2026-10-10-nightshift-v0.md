@@ -24,7 +24,7 @@ silently adding them to pull requests.
 
 ### The workflow profile owns routing
 
-`workflow-nightshift.agent.md` classifies each slice as `frontend` or
+`eng-nightshift.agent.md` classifies each slice as `frontend` or
 `backend` and records whether the already-approved Task requires independent
 review. The operator does not select an agent or model.
 
@@ -109,7 +109,7 @@ published through the existing asset lifecycle.
 
 Use Copilot CLI programmatic autopilot with:
 
-- `--agent workflow-nightshift`;
+- `--agent <routed-builder-or-delivery-profile>`;
 - `--autopilot`;
 - `--no-ask-user`;
 - `--allow-all-tools`, required by non-interactive prompt mode;
@@ -224,7 +224,7 @@ Expected before implementation: focused failures for the missing surfaces.
 
 Create:
 
-- `plugins/kai-engineering/agents/workflow-nightshift.agent.md`;
+- `plugins/kai-engineering/agents/eng-nightshift.agent.md`;
 - `plugins/kai-engineering/skills/nightshift-run/SKILL.md`; and
 - `plugins/kai-engineering/skills/nightshift-run/references/morning-report.md`.
 

@@ -18,6 +18,7 @@ import {incubatedIds} from './incubation-contract.mjs';
 import { bundlePack } from './bundle.mjs';
 import {
   ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+  NAMED_CAPABILITY_AGENTS,
   KIND_AGENT_FAMILIES, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
   agentProfileModelErrors as profileModelErrors,
 } from '../../src/core/lib/agent-model-policy.mjs';
@@ -898,6 +899,7 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 export {
   ROLE_FAMILY_PACK, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
   ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+  NAMED_CAPABILITY_AGENTS,
 } from '../../src/core/lib/agent-model-policy.mjs';
 const RETIRED_AGENT_FAMILIES = [
   'principal', 'director',
@@ -936,6 +938,12 @@ const RETIRED_AGENT_IDS = new Set(
 // namespace with enforced posture and placement.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
+  const namedCapability = NAMED_CAPABILITY_AGENTS[id] ?? null;
+  if (namedCapability) {
+    return namedCapability.pack === pack
+      ? []
+      : [`named capability agent \`${id}\` belongs to ${packPluginName(namedCapability.pack)}, not ${packPluginName(pack)}`];
+  }
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
     return RETIRED_AGENT_IDS.has(id)
       ? []
@@ -966,6 +974,7 @@ export function agentTaxonomyErrors({ id, pack }) {
 
 export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
+  if (NAMED_CAPABILITY_AGENTS[id]) return true;
   if (['director', 'principal', 'workflow'].includes(family)) return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }

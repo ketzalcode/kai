@@ -174,7 +174,7 @@ the night:
 
 Role and model selection do not belong in the envelope.
 
-`workflow-nightshift.agent.md` owns workflow routing. Each selected agent
+`eng-nightshift.agent.md` owns workflow routing. Each selected agent
 profile owns its model, tools, and domain instructions, as other Kai agents do
 today. The runner invokes the selected profile without restating or overriding
 its model. A missing, ambiguous, or unsupported route is a blocker, not
@@ -468,7 +468,7 @@ drift enters recovery rather than being silently rebased.
 
 | Surface | Responsibility |
 | --- | --- |
-| `workflow-nightshift.agent.md` | Explicit PREPARE and RECONCILE entry point, routing policy, delivery boundary, and hard authority limits. |
+| `eng-nightshift.agent.md` | Explicit PREPARE and RECONCILE entry point, routing policy, delivery boundary, and hard authority limits. |
 | `nightshift-run` skill | Task selection, slice lifecycle, self-unblocking, evidence, blocker, and report procedure. |
 | Engineering runner | Durable serial orchestration of fresh programmatic Copilot sessions, isolated worktrees, run limits, checkpoints, and reconciliation. |
 | Engineering publication vocabulary | Private Nightshift report and evidence route associated with the authorized hierarchy subject. |

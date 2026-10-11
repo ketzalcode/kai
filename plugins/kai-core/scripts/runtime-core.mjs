@@ -916,6 +916,12 @@ var ROLE_POSTURE_PROFILES = Object.freeze({
   coordinator: Object.freeze(["coordination"]),
   advisor: Object.freeze(["judgment", "technical-judgment", "advisory"])
 });
+var NAMED_CAPABILITY_AGENTS = Object.freeze({
+  "eng-nightshift": Object.freeze({
+    pack: "engineering",
+    profiles: Object.freeze(["technical-judgment"])
+  })
+});
 var KIND_AGENT_PROFILES = Object.freeze({
   workflow: Object.freeze(["procedure"]),
   persona: Object.freeze(["simulation"]),
@@ -943,7 +949,8 @@ function agentProfileModelErrors({ id, body, fm = {} }) {
   const [family, posture] = (id ?? "").split("-");
   const isDurableRole = family in ROLE_FAMILY_PACK;
   const isNewKind = KIND_AGENT_FAMILIES.includes(family);
-  if (!isDurableRole && !isNewKind) return [];
+  const namedCapability = NAMED_CAPABILITY_AGENTS[id] ?? null;
+  if (!isDurableRole && !isNewKind && !namedCapability) return [];
   const errors = [];
   const profiles = [...(body ?? "").matchAll(
     /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
@@ -958,9 +965,10 @@ function agentProfileModelErrors({ id, body, fm = {} }) {
     errors.push(`primary profile \`${profile}\` has no approved model mapping`);
     return errors;
   }
-  const allowed = isDurableRole ? ROLE_POSTURE_PROFILES[posture] : KIND_AGENT_PROFILES[family];
+  const allowed = namedCapability?.profiles ?? (isDurableRole ? ROLE_POSTURE_PROFILES[posture] : KIND_AGENT_PROFILES[family]);
   if (!allowed?.includes(profile)) {
-    errors.push(`${isDurableRole ? `posture \`${posture}\`` : `kind \`${family}\``} requires primary profile ${(allowed ?? []).map((value) => `\`${value}\``).join(" or ") || "(none)"}, not \`${profile}\``);
+    const owner = namedCapability ? `named capability \`${id}\`` : isDurableRole ? `posture \`${posture}\`` : `kind \`${family}\``;
+    errors.push(`${owner} requires primary profile ${(allowed ?? []).map((value) => `\`${value}\``).join(" or ") || "(none)"}, not \`${profile}\``);
   }
   const model = (fm.model ?? "").trim().replace(/^(['"])(.*)\1$/, "$2");
   if (!model) {

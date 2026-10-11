@@ -97,7 +97,7 @@ test('active engineering agents require explicit invocation', () => {
     'eng-lead-software',
     'eng-reviewer-code',
     'eng-lead-technical-writing',
-    'workflow-nightshift',
+    'eng-nightshift',
   ]) {
     assert.match(readAgent(id), /^disable-model-invocation:\s*true$/m);
   }

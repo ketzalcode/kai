@@ -13,6 +13,8 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {
+  agentProfileModelErrors,
+  agentTaxonomyErrors,
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
@@ -239,7 +241,9 @@ function workspaceFixture() {
 }
 
 test('Nightshift is an explicit manual workflow over current engineering roles', () => {
-  const workflow = readAgent('workflow-nightshift');
+  const workflow = readAgent('eng-nightshift');
+  assert.match(workflow, /^model:\s*"gpt-5\.6-sol"$/m);
+  assert.match(workflow, /\*\*Primary profile:\*\* technical-judgment/);
   assert.match(workflow, /^model:\s*"[^"]+"$/m);
   assert.match(workflow, /^disable-model-invocation:\s*true$/m);
   assert.match(workflow, /Apply `nightshift-run`/);
@@ -257,6 +261,22 @@ test('Nightshift is an explicit manual workflow over current engineering roles',
   assert.match(workflow, /Never merge, deploy, tag, release/);
   assert.match(workflow, /does not rewrite its own instructions/);
   assert.match(workflow, /automatically create[\s\S]*GitHub issue/i);
+});
+
+test('eng-nightshift is a named capability with technical-judgment model policy', () => {
+  assert.deepEqual(agentTaxonomyErrors({
+    id: 'eng-nightshift',
+    pack: 'engineering',
+  }), []);
+  assert.deepEqual(agentProfileModelErrors({
+    id: 'eng-nightshift',
+    body: '**Primary profile:** technical-judgment',
+    fm: {model: '"gpt-5.6-sol"'},
+  }), []);
+  assert.match(agentTaxonomyErrors({
+    id: 'eng-nightshift',
+    pack: 'core',
+  }).join('\n'), /belongs to kai-engineering/i);
 });
 
 test('Nightshift skill protects required-first delivery and structured blockers', () => {

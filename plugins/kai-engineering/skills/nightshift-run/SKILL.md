@@ -1,6 +1,6 @@
 ---
 name: nightshift-run
-description: "Use inside workflow-nightshift to prepare, execute, or reconcile a bounded unattended engineering run with serial pull-request slices, structured blockers, exact evidence, and a morning report."
+description: "Use inside eng-nightshift to prepare, execute, or reconcile a bounded unattended engineering run with serial pull-request slices, structured blockers, exact evidence, and a morning report."
 tools: [execute, read, edit, search, ask_user, agent, read_agent, write_agent, skill]
 ---
 
@@ -39,7 +39,7 @@ Each slice has:
 - accepted criteria;
 - touched areas;
 - one observable completion check;
-- one `frontend` or `backend` route selected by `workflow-nightshift`;
+- one `frontend` or `backend` route selected by `eng-nightshift`;
 - the already-approved `reviewRequired` decision;
 - deterministic branch;
 - explicit slice dependencies; and

@@ -54,6 +54,7 @@ Choose the kind from the responsibility, not from a title:
 | Kind | Qualification | Identity form |
 | --- | --- | --- |
 | Durable role | Holds standing judgment or execution responsibility across requests. | `<family>-<posture>-<scope>` |
+| Named capability role | Holds a standing product entry point whose capability name is clearer than a posture label. | `<family>-<capability>`; exact ID, pack, and profiles are registered in `NAMED_CAPABILITY_AGENTS` |
 | Workflow | Runs a bounded procedure with a defined completion condition. | `workflow-<outcome>` |
 | Persona | Represents a user or stakeholder viewpoint without delivery authority. | `persona-<viewpoint>` |
 | Instructor | Teaches or structures learning for the operator. | `instructor-<teaching-scope>` |
@@ -96,13 +97,13 @@ or use a bounded workflow instead.
 ### Execution profiles and models
 
 Agent model policy is deterministic and versioned as
-`kai-agent-models-v2`. Declare exactly one
+`kai-agent-models-v3`. Declare exactly one
 `**Primary profile:** <profile>` line and use the exact quoted model:
 
 | Profile | Allowed posture or kind | Required model |
 | --- | --- | --- |
 | `judgment` | `lead`, `advisor` | `claude-opus-5` |
-| `technical-judgment` | `lead`, `advisor` | `gpt-5.6-sol` |
+| `technical-judgment` | `lead`, `advisor`, named capability `eng-nightshift` | `gpt-5.6-sol` |
 | `review` | `reviewer` | `claude-opus-5` |
 | `technical-review` | `reviewer` | `gpt-5.6-terra` |
 | `execution` | `builder` | `claude-sonnet-5` |

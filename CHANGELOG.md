@@ -8,7 +8,7 @@ follow semantic versioning.
 
 ### Added
 
-- Added `workflow-nightshift` for explicitly approved unattended engineering
+- Added `eng-nightshift` for explicitly approved unattended engineering
   runs that deliver bounded pull-request slices serially and stop at current
   Direction, scope, authority, and run limits.
 - Added `nightshift-run` with required-first delivery, structured Core
@@ -22,6 +22,9 @@ follow semantic versioning.
 
 - Added `reports/nightshift` to the Engineering publication vocabulary for
   private plans, ledgers, evidence, and morning reports.
+- Registered `eng-nightshift` as a named Engineering capability agent with the
+  `technical-judgment` profile and GPT-5.6 Sol, keeping the user-facing name
+  independent of workflow implementation terminology.
 - Extended the Engineering package description and catalog to include bounded
   unattended delivery.
 

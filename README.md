@@ -80,7 +80,7 @@ Counts come from `plugins/` and are checked against the generated
 **[agents & skills catalog](docs/reference/agents-and-skills.md)** by `npm test`.
 They describe source ownership, not runtime quality.
 
-`workflow-nightshift` is the explicit unattended path. One approved run
+`eng-nightshift` is the explicit unattended path. One approved run
 executes bounded pull-request slices serially in isolated worktrees, delivers
 required outcomes first, preserves structured blockers, and leaves broader or
 lower-confidence ideas in a private morning report. It never infers merge,

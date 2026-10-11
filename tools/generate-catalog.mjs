@@ -47,7 +47,7 @@ const CATEGORIES = [
     blurb: 'Implement bounded frontend and backend work, explicitly coordinate a complete change, or run approved unattended delivery.',
     members: [
       'eng-lead-software', 'eng-builder-frontend', 'eng-builder-backend',
-      'workflow-nightshift',
+      'eng-nightshift',
     ],
   },
   {
