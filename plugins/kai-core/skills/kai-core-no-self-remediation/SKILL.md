@@ -57,9 +57,9 @@ answer is no because of something you wrote, you have remediated.
 
 Exactly two places:
 
-1. **Your assessment output root** — the run path your own skill resolves
-   (`kai-core-web-evaluation`, `kai-core-workspace-paths`, or the path your profile
-   names). Reports, findings, screenshots, evidence, scaffolds.
+1. **Your assessment output root** — the run path resolved through
+   `kai-core-workspace-paths` or named by your profile. Reports, findings,
+   screenshots, evidence, scaffolds.
 2. **Coordination and activity records** — the Task, typed messages, and
    `.kai/core/runtime/activity.jsonl` via `kai-core-work-acting` and
    `kai-core-work-activity`. These make the review visible; they are not the

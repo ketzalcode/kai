@@ -32,9 +32,9 @@ is an installable plugin. Regenerate those on re-entry.
 | Package | Agents | Skills | Notes |
 | --- | ---: | ---: | --- |
 | `kai-assistant` | 2 | 4 | [PACKAGE.md](kai-assistant/PACKAGE.md) |
-| `kai-learning` | 5 | 1 | [PACKAGE.md](kai-learning/PACKAGE.md) |
+| `kai-learning` | 5 | 2 | [PACKAGE.md](kai-learning/PACKAGE.md) |
 | `kai-marketing` | 4 | 2 | [PACKAGE.md](kai-marketing/PACKAGE.md) |
-| `kai-product` | 10 | 1 | [PACKAGE.md](kai-product/PACKAGE.md) |
+| `kai-product` | 10 | 2 | [PACKAGE.md](kai-product/PACKAGE.md) |
 | `kai-revenue` | 7 | 0 | [PACKAGE.md](kai-revenue/PACKAGE.md) |
 
 These packages were never in the default marketplace index, so incubating them
@@ -53,8 +53,8 @@ package's directory.
 
 | Package | Contents |
 | --- | --- |
-| `kai-creative` | [The `demo-capture` live-recording command](kai-creative/README.md), parked by [#226](https://github.com/RubenSaucedo/kai/issues/226) |
-| `kai-engineering` | [Document review, architecture, platform, and release components](kai-engineering/README.md), with re-entry requirements tracked per component |
+| `kai-creative` | [`demo-capture` and design grounding](kai-creative/README.md) |
+| `kai-engineering` | [Document review, architecture, platform, issue analysis, and unsupported fleet observation](kai-engineering/README.md) |
 
 ## Returning something to the active tree
 

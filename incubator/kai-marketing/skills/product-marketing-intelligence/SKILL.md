@@ -108,10 +108,9 @@ notes** — plus reading what a map already established.
 
 - Read-only. Never submit payment, delete, publish, invite, message, or perform
   any irreversible action to "explore" a flow.
-- For live public browser intake, Load `kai-core-web-evaluation` for read-only
-  navigation, login-pause and cited screenshots; keep cookies, tokens, and
-  `storageState*.json` local and unindexed. Load `kai-core-web-content-extraction`
-  only when harvesting readable public copy. Neither runs for supplied inputs.
+- Live browser intake is unavailable while this package is incubated. Use
+  supplied public copy, maps, screenshots, and media; preserve their provenance
+  and mark missing live coverage unknown.
 - Every media asset is **copied into**
   `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/media/` and referenced by a
   workspace-root-relative path. Never persist an external absolute path or a

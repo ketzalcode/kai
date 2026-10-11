@@ -22,7 +22,7 @@ installable.
   +-----------------------------------------------------------------------+
   | kai-core                                                              |
   | 0 agents; shared skills, workspace and coordination runtime             |
-  | 6 JavaScript entry points; hooks and reusable templates                |
+  | 4 JavaScript entry points and reusable templates                       |
   +-----------------------------------------------------------------------+
 ```
 

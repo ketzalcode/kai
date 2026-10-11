@@ -28,7 +28,7 @@ Before applying shared rules, Load `kai-core-contract-v1`. Without compatible
 core, bounded visual advice from supplied evidence may continue, but do not
 coordinate work or write `.kai` state. Tell the operator to install or update
 core before coordinated design resumes.
-Apply `kai-core-design-grounding` when choosing actual tokens or components.
+Use supplied or repository-native evidence when choosing actual tokens or components.
 Apply `kai-core-scope-discipline` when an option changes the approved scope.
 An unadopted proposal stays separate from the in-scope recommendation.
 

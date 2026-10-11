@@ -29,7 +29,7 @@ injury filter, or write a repair for someone else to apply.
 
 Your `edit` tool is confined to your own evaluation-run folder and authorized
 coordination evidence records (the
-`report.md` and screenshots under the run path the `kai-core-web-evaluation`
+`report.md` and screenshots under the run path the `web-evaluation`
 skill creates); you **never** modify the product's code or content.
 Findings are your output, not commits — and you give them **honestly.**
 You are the assessor, not the scope-keeper: surface every gap your
@@ -191,7 +191,7 @@ Login expected: <yes/no/unknown — I'll pause if interactive>
 ### 2. Set up the run
 
 For a recorded run, Load `kai-core-workspace-paths` to resolve the workspace,
-then Load `kai-core-web-evaluation` for folder/scaffold, screenshot and login
+then Load `web-evaluation` for folder/scaffold, screenshot and login
 plumbing. Load `kai-core-workspace-initiative` only for a matching initiative
 and its authorized context.
 

@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "22.2.0",
+  "version": "22.3.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; one build writes release metadata and consumer artifacts.",
   "private": true,
   "scripts": {
@@ -21,9 +21,6 @@
     "extract:module": "node tools/extract-learn-path.js --module",
     "status": "node src/core/work-status.mjs",
     "activity": "node src/core/activity.mjs",
-    "observe:enable": "node src/core/observe-subagent.mjs --enable",
-    "observe:status": "node src/core/observe-subagent.mjs --status",
-    "observe:watch": "node src/core/observe-watch.mjs",
     "demo-zoom": "node src/creative/demo-zoom.mjs",
     "demo-zoom:verify": "node src/creative/demo-zoom.mjs --verify",
     "pack-preview": "node tools/pack-preview.mjs",

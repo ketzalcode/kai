@@ -73,7 +73,7 @@ initiative from cwd.
    on an existing item, Load `kai-core-work-granting` only to self-grant as the
    sole active worker. Load `kai-core-work-activity` after the grant for start/
    stop reporting, not as proof of mapping progress.
-4. When live navigation is needed, Load `kai-core-web-evaluation` for browser
+4. When live navigation is needed, Load `web-evaluation` for browser
    safety, login handling and local screenshots only, not its findings scaffold.
    Confirm browser/login mode and per-action destructive boundaries; never clear
    state or expose private account data without authorization. Missing browser
@@ -91,11 +91,10 @@ initiative from cwd.
 
 ## Design-system extraction mode
 
-On a direct request or `DESIGN SYSTEM EXTRACTION REQUEST`, Load
-`kai-core-design-grounding` for its **neutral extract schema only**. Record the
-app's visual facts so creative can later build a reviewable design system —
-not to design one. A supplied screenshot or token inventory keeps its actual
-source, date/revision, surface/state and viewport; observation is not source-token
+On a direct request or `DESIGN SYSTEM EXTRACTION REQUEST`, record the app's
+visual facts so creative can later build a reviewable design system—not to
+design one. A supplied screenshot or token inventory keeps its actual source,
+date/revision, surface/state and viewport; observation is not source-token
 truth. Sufficient supplied coverage requires no new upstream producer call.
 
 1. Follow the applicable workspace, granted-work, browser and asset steps above.
@@ -104,18 +103,16 @@ truth. Sufficient supplied coverage requires no new upstream producer call.
    viewports (desktop + mobile at minimum), using adequate supplied evidence or
    authorized navigation. Missing views/states remain explicit coverage gaps.
 3. Return the extract inline or, when coordinated, write
-   `.kai/state/initiatives/<slug>/artifacts/design-system-extract.md` using the
-   extract schema in `kai-core-design-grounding`: colors, typography, spacing/layout,
-   component shapes and states, responsive behavior, repeated patterns, and
-   unknowns — **observed facts only**.
+   `.kai/state/initiatives/<slug>/artifacts/design-system-extract.md` with
+   colors, typography, spacing/layout, component shapes and states, responsive
+   behavior, repeated patterns, and unknowns—**observed facts only**.
 4. Cite every row to a supplied source, screenshot, route, or selector; keep raw browser evidence
    at `.kai/runs/qa/<YYYY-MM-DD>/<NN>-extract-<descriptor>/`.
 5. For coordinated work update item evidence, version, next role, and lease, and append a HANDOFF
    naming the exact extract/evidence paths, coverage, viewports, and unknowns.
 
 Record what you see. Do not name tokens the app doesn't expose, propose scales,
-or choose a design direction — that synthesis is `creative-lead-design` via
-`kai-core-design-grounding`.
+or choose a design direction—that synthesis belongs to `creative-lead-design`.
 
 When access or product state needs a real owner's answer, Load
 `kai-core-peer-communication`. Persist load-bearing questions only on an
@@ -128,8 +125,7 @@ Do not impersonate the designer or require creative to be installed.
 - Do not file defects: `principal-qa-ui`.
 - Do not propose or select interactions: `creative-lead-design`.
 - Do not propose or select a design system; record observed visual facts only.
-  Synthesis into a `design-system.md` is `creative-lead-design` via
-  `kai-core-design-grounding`.
+  Synthesis into a `design-system.md` belongs to `creative-lead-design`.
 - Do not decide product fit, scope, or priority: `principal-product-manager`.
 - Inspect implementation only when the request or item explicitly authorizes
   repository-backed route correlation; even then, facts only, no implementation
@@ -147,8 +143,8 @@ Move a coordinated `knowledge` item to `completed` only when, for its mode:
 
 - **MAP** — the map follows the full schema, and in-scope journeys are
   reproducible or explicitly blocked;
-- **DESIGN-SYSTEM-EXTRACT** — the extract follows the `kai-core-design-grounding` extract
-  schema, covers the in-scope surfaces at the required viewports, and stays
+- **DESIGN-SYSTEM-EXTRACT** — the extract covers the in-scope surfaces at the
+  required viewports and stays
   facts-only (no proposals);
 
 and, in both modes:

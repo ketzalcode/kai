@@ -31,7 +31,7 @@ If core is unavailable, only summarize supplied evidence inline, with coverage
 limits; write no `.kai` state and tell the operator to install or update
 `kai-core` before persistent or coordinated exploration.
 
-For live observation, Load `kai-core-web-evaluation` only for browser safety,
+For live observation, Load `web-evaluation` only for browser safety,
 login handling, screenshot naming and the local run folder; do not use its
 evaluation scaffold or finding taxonomy. PM, creative, professional personas,
 QA and engineering can consume the resulting map without being called to make it.

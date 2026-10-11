@@ -94,9 +94,9 @@ const CATEGORIES = [
     blurb: 'Shared operating, scope, communication, activity, completion, and durable asset lifecycle contracts.',
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
-      'kai-core-fleet-observation', 'kai-core-definition-of-done',
+      'kai-core-definition-of-done',
       'kai-core-scope-discipline', 'kai-core-no-self-remediation',
-      'kai-core-issue-analysis', 'kai-core-peer-communication',
+      'kai-core-peer-communication',
       'kai-core-contract-v1', 'kai-core-create-agent',
       'kai-core-create-skill',
       'kai-core-asset-producing', 'kai-core-asset-closing',
@@ -117,12 +117,6 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Design grounding',
-    blurb: 'The shared design-system grounding contract, with the frontend seam.',
-    members: ['kai-core-design-grounding'],
-  },
-  {
-    kind: 'skill',
     title: 'Creative methods',
     blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
     members: [
@@ -132,11 +126,9 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Web & content',
-    blurb: 'Browser-run plumbing, content methods, and the claim safety creative content rests on.',
-    members: [
-      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'content-grounding',
-    ],
+    title: 'Content grounding',
+    blurb: 'Claim safety for creative content.',
+    members: ['content-grounding'],
   },
 ];
 

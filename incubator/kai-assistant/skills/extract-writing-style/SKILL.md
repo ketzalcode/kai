@@ -510,6 +510,5 @@ Don't bluff confident attributes on a thin corpus.
 
 - `write-in-user-voice` — the method that applies this profile to a draft.
 - `personal-assistant` and `persona-self` — the roles that request it.
-- Sister skills: `kai-core-web-content-extraction` (different lane —
-  extracts someone else's content for reading), `kai-core-web-evaluation`
-  (UI evaluation, not text analysis).
+- Browser extraction and UI evaluation belong to their incubated domain
+  packages, not this voice-analysis method.

@@ -271,9 +271,8 @@ export const PACKS_DIR = 'plugins';
 
 // Where product source lives. A shipped body invokes `scripts/foo.mjs` — the
 // path a consumer actually runs — while the file is authored at
-// `src/<pack>/foo.mjs`. The shipped path is deliberately unchanged, so
-// `hooks.json` and every markdown command string keep working; only the
-// authoring location moved.
+// `src/<pack>/foo.mjs`. The shipped path is deliberately unchanged, so every
+// markdown command string keeps working; only the authoring location moved.
 export const SRC_DIR = 'src';
 
 // The prefix a shipped instruction uses for an executable. It is a shipped
@@ -344,14 +343,6 @@ export function assetLocationErrors({ assets, index }) {
 }
 
 
-
-// The host executes hooks.json itself, on every subagent, for everyone who
-// installs the plugin that ships it. Two installed packs carrying it means the
-// observer runs twice per subagent; none carrying it means it never runs. So it
-// is assigned to exactly one pack, and core is that pack: the one plugin every
-// department already requires.
-export const HOOKS_FILE = 'hooks.json';
-export const HOOKS_OWNER = 'core';
 
 // Whole packages moved into `incubator/` while development returns to core.
 // They are not discovered, not validated as packs and not emitted; their source
@@ -699,10 +690,6 @@ export function materializePacks({
     for (const [shipped, text] of bundled.files) {
       files.set(`${packPluginName(pack)}/${shipped}`, normalizeLF(text));
     }
-  }
-  if (selected.has(HOOKS_OWNER)) {
-    files.set(`${packPluginName(HOOKS_OWNER)}/${HOOKS_FILE}`,
-      normalizeLF(readFileSync(join(root, HOOKS_FILE), 'utf8')));
   }
   if (selected.has('core')) {
     // Onboarding reads this data file; executable/module routing cannot discover it.
@@ -1315,7 +1302,6 @@ export function parseGeneratedKey(key, packs = PACK_ORDER) {
   if (rest.length === 1 && rest[0] === 'plugin.json') return { ...at, kind: 'manifest', id: null };
   if (rest.length === 1 && rest[0] === 'package.json') return { ...at, kind: 'package', id: null };
   if (rest.length === 1 && rest[0] === 'package-lock.json') return { ...at, kind: 'lock', id: null };
-  if (rest.length === 1 && rest[0] === HOOKS_FILE) return { ...at, kind: 'hooks', id: null };
   if (rest.length === 2 && rest[0] === 'agents' && rest[1].endsWith('.agent.md')) {
     return { ...at, kind: 'agent', id: rest[1].replace(/\.agent\.md$/, '') };
   }
@@ -1752,103 +1738,6 @@ export function generatedRuntimeErrors(files, packs = PACK_ORDER) {
           msg: `imports \`${specifier}\`, which is missing from ${entry.dir}`,
         });
       }
-    }
-  }
-  return errs;
-}
-
-// hooks.json is assigned to exactly one pack, and the scripts it runs ship in
-// that same pack. Pure: `owners` is every pack claiming the file, `hookAssets`
-// the plugin-relative commands it runs, `assets` the plan from planAssets.
-
-// The one place a hook command's plugin-relative path is recognised. The host
-// executes these on every subagent, so the validator and the CI gate read them
-// with the same expression rather than each carrying its own.
-export const HOOK_ASSET_RE = /\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/;
-
-const hookAssetMatches = (command) =>
-  [...command.matchAll(/\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/g)].map((match) => match[1]);
-
-const HOOK_ASSET_PATH = /^scripts\/[A-Za-z0-9_-]+\.(?:mjs|js|cjs|ps1|sh|py)$/;
-
-export function hookAssetReferenceErrors(text) {
-  let cfg;
-  try { cfg = JSON.parse(text); } catch { return []; }
-  const errs = [];
-  for (const [event, entries] of Object.entries(cfg.hooks ?? {})) {
-    for (const [index, entry] of (Array.isArray(entries) ? entries : []).entries()) {
-      const command = entry.command || entry.bash || entry.powershell || '';
-      const assets = hookAssetMatches(command);
-      if (assets.length > 1) {
-        errs.push({
-          file: HOOKS_FILE,
-          msg: `${event}[${index}] contains ${assets.length} \${PLUGIN_ROOT} paths — one hook command `
-            + 'must invoke one owned asset so routing is unambiguous',
-        });
-      }
-      for (const asset of assets) {
-        if (HOOK_ASSET_PATH.test(asset)) continue;
-        errs.push({
-          file: HOOKS_FILE,
-          msg: `${event}[${index}] invokes \`${asset}\` outside the supported top-level `
-            + '`scripts/<name>.<ext>` asset key-space',
-        });
-      }
-    }
-  }
-  return errs;
-}
-
-// The scripts a hooks.json runs, in declaration order, deduplicated. Invalid
-// JSON yields nothing: its own error is reported where the file is parsed.
-export function hookAssetsIn(text) {
-  let cfg;
-  try { cfg = JSON.parse(text); } catch { return []; }
-  const out = new Set();
-  for (const entries of Object.values(cfg.hooks ?? {})) {
-    for (const entry of Array.isArray(entries) ? entries : []) {
-      const command = entry.command || entry.bash || entry.powershell || '';
-      for (const asset of hookAssetMatches(command)) out.add(asset);
-    }
-  }
-  return [...out];
-}
-
-export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Map(), packs = PACK_ORDER }) {
-  const errs = [];
-  const file = HOOKS_FILE;
-  if (owners.length === 0) {
-    errs.push({
-      file,
-      msg: 'is assigned to no pack — the host-executed subagent observer would ship in no plugin at all',
-    });
-  } else if (owners.length > 1) {
-    errs.push({
-      file,
-      msg: `is claimed by ${owners.map(packPluginName).join(' and ')} — the host loads every installed `
-        + 'copy, so the observer would fire once per pack on every subagent',
-    });
-  }
-  for (const owner of owners) {
-    if (!packs.includes(owner)) errs.push({ file, msg: `is assigned to "${owner}", which is not a pack` });
-  }
-  const owner = owners.length === 1 ? owners[0] : null;
-  for (const asset of hookAssets) {
-    const entry = assets.get(asset);
-    if (!entry) {
-      errs.push({
-        file,
-        msg: `runs \`${asset}\`, which no pack owns — a hook cannot point at a file its own plugin `
-          + 'does not ship',
-      });
-      continue;
-    }
-    if (owner && entry.owner !== owner) {
-      errs.push({
-        file,
-        msg: `runs \`${asset}\`, owned by ${packPluginName(entry.owner)}, but ships in `
-          + `${packPluginName(owner)} — \${PLUGIN_ROOT} resolves inside the hook's own plugin`,
-      });
     }
   }
   return errs;

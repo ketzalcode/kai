@@ -1,79 +1,54 @@
 ---
 name: kai-core-create-epic
-description: "Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning."
-tools: [execute, read, edit, search, ask_user]
+description: "Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Task planning."
+tools: [execute, read, search, ask_user]
 user-invocable: true
 argument-hint: "approved outcome and target workspace"
 ---
 
 # Create an Epic
 
-Shape and submit one Direction-aligned Epic proposal. This is an explicit
-procedure, not a standing role. It creates no record before the named authority
-approves the complete proposal.
+Prepare and submit one proposed Epic. This procedure never activates it, creates
+descendants, changes priority, or starts implementation.
 
-## Establish authority
+## Resolve
 
-Invoke `kai-core-contract-v1` immediately before the first other Core skill.
-If Core is unavailable or incompatible, discuss the outcome only as a
-single-shot suggestion; create no `.kai` state and claim no coordinated work.
-
-Apply `kai-core-operating-rules` before handling authority or operator gates.
-The operator owns Direction. Named scope and completion authorities own the
-Epic boundaries and exact acceptance.
+Apply `kai-core-workspace-paths` before resolving the exact schema-5 workspace,
+project, Direction, and coordination runtime.
 
 Require:
 
-- exact workspace and target project;
-- current `docs/kai/DIRECTION.md`;
-- an observable outcome that advances the Current Goal;
-- proposed owner, scope authority, and completion authority;
-- priority, contribution, scope fit, outcome, and acceptance;
-- initial required and optional Feature boundaries; and
-- the named authority who may approve the proposal.
+- an observable outcome advancing the current Goal;
+- owner, scope authority, completion authority, and proposal approver;
+- contribution, scope fit, priority, outcome, and acceptance; and
+- initial required and optional Feature boundaries.
 
-Missing detail is not permission to invent it. A suggestion without named
-authority approval remains conversational.
+The operator owns Direction. Missing authority or hierarchy detail is not
+permission to invent it.
 
-## Prepare the proposal
+## Propose
 
-Apply `kai-core-workspace-paths` before resolving the workspace, project,
-Direction, and coordination runtime.
+Read current Direction and existing Epic IDs through the runtime. Verify the
+proposal advances the Goal, respects Out of Scope, has disjoint required and
+optional Feature IDs, and names all authorities.
 
-Apply `kai-core-work-hierarchy` before shaping the Epic. Verify:
+Present the complete proposal and exact approval request. Use `ask_user` only
+when the named approver is the operator. Confidence, role installation, or a
+chat hint is not approval.
 
-- contribution advances the exact Current Goal;
-- scope respects Vision, Mission, and Out of Scope;
-- authorities, priority, outcome, and acceptance are explicit;
-- required and optional Feature IDs are disjoint and use shipped pack
-  namespaces; and
-- no existing Epic ID conflicts.
+## Submit
 
-Present the complete proposal and exact authority request. Use `ask_user` when
-the named authority is the operator. Confidence, a chat hint, or role
-installation is not approval.
+Stop if approval is missing, ambiguous, stale, or from another actor.
 
-## Submit after approval
-
-Stop if approval is absent, ambiguous, stale, or from another actor.
-
-Apply `kai-core-work-stewardship` before the promotion decision.
-
-Apply `kai-core-work-acting` immediately before the state-changing command,
-then submit one `epic.create` through:
+Apply `kai-core-work-acting` immediately before the state-changing command:
 
 ```text
 node "<kai-plugin>/scripts/coordinate.mjs" apply --root "<workspace-root>"
 ```
 
-Bind the runtime-computed current Direction reference. Create only a `proposed`
-Epic; never activate the proposal, create descendants, change priority, or
-start implementation.
+Submit one `epic.create` with the runtime-computed current Direction reference.
+Treat every runtime refusal as a stop; never rewrite authority to make the
+command pass.
 
-Apply `kai-core-work-activity` only after the command is accepted. Report the
-exact Epic ID, version, state, authorities, Direction hash, and next required
-authority action.
-
-Stop on Direction drift, scope conflict, missing authority, ID conflict,
-`VERSION_CONFLICT`, `AUTHORITY_REQUIRED`, `INVALID_INPUT`, or any other runtime
-refusal.
+Return the exact Epic ID, version, proposed state, authorities, Direction hash,
+and next named authority action.

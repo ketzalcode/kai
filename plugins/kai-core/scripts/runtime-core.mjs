@@ -4584,7 +4584,7 @@ function applyOperation(store, command2, mutate) {
   const internalCommand = snapshotJson(command2);
   validateCommand(internalCommand);
   if (typeof mutate !== "function") invalid3("operation mutate callback must be a function");
-  const digest3 = commandDigest(internalCommand);
+  const digest2 = commandDigest(internalCommand);
   let inTransaction = false;
   try {
     runSqlite(() => store.database.exec("BEGIN IMMEDIATE"));
@@ -4696,7 +4696,7 @@ function applyOperation(store, command2, mutate) {
     runSqlite(() => store.database.prepare(`
       INSERT INTO operations (id, payload_digest, receipt)
       VALUES (?, ?, ?)
-    `).run(internalCommand.operationId, digest3, canonicalJson(accepted2)));
+    `).run(internalCommand.operationId, digest2, canonicalJson(accepted2)));
     runSqlite(() => store.database.exec("COMMIT"));
     inTransaction = false;
     return accepted2;
@@ -4731,15 +4731,6 @@ var RUN_RE = /^[a-z0-9]{6,16}$/;
 var MAX_NOTE = 120;
 var MAX_LINE = 1024;
 var MAX_BYTES = 512 * 1024;
-function digest(input) {
-  let h1 = 2166136261, h2 = 16777619;
-  const s = String(input);
-  for (let i = 0; i < s.length; i++) {
-    h1 = Math.imul(h1 ^ s.charCodeAt(i), 16777619) >>> 0;
-    h2 = Math.imul(h2 + s.charCodeAt(i) + 1, 2246822507) >>> 0;
-  }
-  return (h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0")).slice(0, 12);
-}
 var ABSOLUTE = /(^|[\s"'(=])([A-Za-z]:[\\/]|\/(?:home|Users|root|mnt|var|tmp|etc)\b|\\\\|~[\\/])/;
 function looksAbsolute(s) {
   return typeof s === "string" && ABSOLUTE.test(s);
@@ -5104,18 +5095,18 @@ function exclusiveFile(root, path4, bytes) {
 function scanExactFile(root, path4, consume = () => {
 }) {
   return readExactFile(root, path4, (fd, expectedSize) => {
-    const digest3 = createHash4("sha256");
+    const digest2 = createHash4("sha256");
     const buffer = Buffer.alloc(64 * 1024);
     let size = 0;
     while (size < expectedSize) {
       const count = readSync(fd, buffer, 0, Math.min(buffer.length, expectedSize - size), null);
       if (!count) break;
       const chunk = buffer.subarray(0, count);
-      digest3.update(chunk);
+      digest2.update(chunk);
       consume(chunk);
       size += count;
     }
-    return { value: { digest: digest3.digest("hex"), size }, size };
+    return { value: { digest: digest2.digest("hex"), size }, size };
   });
 }
 var hash = (bytes) => createHash4("sha256").update(bytes).digest("hex");
@@ -5205,7 +5196,7 @@ function retainSubject(root, subject, projectId, runDirectory, artifactId) {
 }
 function verifyArtifact(root, artifact) {
   const entries = verifySubject(root, artifact.content_ref, artifact.project_id);
-  if (canonicalJson(entries) !== canonicalJson(artifact.snapshots.map(({ path: path4, digest: digest3 }) => ({ path: path4, digest: digest3 })))) {
+  if (canonicalJson(entries) !== canonicalJson(artifact.snapshots.map(({ path: path4, digest: digest2 }) => ({ path: path4, digest: digest2 })))) {
     fail5("EVIDENCE_GAP", "artifact snapshot manifest does not match its exact subject");
   }
   for (const snapshot of artifact.snapshots) {
@@ -5384,7 +5375,7 @@ function contextFor(storeOrTransaction) {
 
 // src/core/lib/coordination-runtime/input-basis.mjs
 import { createHash as createHash5 } from "node:crypto";
-var digest2 = (value) => createHash5("sha256").update(canonicalJson(value)).digest("hex");
+var digest = (value) => createHash5("sha256").update(canonicalJson(value)).digest("hex");
 var privacyRank = { public: 0, internal: 1, confidential: 2, personal: 3 };
 function captureInputBasis(context, tx, references, seen = /* @__PURE__ */ new Set(), observe) {
   return [...new Set(references)].sort().map((reference) => {
@@ -5394,7 +5385,7 @@ function captureInputBasis(context, tx, references, seen = /* @__PURE__ */ new S
     if (!match) {
       const subject = hashArtifact({ root: context.root, relativePath: reference });
       observe?.({ subject, classification: pathPrivacy(context.root, subject.path) });
-      return { reference, digest: digest2(subject) };
+      return { reference, digest: digest(subject) };
     }
     const [, kind, id] = match;
     const record2 = tx.get(kind, id);
@@ -5418,7 +5409,7 @@ function captureInputBasis(context, tx, references, seen = /* @__PURE__ */ new S
     if (!owner) fail5("EVIDENCE_GAP", `applicable input ${reference} has no owning hierarchy subject`);
     return {
       reference,
-      digest: digest2({
+      digest: digest({
         record: record2,
         ownerCriteria: criteriaRef(owner, (kind2, id2) => tx.get(kind2, id2))
       })
@@ -6210,8 +6201,8 @@ var requireKind = (kind) => {
 };
 function nativeWriterTokenPath(root, id) {
   const canonical = canonicalPath(root);
-  const digest3 = createHash6("sha256").update(canonical).digest("hex").slice(0, 12);
-  return join10(dirname9(canonical), `.${basename3(canonical)}.${digest3}.native-writer-${id}.lock`);
+  const digest2 = createHash6("sha256").update(canonical).digest("hex").slice(0, 12);
+  return join10(dirname9(canonical), `.${basename3(canonical)}.${digest2}.native-writer-${id}.lock`);
 }
 function capabilityId(id) {
   if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
@@ -12229,18 +12220,12 @@ export {
   hierarchyStatus,
   cli_exports,
   exactPath,
-  escapesRoot,
   inspectPrivateLanes,
   pathHasLink,
   WORKSPACE_SCHEMA_VERSION,
   COORDINATION_DATABASE,
   LOG_REL,
   FORBIDDEN_FIELDS,
-  MAX_LINE,
-  MAX_BYTES,
-  digest,
-  looksAbsolute,
-  safeNote,
   activityWorkspaceAdmission,
   append,
   read,

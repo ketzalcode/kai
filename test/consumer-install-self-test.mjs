@@ -165,8 +165,6 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
   const invocations = new Map([
     ['kai-core/scripts/activity.mjs', ['--help']],
     ['kai-core/scripts/coordinate.mjs', ['direct']],
-    ['kai-core/scripts/observe-subagent.mjs', ['--status', '--root', consumerRoot]],
-    ['kai-core/scripts/observe-watch.mjs', ['--once', '--root', consumerRoot]],
     ['kai-core/scripts/work-status.mjs', ['--root', consumerRoot, '--json']],
     ['kai-core/scripts/workspace-doctor.mjs', ['--root', consumerRoot, '--json']],
     ['kai-engineering/scripts/nightshift.mjs', ['--help']],

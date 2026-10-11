@@ -14,7 +14,7 @@
 //     carries no copied dependency guard; the probe marker and contract version
 //     remain rigid at their single source, the probe skill and its body;
 //   • cross-pack references — every routed, user-invoked and orchestrated
-//     reference, plus every invoked script and hooks.json itself, resolves to
+//     reference, plus every invoked script, resolves to
 //     core or to the referring body's own pack;
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
@@ -32,13 +32,13 @@ import {
   marketplaceSurfacePolicy,
   materializePacks,
   CONTRACT_SKILL,
-  HOOKS_OWNER, HOOK_ASSET_RE, loadedSkills, packProviders,
+  loadedSkills, packProviders,
   collectReferences, referenceErrors, referenceCycleErrors, planAssets, assetOwnershipErrors,
-  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentTaxonomyErrors,
+  planPacks, agentTaxonomyErrors,
   requiresCoordinatedRunContracts, agentRoutingErrors,
   agentProfileModelErrors, agentPromptLimitErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  generatedKeyErrors, generatedRuntimeErrors,
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -564,26 +564,33 @@ const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
 const onboardingPath = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
 const onboarding = onboardingPath ? readIf(onboardingPath) : null;
 const onboardingRel = onboardingPath ? rel(onboardingPath) : 'skill:kai-core-workspace-onboarding';
+const onboardingSurface = onboardingPath && onboarding
+  ? [
+      onboarding,
+      ...skillCompanionFiles(ROOT, 'kai-core-workspace-onboarding')
+        .map(entry => readFileSync(entry.path, 'utf8')),
+    ].join('\n')
+  : null;
 const gitignore = readIf(join(ROOT, '.gitignore'));
 
-// The split installer is prose executed by an agent, so pin the load-bearing
-// order and failure semantics here instead of treating documentation presence
-// as behavioral coverage.
+// Installation and workspace templates may live in JIT companion references.
+// Validate the shipped skill closure rather than forcing all instructions into
+// the always-loaded SKILL.md body.
 const guidedInstallCommands = PUBLISHED_PACKS.map(
   (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
 );
-if (onboarding) {
+if (onboardingSurface) {
   for (const pack of INCUBATED_PACKS) {
     for (const action of ['install', 'update']) {
       const command = `copilot plugin ${action} ${packPluginName(pack)}@${MARKETPLACE}`;
-      if (onboarding.includes(command)) {
+      if (onboardingSurface.includes(command)) {
         err(onboardingRel, `guided installer must not advertise incubated package command \`${command}\``);
       }
     }
   }
   let previousCommandIndex = -1;
   for (const command of guidedInstallCommands) {
-    const commandIndex = onboarding.indexOf(command);
+    const commandIndex = onboardingSurface.indexOf(command);
     if (commandIndex === -1) {
       err(onboardingRel, `guided installer is missing exact command \`${command}\``);
       continue;
@@ -594,8 +601,8 @@ if (onboarding) {
     previousCommandIndex = commandIndex;
   }
   const marketplaceBrowse = `copilot plugin marketplace browse ${MARKETPLACE}`;
-  const browseIndex = onboarding.indexOf(marketplaceBrowse);
-  const firstInstallIndex = onboarding.indexOf(guidedInstallCommands[0]);
+  const browseIndex = onboardingSurface.indexOf(marketplaceBrowse);
+  const firstInstallIndex = onboardingSurface.indexOf(guidedInstallCommands[0]);
   if (browseIndex === -1 || firstInstallIndex === -1 || browseIndex >= firstInstallIndex) {
     err(onboardingRel, 'guided installer must browse the marketplace before the first plugin install command');
   }
@@ -612,7 +619,7 @@ function managedBlock(text) {
   return block.split(/\r?\n/).map((l) => l.replace(/\s+$/, '')).join('\n');
 }
 const giBlock = managedBlock(gitignore);
-const obBlock = managedBlock(onboarding);
+const obBlock = managedBlock(onboardingSurface);
 if (giBlock === null) err('.gitignore', 'missing the managed "# >>> kai workspace" block');
 if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block template');
   if (giBlock && !giBlock.includes('/.kai/')) {
@@ -724,86 +731,6 @@ const SANCTIONED_GIT_DEPS = new Map();
         err('package-lock.json', `git dependency "${name}" is not pinned to a 40-hex commit SHA ("${resolved}") — a floating git ref is not reproducible`);
       }
     }
-  }
-})();
-
-// ---------------------------------------------------------------------------
-// The plugin hooks contract.
-//
-// hooks.json is the one file in this repository the HOST executes on its own,
-// on every subagent, for everyone who installs kai. Nobody reads it in review
-// the way they read a prompt, and a mistake here is silent: a wrong path just
-// fails to spawn, over and over, in someone else's session.
-//
-// So the shape is pinned rather than trusted.
-// ---------------------------------------------------------------------------
-(() => {
-  const rel = 'hooks.json';
-  const raw = readIf(join(ROOT, rel));
-  if (!raw) return; // the observer is optional; only its shape is enforced
-
-  let cfg;
-  try {
-    cfg = JSON.parse(raw);
-  } catch (e) {
-    err(rel, `is not valid JSON (${e.message}) — the host would drop every kai hook`);
-    return;
-  }
-  for (const e of hookAssetReferenceErrors(raw)) err(e.file, e.msg);
-  if (cfg.version !== 1) err(rel, `version must be 1, found ${JSON.stringify(cfg.version)}`);
-
-  const events = Object.keys(cfg.hooks || {});
-  // Deliberately narrow. preToolUse is FAIL-CLOSED -- a crash there denies the
-  // tool call -- and per-tool-call events cost ~66ms each. Neither belongs in a
-  // file that installs itself.
-  const ALLOWED = new Set(['subagentStart', 'subagentStop']);
-  for (const ev of events) {
-    if (!ALLOWED.has(ev)) {
-      err(rel, `subscribes to "${ev}"; kai ships only ${[...ALLOWED].join(' and ')} (see docs/workspaces.md)`);
-    }
-  }
-  for (const ev of ALLOWED) {
-    if (!events.includes(ev)) err(rel, `does not subscribe to "${ev}" — a start without a stop cannot be paired`);
-  }
-
-  const hookAssets = new Set();
-  for (const [ev, entries] of Object.entries(cfg.hooks || {})) {
-    for (const entry of Array.isArray(entries) ? entries : []) {
-      const cmd = entry.command || entry.bash || entry.powershell || '';
-      // Verified empirically: ${PLUGIN_ROOT} expands to the install directory.
-      // A relative path would resolve against the USER's repository instead.
-      if (!cmd.includes('${PLUGIN_ROOT}')) {
-        err(rel, `${ev} command does not use \${PLUGIN_ROOT}; it would resolve against the user's repository, not the plugin`);
-      }
-      const m = cmd.match(HOOK_ASSET_RE);
-      if (m) {
-        hookAssets.add(m[1]);
-        // The hook names the shipped path the host executes; its source lives
-        // under src/<pack>/, so it resolves through the same index.
-        if (!sourceAssetIndex(ROOT).has(m[1])) {
-          err(rel, `${ev} command points at "${m[1]}", which does not exist in this plugin`);
-        }
-      }
-      if (typeof entry.timeoutSec !== 'number' || entry.timeoutSec > 15) {
-        err(rel, `${ev} entry needs a timeoutSec of 15s or less — it sits in the path of every subagent`);
-      }
-    }
-  }
-
-  // ${PLUGIN_ROOT} resolves inside the hook's own plugin, so the scripts it runs
-  // have to be owned by that same pack. This check rejects a second claimant;
-  // the emitted-tree equality arm in pack-preview's self-test proves one core
-  // copy exists and no department copy does.
-  const claimants = [...generatedPacks.keys()]
-    .map((key) => parseGeneratedKey(key))
-    .filter((entry) => entry && entry.kind === 'hooks')
-    .map((entry) => entry.pack);
-  for (const e of hooksAssignmentErrors({
-    owners: [...new Set([HOOKS_OWNER, ...claimants])],
-    hookAssets: [...hookAssets],
-    assets: packAssets,
-  })) {
-    err(e.file, e.msg);
   }
 })();
 

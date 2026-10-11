@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **46 skills**.
+The repository ships **9 agents** and **41 skills**.
 
-The default marketplace supplies **9 agents** and **46 skills** through core, engineering, and creative (16 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **41 skills** through core, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -73,7 +73,7 @@ Resolve private schema-5 workspaces, initialize Direction, and validate core pub
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding. |
 | [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
-| [`kai-core-create-epic`](../../plugins/kai-core/skills/kai-core-create-epic/SKILL.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
+| [`kai-core-create-epic`](../../plugins/kai-core/skills/kai-core-create-epic/SKILL.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Task planning. |
 
 ### Hierarchy & stewardship
 
@@ -85,7 +85,7 @@ Define hierarchy meaning, authority, Task execution, acting, and granting.
 | [`kai-core-work-stewardship`](../../plugins/kai-core/skills/kai-core-work-stewardship/SKILL.md) | `kai-core` | Use when a named authority proposes, activates, prioritizes, holds, reprioritizes, or closes hierarchy scope. |
 | [`kai-core-work-task`](../../plugins/kai-core/skills/kai-core-work-task/SKILL.md) | `kai-core` | Use when creating, promoting, granting, executing, handing off, reviewing, restoring, or closing a coordinated Task. |
 | [`kai-core-work-acting`](../../plugins/kai-core/skills/kai-core-work-acting/SKILL.md) | `kai-core` | Use when an actor is about to read or mutate granted coordinated work, record evidence, ask a question, hand off, or submit review. |
-| [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | `kai-core` | Use when a grantor plans executable Tasks, issues or reconciles grants and leases, prepares a native role, or handles recovery. |
+| [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | `kai-core` | Use when an authorized grantor plans executable Tasks, issues or reconciles grants and leases, launches a role, or handles recovery. |
 
 ### Pack publication
 
@@ -104,11 +104,9 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 | ---- | ------- | ------------ |
 | [`kai-core-operating-rules`](../../plugins/kai-core/skills/kai-core-operating-rules/SKILL.md) | `kai-core` | The universal rules every kai role follows: role kinds, staying in lane, test ownership, human-only gates, shipping honesty, and @operator. Load whenever acting as a kai role. |
 | [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | `kai-core` | Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals. |
-| [`kai-core-fleet-observation`](../../plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md) | `kai-core` | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |
 | [`kai-core-definition-of-done`](../../plugins/kai-core/skills/kai-core-definition-of-done/SKILL.md) | `kai-core` | Use when deciding whether implementation, review, evidence, publication, release readiness, or coordinated closure is complete. |
 | [`kai-core-scope-discipline`](../../plugins/kai-core/skills/kai-core-scope-discipline/SKILL.md) | `kai-core` | Use when a request, finding, or recommendation may expand approved scope, create durable work, or require adoption authority. |
 | [`kai-core-no-self-remediation`](../../plugins/kai-core/skills/kai-core-no-self-remediation/SKILL.md) | `kai-core` | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
-| [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | `kai-core` | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
 | [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | `kai-core` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
@@ -135,14 +133,6 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
 
-### Design grounding
-
-The shared design-system grounding contract, with the frontend seam.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`kai-core-design-grounding`](../../plugins/kai-core/skills/kai-core-design-grounding/SKILL.md) | `kai-core` | Use when design, frontend, or visual-identity work needs evidence of an app's settled visual language, or when a design-system reference is explicitly requested. |
-
 ### Creative methods
 
 Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.
@@ -155,14 +145,12 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 | [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | `kai-creative` | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
 | [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | `kai-creative` | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |
 
-### Web & content
+### Content grounding
 
-Browser-run plumbing, content methods, and the claim safety creative content rests on.
+Claim safety for creative content.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`kai-core-web-evaluation`](../../plugins/kai-core/skills/kai-core-web-evaluation/SKILL.md) | `kai-core` | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
-| [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | `kai-core` | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`content-grounding`](../../plugins/kai-creative/skills/content-grounding/SKILL.md) | `kai-creative` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 
 ---

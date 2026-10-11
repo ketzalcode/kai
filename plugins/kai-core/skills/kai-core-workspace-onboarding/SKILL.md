@@ -6,294 +6,73 @@ user-invocable: true
 argument-hint: "install packs, initialize workspace, or repair binding"
 ---
 
-# Workspace onboarding
+# Workspace Onboarding
 
-This explicit procedure materializes `kai-core-workspace-paths`. Other roles
-may inspect the result but must not scaffold a partial workspace.
+Choose one mode. Read only its reference:
+
+- **Install or update packs:** read
+  [pack installation](references/pack-installation.md).
+- **Initialize or repair a current workspace:** read
+  [workspace initialization](references/workspace-initialization.md).
+- **Reset an unsupported workspace:** stop and tell the operator to select
+  `kai-core-workspace-reonboard`. Never inspect, translate, or import its old
+  private records.
+
+Do not load both references for one request.
+
+## Shared boundary
 
 Invoke `kai-core-contract-v1` immediately before the first other Core skill.
-If Core is unavailable or incompatible, answer direct workspace questions only;
-scaffold no `.kai` state and tell the operator to install or update `kai-core`.
+If Core is unavailable or incompatible, answer direct questions only; change no
+plugin or `.kai` state.
 
-Apply `kai-core-operating-rules` before confirmation, re-onboarding, Git, or
-operator-only decisions.
+Apply `kai-core-operating-rules` before confirmation, Git changes, plugin
+changes, or other operator-only decisions.
 
-Apply `kai-core-workspace-paths` before resolving any project, placement,
-workspace, registry, Direction, publication root, or coordination database.
-
-## Pack installation mode
-
-Use this mode only when the operator asks to install, select, or update
-Kai plugins. It is guided and fail-closed, not transactional: inspect, show the
-exact plan, get explicit confirmation, execute one step at a time, and stop on
-the first failed or unverified step.
-
-The catalog is closed:
-
-| Order | Plugin | Purpose |
-|---|---|---|
-| 1 | `kai-core` | Required operating contract, workspace tools, and fleet hooks. |
-| 2 | `kai-engineering` | Engineering implementation, investigation, review, and delivery. |
-| 3 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
-
-`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` are incubated packages, not install options. If the operator asks
-for one, say it is unavailable and stop. Do not convert the request into a
-sibling install, fallback, or direct repository path.
-
-Core is always included. Never silently add a capability package. The supported
-baseline is core plus the selected active packages.
-
-`kai-gtm` and `kai-personal` are retired install names without aliases.
-
-### Inspect
-
-Before showing an install plan:
-
-1. Resolve the current Kai plugin directory again before each command that uses
-   it; never reuse a path into a plugin uninstalled or updated during this run.
-2. Read `copilot plugin marketplace list` and `copilot plugin list`.
-3. Refuse installation when mixed provenance, unreadable host state, disabled
-   plugins, or version skew remains unresolved.
-4. Prove `kai-core` and every selected department exist at one marketplace
-   version before recommending removal of the monolith or retired packs.
-
-Do not infer enabled state from `plugin list`. Never substitute a direct
-repository or subdirectory install as a fallback.
-
-### Plan and confirm
-
-Show the exact ordered commands that will run:
-
-```text
-copilot plugin marketplace add ketzalcode/kai
-copilot plugin marketplace update kai-plugins
-copilot plugin marketplace browse kai-plugins
-
-copilot plugin install kai-core@kai-plugins
-copilot plugin update kai-core@kai-plugins
-copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-```
-
-Browse the selected source before any uninstall or install. Show only selected
-department commands. Use `update` for an installed pack at an older version.
-Get explicit confirmation for the displayed plan before changing marketplace
-state, plugins, or workspace provenance.
-
-When replacement requires uninstalling an old package, prove `kai-core` and
-every requested department are listed at one common version, show the re-entry
-sequence. End the current run; a session still carrying the removed
-monolith must not continue the replacement.
-
-### Execute
-
-1. Add or update the marketplace and verify all requested plugins are present
-   at one version.
-2. Install, update, or keep core. Verify one enabled marketplace row at the
-   exact version reported by the browse step. If the host refuses an update
-   because this session has core loaded, perform the update from a session that
-   does not have the pack loaded.
-3. If core is disabled, tell the operator to open `/plugin` in an interactive
-   Copilot session, enable `kai-core@kai-plugins`, start a fresh session before
-   invoking pack agents, and re-run. Do not name the unavailable
-   `copilot plugins enable` command.
-4. Install each selected department in catalog order. If one is disabled, tell
-   the operator to open `/plugin`, enable `<name>@kai-plugins`, and start fresh.
-5. Re-run the marketplace and plugin inventory checks.
-
-Stop on the first non-zero command or unverified result. Do not uninstall
-earlier successful steps to manufacture rollback.
-
-After an actual core install or update, say:
-
-> Core installed. This session still does not have it loaded - start a fresh session before invoking pack agents.
-
-Any department installed or updated also requires a fresh session.
-
-### Report
-
-```text
-Pack install: complete | partial | blocked | unknown
-Requested: <core plus selected departments>
-Verified installed: <name@version rows, or none>
-Failed: <command/check and observed result, or none>
-Not attempted: <selected plugins, or none>
-Retired packs: absent and verified | present | unverified
-Rollback: not attempted or verified
-Session: start a fresh session before invoking pack agents | no pack change
-Next: <ready, or one blocking action>
-```
-
-Choose `partial` when at least one plugin install or update succeeded in this
-run. Choose `unknown` when required host, marketplace, plugin-list, version, or
-workspace evidence is unreadable. Choose `blocked` for every other known
-pre-mutation refusal or failed command when no plugin install or update
-succeeded.
-
-## Workspace inputs
-
-Resolve:
-
-- absolute target project root;
-- placement: `external` or `repo-local`;
-- durable absolute external workspace root for `external`;
-- stable project and workspace IDs;
-- project publication root `docs/kai`;
-- operator-supplied `docs/kai/DIRECTION.md`;
-- plugin version from `plugin.json`;
-- explicit approval for moves, conflicts, and non-empty targets.
-
-Never use session-state or temporary storage as a workspace fallback.
-
-## Direction
-
-Coordinated work requires exactly:
-
-```markdown
-# Vision
-
-<enduring destination>
-
-# Mission
-
-<who the repository serves and why>
-
-# Current Goal
-
-<one observable, time-bounded Current Goal>
-
-# Out of Scope
-
-- <explicit exclusion>
-```
-
-There is one observable, time-bounded Current Goal. The operator supplies these
-bytes. Onboarding validates them and never invents or silently replaces them.
+Apply `kai-core-workspace-paths` only for workspace initialization or repair,
+before resolving the project, placement, registry, Direction, publication root,
+or coordination database.
 
 ## Initialize
 
-Inspect the project, registry, `.gitignore`, publication root, and any existing
-workspace first. Show exact creates, keeps, conflicts, registry changes, and
-managed blocks. Obtain explicit approval before changing a non-empty target,
-registry binding, Git tracking, or project `AGENTS.md`.
+Require an absolute project root, `external` or `repo-local` placement, stable
+workspace/project IDs, and operator-supplied Direction. Inspect first and show
+exact creates, keeps, conflicts, registry changes, and managed blocks.
+
+Obtain explicit approval before changing a non-empty target, registry binding,
+Git tracking, or project `AGENTS.md`.
 
 Apply `kai-core-work-acting` after approval and immediately before the first
 filesystem or registry mutation.
 
-Run the confirmed standalone initializer with the exact approved schema-5
-manifest:
+Run the confirmed standalone initializer:
 
 ```text
-node "<kai-plugin>/scripts/workspace-doctor.mjs" --initialize --root "<workspace-root>" --confirm
+node "<kai-plugin>/scripts/workspace-doctor.mjs" \
+  --initialize --root "<workspace-root>" --confirm
 ```
 
-Do not use native `coordinate.mjs request`, `authorize`, or `init` for workspace
-creation. Activation is manifest-last and failure-clean. A successful new
-workspace creates only:
-
-```text
-.kai/manifest.json
-.kai/core/runtime/coordination.sqlite
-docs/kai/README.md
-docs/kai/DIRECTION.md
-```
-
-No department or artifact directory is seeded. Validated first-write helpers
-create only the exact typed path required by real work.
-
-## Manifest
-
-```json
-{
-  "plugin": "kai-core",
-  "version": "<plugin-version>",
-  "schema_version": 5,
-  "scaffolded": "<YYYY-MM-DD>",
-  "workspace_id": "<stable-id>",
-  "placement": "<external|repo-local>",
-  "workspace_root": "<absolute external root or '.'>",
-  "private_root": ".kai",
-  "direction": "docs/kai/DIRECTION.md",
-  "projects": [
-    {
-      "id": "<project-id>",
-      "path": "<absolute external project path or '.'>",
-      "publication_root": "docs/kai"
-    }
-  ]
-}
-```
-
-Preserve stable IDs across re-runs and moves. SQLite at
-`.kai/core/runtime/coordination.sqlite` is the **only coordination authority**.
-Reads never create or repair the store.
-
-## Git rules
-
-For `external`, register the exact workspace/project pair and create no
-project-local `.kai/`.
-
-For `repo-local`, install and verify:
-
-```gitignore
-# >>> kai workspace (managed by workflow-workspace-init) >>>
-# Kai operational state stays local to this checkout.
-/.kai/
-/.kai-retired-*/
-**/storageState*.json
-# <<< kai workspace <<<
-```
-
-Verify `git ls-files -- .kai` is empty and `.kai/` is ignored. If private files
-are tracked, report exact paths and stop. Never run `git rm --cached`, commit,
-or rewrite history without explicit authorization.
-
-## Repository instructions
-
-Offer once to install `scripts/lib/repository-instructions-block.md`.
-If `AGENTS.md` does not exist, create it with the managed block. If it exists,
-preserve every user-authored byte outside the markers and
-replace only the marked Kai region. Never stage or commit the file without
-separate operator authorization.
-
-## Unsupported workspace
-
-If a manifest is not schema 5, stop and route the operator to
-`kai-core-workspace-reonboard`. Do not inspect, translate, migrate, or import
-its private records.
-
-## Validate
+Then run:
 
 ```text
 node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
 node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
-Require exact schema, placement, IDs, project bindings, Direction, database,
-registry, Git privacy, and publication-root containment. Before every write,
-resolve real paths again and refuse links, junctions, aliases, nested Git roots,
-collisions, or escapes.
+The initializer creates only the schema-5 manifest, coordination database,
+`docs/kai/README.md`, and operator-supplied `docs/kai/DIRECTION.md`. It never
+seeds department or artifact directories.
+
+For `repo-local`, verify `.kai/` is ignored and untracked. For `external`,
+register the exact project/workspace pair and create no project-local `.kai/`.
+
+Offer once to install `scripts/lib/repository-instructions-block.md`. If
+`AGENTS.md` does not exist, create it. Otherwise replace only the marked Kai
+region and preserve every other byte. Never stage or commit the file without
+separate operator authorization.
 
 ## Result
 
-```text
-Workspace: ready | blocked | unknown
-Placement: external | repo-local
-Workspace root: <absolute path>
-Project: <id and absolute path>
-Publication root: <project-relative path>
-Schema: 5 | unsupported | unknown
-Coordination store: present | absent | unknown
-Registry: paired | n/a | blocked | unknown
-Git contract: verified | n/a | blocked | unknown
-Created: <paths or none>
-Kept: <paths or none>
-Retired: <backup path or none>
-Published: <paths or none>
-Conflicts: <paths or none>
-Next: <ready, or one exact blocking action>
-```
-
-Ready requires healthy validation and every applicable registry and Git check.
-Re-running a ready workspace is a no-op.
+Return the selected mode, exact verified state, changes made, checks performed,
+unknowns, and one next action. Stop on the first failed or unverified mutation;
+never manufacture rollback or readiness.

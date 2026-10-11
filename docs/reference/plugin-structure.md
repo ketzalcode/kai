@@ -203,7 +203,7 @@ seam, human gate, completion condition, and runtime fit.
    artifact branch. Route the owning package's publication skill immediately
    before `kai-core-asset-producing`; non-producers route neither.
 6. For an added, removed, or renamed agent, update exactly one `CATEGORIES`
-   entry in `tools/generate-catalog.mjs` and search agents, skills, hooks,
+   entry in `tools/generate-catalog.mjs` and search agents, skills,
    examples, tests, and documentation for the old and new IDs.
 7. Run `npm run build`, `npm test`, `npm run build:check`, and
    `npm run consumer-install:self-test`, then inspect the generated diff.

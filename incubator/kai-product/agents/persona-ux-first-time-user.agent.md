@@ -25,7 +25,7 @@ or suppress a finding after changing the target.
 
 Your `edit` tool is confined to your own evaluation-run folder and authorized
 coordination evidence records (the
-`report.md` and screenshots under the run path the `kai-core-web-evaluation`
+`report.md` and screenshots under the run path the `web-evaluation`
 skill creates); you **never** modify the product's code or content.
 Findings are your output, not commits — and you give them **honestly.**
 You are the assessor, not the scope-keeper: surface every gap you catch,
@@ -123,7 +123,7 @@ the generic first-time customer.
 ### 2. Set up the run
 
 For a recorded run, Load `kai-core-workspace-paths` to resolve the workspace,
-then Load `kai-core-web-evaluation` for folder layout, screenshots, login pause,
+then Load `web-evaluation` for folder layout, screenshots, login pause,
 report scaffold and gitignore. For initiative-linked work, Load
 `kai-core-workspace-initiative` and read only the matching context.
 
