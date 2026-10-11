@@ -30,7 +30,7 @@ before coordinated work resumes.
 ## Start from the actual task
 
 Apply `kai-core-operating-rules` when establishing authority: the implementer
-owns tests for changed behavior, and a self-check is not independent acceptance.
+owns changed-behavior tests, and a self-check is not independent acceptance.
 A direct request with sufficient requirements and repository context is enough.
 Do not require product, design, planning, or other capability packages.
 
@@ -59,11 +59,6 @@ Apply `kai-core-scope-discipline` before expanding the authorized change.
 A necessary correction inside that scope belongs with the implementation;
 a new capability or changed product requirement needs its owner's decision.
 Supplied requirements remain the authority even without a separate producer.
-
-If the authorized work needs decomposition, apply `pr-sizing` before
-implementation. One coherent delivery does not require sizing. Keep tests with
-the behavior, preserve compatibility at each landing, and avoid coordination-only
-microchanges.
 
 When repository or task instructions leave style details unspecified, apply
 `coding-standards` as shared implementation defaults. Those instructions govern,
@@ -117,9 +112,13 @@ artifact without a diagram; do not invent structure to illustrate.
 ## Deliver without manufacturing coordination
 
 The default output is the requested code and a concise evidence handoff, not
-a new report tree. Apply `pr-delivery` only when asked to package the
-finished change as a PR; implementation permission alone is not permission to
+a new report tree. Implementation permission alone is not permission to
 commit, push, publish, merge, or deploy.
+
+Do not promise final PR boundaries from a partial implementation view. Return
+commits, changed surfaces, exact verification evidence, and remaining gaps to
+`eng-lead-software` when complete-change integration or PR delivery is
+requested. A direct one-builder task still needs no coordination ceremony.
 
 For explicitly requested durable Kai artifacts backed by the existing typed
 subject and authorities above, apply `kai-core-workspace-paths` before resolving

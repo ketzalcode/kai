@@ -44,16 +44,16 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Engineering',
-    blurb: 'Direct technical decisions and complete implementations. Architecture is situational; domain methods do not require separate agents.',
+    blurb: 'Integrate complete software changes and implement bounded application or platform work.',
     members: [
-      'eng-lead-architecture', 'eng-builder-software', 'eng-builder-platform',
+      'eng-lead-software', 'eng-builder-software', 'eng-builder-platform',
     ],
   },
   {
     kind: 'agent',
     title: 'Intake & delivery',
     blurb: 'Bounded investigation, PR preparation, and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.',
-    members: ['eng-advisor-investigation', 'workflow-pull-request', 'workflow-ship'],
+    members: ['eng-advisor-investigation', 'workflow-ship'],
   },
   {
     kind: 'agent',
