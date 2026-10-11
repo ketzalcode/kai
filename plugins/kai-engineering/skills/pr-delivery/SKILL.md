@@ -6,27 +6,23 @@ tools: [execute, read, edit, search]
 
 # PR Delivery
 
-The span between "the work is finished" and "the change is merged" is the one
-step in kai's chain with no encoded shape. Sizing, readiness, and deployment all
-have owners; the **branch, the PR description, the version bump, and merge
-readiness** have lived only in whoever happened to be doing the work.
+The span between "the work is finished" and "the change is merged" needs a
+small, explicit shape. The **branch, PR description, version bump, merge
+readiness, and authorized merge action** belong here.
 
 This skill is that shape. It is **delivery hygiene, not judgment** - it never
 re-decides anything another skill owns.
+It opens and prepares one pull request, then executes a merge only when the
+operator explicitly requests it and live repository gates allow it.
 
 ## Where it sits
 
 ```text
-pr-sizing          PR-DELIVERY            kai-core-definition-of-done      workflow-ship
----------          -----------            ------------------      -------------
-splits the    -->  opens and prepares -->  says it is        -->   deploys it
-work               ONE pull request       release-ready
-
-                   branch
-                   commits
-                   PR description
-                   version bump
-                   merge readiness
+pr-sizing          PR-DELIVERY                    repository release process
+---------          -----------                    --------------------------
+splits the    -->  prepares ONE pull request -->  runs only when requested
+work               and executes an authorized
+                   merge when live gates allow
 ```
 
 | Question | Owner |
@@ -34,7 +30,7 @@ work               ONE pull request       release-ready
 | Was the work split into the right increments? | `pr-sizing` |
 | Is the code correct and well-designed? | `eng-reviewer-code` |
 | Is it ready to release? | `kai-core-definition-of-done` |
-| How does it reach production? | `workflow-ship` |
+| How does it reach production? | The repository's explicit release process |
 | **How does this change physically reach `main`?** | **this skill** |
 
 ## 1 - The anchor ladder
@@ -163,6 +159,21 @@ Before opening the PR:
   and box-drawing characters corrupt through some shells (a repeatedly-hit
   Windows/PowerShell hazard); ASCII survives everywhere.
 
+## 7 - Explicit merge
+
+For an explicit merge instruction on an existing PR, resolve the intended PR
+and exact head. Read live draft, mergeability, required check, required review,
+unresolved conversation, and allowed merge-method state.
+
+When every repository gate allows the action, merge with an allowed method and
+report the merge commit. Otherwise report the exact blocker without bypassing
+protection or manufacturing success.
+
+Do not restart review, testing, planning, or PR preparation solely because merge was requested.
+Do not rerun unchanged development validation as a merge ritual. If clearing a
+blocker requires a code change, that work returns to `software-development`
+with proportionate validation before another merge attempt.
+
 ## Hard rules
 
 1. **Never commit to the protected branch.** Always branch.
@@ -170,8 +181,8 @@ Before opening the PR:
    your own.**
 3. **Never bypass branch protection silently.** Report the blocking rule and
    escalate to `@operator`.
-4. **The human presses merge.** Draft and validate; never merge, tag, or
-   release. Consistent with every other kai role.
+4. **Merge only on an explicit operator instruction.** Never tag, release, or
+   infer merge authority from an open or approved PR.
 5. **Keep execution status out of the PR description.** CI and repository
    checks own commands, counts, and current results.
 6. **A changed user-visible surface ships before/after screenshots**, scaled to

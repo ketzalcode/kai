@@ -5,8 +5,9 @@ import {runCLI} from './coordination-cli-entrypoint.mjs';
 import {createNativeHost} from '../../src/core/lib/coordination-runtime/native-host.mjs';
 import {randomUUID} from 'node:crypto';
 
-const roles = ['workflow-manager', 'workflow-ship', 'eng-lead-software',
-  'eng-builder-software', 'eng-reviewer-code', 'eng-reviewer-quality',
+const roles = ['director-chief-of-staff', 'eng-lead-software',
+  'eng-builder-backend', 'eng-builder-frontend', 'eng-reviewer-code',
+  'eng-lead-technical-writing',
   'creative-lead-design', 'creative-lead-video', 'workflow-creative-demo-production'];
 const host = createNativeHost({
   env: process.env,

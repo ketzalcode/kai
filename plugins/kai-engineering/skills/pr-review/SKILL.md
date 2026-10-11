@@ -32,16 +32,14 @@ Risk signals: only concrete triggers visible in this change
   `coding-standards` review.
 - documentation or metadata-only changes skip code-only lenses.
 
-## Route follow-up judgment to the right owner
+## Apply relevant lenses directly
 
-- Route assembled UI, API, CLI, or system acceptance to quality when
-  applicable.
-- Route concrete security, privacy/compliance, and reliability triggers to
-  their owners.
+- Include security, privacy, reliability, accessibility, localization, and
+  assembled acceptance only when the brief contains a concrete trigger.
+- The general reviewer must report relevant defects directly. Do not dispatch
+  another reviewer merely because a lens applies.
 - Use `research-before-coding` only for a bounded unresolved fact that could
   change a finding.
-- The general reviewer may identify a specialist trigger but never issue the
-  specialist verdict.
 
 ## Revision handling
 

@@ -29,6 +29,14 @@ test('Kai dogfoods the exact canonical block', () => {
   assertExactManagedRegion(agents);
 });
 
+test('the canonical block defines lean development without Superpowers', () => {
+  assert.match(block, /Kai keeps direct work direct/);
+  assert.match(block, /focused TDD/);
+  assert.match(block, /targeted automated checks\s+and named manual scenarios/);
+  assert.match(block, /proportionate validation/);
+  assert.doesNotMatch(block, /Superpowers/);
+});
+
 test('the exact managed-region check rejects line-ending drift', () => {
   const differentLineEndings = block.includes('\r\n')
     ? block.replaceAll('\r\n', '\n')

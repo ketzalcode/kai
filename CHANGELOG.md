@@ -4,6 +4,37 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [22.0.0] - 2026-10-10
+
+### Added
+
+- Added Kai's lean, quality-first agent-to-agent collaboration philosophy to
+  the README and contributor instructions.
+- Added `software-development`, a lightweight implementation workflow with
+  focused TDD, proportionate validation, and explicit lifecycle boundaries.
+- Added `eng-builder-frontend` and `eng-builder-backend` with shared
+  `coding-standards` plus focused frontend and backend coding standards.
+
+### Changed
+
+- Made all active engineering agents manually selected and limited software-lead
+  dispatch to explicit multi-builder work.
+- Made code review selective and general: relevant risk findings stay in one
+  review instead of routing through permanent specialist agents.
+- Made an explicit PR merge request consume live repository gates and merge
+  directly when allowed without restarting review, tests, planning, or PR
+  preparation.
+- Incubated `eng-builder-platform` pending repository-learning design and
+  `workflow-ship` pending meaningful release authority or executable actions.
+
+### Removed
+
+- Removed `eng-builder-software`, `eng-advisor-investigation`, the security,
+  privacy/compliance, reliability, and quality reviewer agents, and
+  `workflow-incident-response`.
+- Removed Superpowers-specific methodology from the repository development
+  profile; Kai now owns its lean implementation workflow.
+
 ## [21.0.0] - 2026-10-09
 
 ### Added
@@ -4520,6 +4551,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[22.0.0]: https://github.com/ketzalcode/kai/compare/v21.0.0...v22.0.0
 [21.0.0]: https://github.com/ketzalcode/kai/compare/v20.0.1...v21.0.0
 [20.0.1]: https://github.com/ketzalcode/kai/compare/v20.0.0...v20.0.1
 [20.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v20.0.0

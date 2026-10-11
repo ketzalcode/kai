@@ -44,19 +44,86 @@ test('software lead is the single active PR integration owner', () => {
   assert.match(lead, /Apply `pr-sizing` after integration, when the complete diff exists/);
   assert.match(lead, /Apply `pr-delivery`/);
   assert.match(lead, /eng-reviewer-code/);
+  assert.match(lead, /explicit multi-builder request/);
+  assert.match(
+    lead,
+    /Review is optional unless the operator explicitly requests it/,
+  );
+  assert.doesNotMatch(lead, /A changed revision requires fresh review/);
   assert.match(lead, /blocking authority gap/);
   assert.match(lead, /operator\/owning authority/);
   assert.match(lead, /Never merge, deploy, tag, release/);
 });
 
 test('builders stop at implementation evidence handoff', () => {
-  for (const id of ['eng-builder-software', 'eng-builder-platform']) {
+  assert.equal(agents.has('eng-builder-frontend'), true);
+  assert.equal(agents.has('eng-builder-backend'), true);
+  assert.equal(agents.has('eng-builder-software'), false);
+  assert.equal(agents.has('eng-builder-platform'), false);
+  assert.equal(
+    existsSync(join(
+      root,
+      'incubator',
+      'kai-engineering',
+      'agents',
+      'eng-builder-platform.agent.md',
+    )),
+    true,
+  );
+
+  for (const id of ['eng-builder-frontend', 'eng-builder-backend']) {
     const body = readAgent(id);
     assert.doesNotMatch(body, /Apply `pr-sizing`/);
     assert.doesNotMatch(body, /Apply `pr-delivery`/);
     assert.match(body, /eng-lead-software/);
     assert.match(body, /changed-behavior tests|Tests for changed/);
+    assert.match(body, /Apply `software-development`/);
+    assert.match(body, /Apply `coding-standards`/);
   }
+
+  const frontend = readAgent('eng-builder-frontend');
+  assert.match(frontend, /Apply `frontend-coding-standards`/);
+  assert.doesNotMatch(frontend, /Apply `backend-coding-standards`/);
+
+  const backend = readAgent('eng-builder-backend');
+  assert.match(backend, /Apply `backend-coding-standards`/);
+  assert.doesNotMatch(backend, /Apply `frontend-coding-standards`/);
+});
+
+test('active engineering agents require explicit invocation', () => {
+  for (const id of [
+    'eng-builder-frontend',
+    'eng-builder-backend',
+    'eng-lead-software',
+    'eng-reviewer-code',
+    'eng-lead-technical-writing',
+  ]) {
+    assert.match(readAgent(id), /^disable-model-invocation:\s*true$/m);
+  }
+});
+
+test('software development scales process and stops at evidence handoff', () => {
+  const development = readSkill('software-development');
+  assert.match(development, /^user-invocable:\s*true$/m);
+  assert.match(
+    development,
+    /feature, fix, refactor, or behavior change/,
+  );
+  assert.match(development, /Do not use for review-only, PR merge/);
+  assert.match(development, /Apply `coding-standards`/);
+  assert.match(development, /Clear bounded change/);
+  assert.match(development, /Material ambiguity/);
+  assert.match(development, /Architecture or risky cross-cutting change/);
+  assert.match(development, /Defect with uncertain cause/);
+  assert.match(development, /strict red\/green/);
+  assert.match(development, /Stabilize uncertain design before expanding tests/);
+  assert.match(development, /named manual scenarios/);
+  assert.match(development, /targeted tests by default/);
+  assert.match(development, /evidence handoff/);
+  assert.match(
+    development,
+    /Do not automatically start review, PR delivery,\s+merge, release, or deployment/,
+  );
 });
 
 test('pr sizing uses the completed diff and reviewability boundaries', () => {
@@ -89,6 +156,17 @@ test('pr delivery reads the shared description reference', () => {
   assert.match(delivery, /rollout plan only when the change\s+has one/);
   assert.doesNotMatch(delivery, /rollout\/removal gates/);
   assert.doesNotMatch(delivery, /Verification names the command/);
+  assert.match(delivery, /explicit merge instruction on an existing PR/);
+  assert.match(
+    delivery,
+    /live draft, mergeability, required check, required review,\s+unresolved conversation/,
+  );
+  assert.match(delivery, /report the merge commit/);
+  assert.match(
+    delivery,
+    /Do not restart review, testing, planning, or PR preparation solely because merge was requested/,
+  );
+  assert.match(delivery, /returns to `software-development`/);
 
   const reference = readFileSync(join(
     root,
@@ -161,7 +239,12 @@ test('review requests route through the reviewer and internal review method', ()
   assert.match(review, /Changed behavior:/);
   assert.match(review, /Affected surfaces:/);
   assert.match(review, /Risk signals:/);
-  assert.match(review, /specialist verdict/);
+  assert.match(review, /report relevant defects directly/);
+  assert.doesNotMatch(
+    review,
+    /eng-reviewer-(security|privacy-compliance|reliability|quality)/,
+  );
+  assert.match(reviewer, /Do not spawn another reviewer/);
 });
 
 test('pr-review skips docs and metadata-only changes', () => {
@@ -169,10 +252,13 @@ test('pr-review skips docs and metadata-only changes', () => {
   assert.match(review, /documentation or metadata-only changes skip code-only lenses/);
 });
 
-test('pr-review routes assembled acceptance to quality', () => {
+test('pr-review keeps relevant risk lenses in one general review', () => {
   const review = readSkill('pr-review');
-  assert.match(review, /Route assembled UI, API, CLI, or system acceptance to quality when\s+applicable\./);
-  assert.doesNotMatch(review, /assembled UI, API, CLI, or system behavior may require quality review/);
+  assert.match(
+    review,
+    /security, privacy, reliability, accessibility, localization, and\s+assembled acceptance/,
+  );
+  assert.doesNotMatch(review, /Route .* to .*owner/);
 });
 
 test('pr-review handles stacked PR parent revisions', () => {
@@ -204,17 +290,28 @@ test('review comments use tone rules for questions and required outcomes', () =>
   assert.match(comments, /State a required outcome directly when evidence settles it/);
 });
 
-test('specialist reviewers share comment communication, not review judgment', () => {
+test('specialist and incident agents are removed from the active surface', () => {
   for (const id of [
+    'eng-advisor-investigation',
     'eng-reviewer-security',
     'eng-reviewer-privacy-compliance',
     'eng-reviewer-reliability',
     'eng-reviewer-quality',
+    'workflow-incident-response',
+    'workflow-ship',
   ]) {
-    const body = readAgent(id);
-    assert.match(body, /Apply `pr-review-comments`/);
-    assert.doesNotMatch(body, /Apply `pr-review`/);
+    assert.equal(agents.has(id), false);
   }
+  assert.equal(
+    existsSync(join(
+      root,
+      'incubator',
+      'kai-engineering',
+      'agents',
+      'workflow-ship.agent.md',
+    )),
+    true,
+  );
 });
 
 test('README overview reflects the released engineering surface', () => {
@@ -222,21 +319,14 @@ test('README overview reflects the released engineering surface', () => {
     .replace(/\r\n/g, '\n');
   const overview = readme.slice(0, readme.indexOf('\n## Install'));
 
-  assert.doesNotMatch(
-    overview,
-    /specialist agents — implementation, architecture, independent review, delivery/,
-  );
+  assert.match(overview, /lean, quality-first suite of specialized agents and skills/);
+  assert.match(overview, /Kai keeps direct work direct/);
+  assert.match(overview, /agent-to-agent software collaboration/);
+  assert.match(overview, /\|\s*5 agents\s*\|/);
+  assert.match(overview, /\|\s*12 skills\s*\|/);
   assert.match(
     overview,
-    /specialist agents — implementation, technical investigation, independent review,\s+and delivery/,
+    /\| `kai-engineering` \| 5 \/ 12 \| Frontend and backend implementation, selective review, technical writing, and explicit delivery \|/,
   );
-  assert.match(overview, /\|\s*9 skills\s*\|/);
-  assert.match(
-    overview,
-    /\| `kai-engineering` \| 13 \/ 9 \| Implementation, technical investigation, independent review, and delivery \|/,
-  );
-  assert.doesNotMatch(
-    overview,
-    /\| `kai-engineering` \| 13 \/ 7 \| Implementation, architecture, independent review, delivery \|/,
-  );
+  assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

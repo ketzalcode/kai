@@ -169,6 +169,7 @@ const INVALID_FIXTURES = [
   { file: 'model-non-string.agent.md', kind: 'agent', re: /model.*quoted scalar string/i },
   { file: 'model-unapproved.agent.md', kind: 'agent', re: /approved agent model set/i },
   { file: 'name-mismatch.agent.md', kind: 'agent', re: /name .* must equal/i },
+  { file: 'disable-model-invocation-value.agent.md', kind: 'agent', re: /disable-model-invocation.*true.*false/i },
 ];
 
 function checkInvalidFixtures(errors) {

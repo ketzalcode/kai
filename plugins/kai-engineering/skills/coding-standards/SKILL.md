@@ -39,22 +39,19 @@ maintainability.
   keep single-use types local, and place shared or domain types in the
   repository's established model or type boundary.
 - Handle errors explicitly. Avoid silent catches and broad fallbacks. Make
-  error messages and logs actionable without exposing sensitive data.
+  error messages actionable without exposing sensitive data.
 - Treat telemetry as a compatibility contract. Preserve existing event names,
   fields, meaning, and emission behavior unless changing telemetry is part of
   the task; account for affected dashboards, alerts, and other consumers. For
   new telemetry, follow repository patterns and emit useful, non-sensitive
   signals.
-- Give each unit one coherent responsibility. A UI component boundary earns
-  itself when it owns reusable behavior, independent state or lifecycle, or a
-  stable interface. Keep a one-off render branch with the component that owns
-  its state. Extract other code for clarity, real reuse, or independent
-  testing; keep cohesive, single-use logic local when extraction would hide
-  context or add indirection. Prefer pure helpers for reusable transformations
-  and decisions.
-- Avoid speculative abstractions, unnecessary components, generic frameworks,
-  and lookup tables that do not simplify the current requirement.
-- Preserve public behavior, accessibility, and localization during refactors
-  unless the task intentionally changes them.
+- Give each unit one coherent responsibility. Extract code for clarity, real
+  reuse, or independent testing; keep cohesive, single-use logic local when
+  extraction would hide context or add indirection. Prefer pure helpers for
+  reusable transformations and decisions.
+- Avoid speculative abstractions, unnecessary layers, generic frameworks, and
+  lookup tables that do not simplify the current requirement.
+- Preserve public behavior and compatibility during refactors unless the task
+  intentionally changes them.
 - Comment only when names and structure cannot make a non-obvious intent,
   constraint, or invariant clear.

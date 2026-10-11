@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **20 agents** and **41 skills**.
+The repository ships **13 agents** and **44 skills**.
 
-The default marketplace supplies **20 agents** and **41 skills** through core, engineering, and creative (11 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **13 agents** and **44 skills** through core, engineering, and creative (12 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -40,33 +40,13 @@ Delivery coordination, on explicit request. Nothing has to be routed through it.
 
 ### Engineering
 
-Integrate complete software changes and implement bounded application or platform work.
+Implement bounded frontend and backend work, or explicitly coordinate a complete software change.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-lead-software`](../../plugins/kai-engineering/agents/eng-lead-software.agent.md) | `kai-engineering` | Coordinates one complete authorized software change across builders, integration, independent review, post-build PR sizing, and PR delivery. Use for multi-builder work or packaging a finished diff. Never implements product code, self-approves, merges, deploys, tags, or releases. |
-| [`eng-builder-software`](../../plugins/kai-engineering/agents/eng-builder-software.agent.md) | `kai-engineering` | Implements a scoped software change end-to-end: frontend, APIs, persistence, data pipelines, or applied AI, with its tests. Use for features, fixes, and refactors. Not independent review, platform provisioning, or production deployment. |
-| [`eng-builder-platform`](../../plugins/kai-engineering/agents/eng-builder-platform.agent.md) | `kai-engineering` | Implements CI/CD, IaC, containers, build tooling, runtime configuration, and observability with plan or dry-run evidence. Use for platform changes. Not application implementation, independent readiness approval, or production operations. |
-
-### Intake & delivery
-
-Bounded investigation and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`eng-advisor-investigation`](../../plugins/kai-engineering/agents/eng-advisor-investigation.agent.md) | `kai-engineering` | Investigates a bounded issue, codebase question, technical option, or AI research topic and returns cited findings and unknowns. Use when evidence is missing. Not implementation, independent acceptance, or automatic delivery planning. |
-| [`workflow-ship`](../../plugins/kai-engineering/agents/workflow-ship.agent.md) | `kai-engineering` | Assesses release readiness directly or, for authorized coordinated work, records PREPARE, deployment start, completion, production verification, rollback, and shipped transitions. Never deploys, merges, pushes, tags, migrates, triggers CI, or monitors continuously. |
-
-### Trust & reliability
-
-Independent judgment on security, privacy, reliability, and live incidents.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`eng-reviewer-security`](../../plugins/kai-engineering/agents/eng-reviewer-security.agent.md) | `kai-engineering` | Independently reviews an exact change, design, or supplied security evidence for credible threats, control adequacy, and residual risk. Use for defensive security assessment. Never exploits, remediates the product, certifies compliance, or accepts risk. |
-| [`eng-reviewer-privacy-compliance`](../../plugins/kai-engineering/agents/eng-reviewer-privacy-compliance.agent.md) | `kai-engineering` | Independently reviews an exact change, processing activity, policy, or vendor evidence against named privacy and compliance obligations. Produces source-cited gaps; never gives legal certification, handles real personal data, remediates the product, or makes counsel decisions. |
-| [`eng-reviewer-reliability`](../../plugins/kai-engineering/agents/eng-reviewer-reliability.agent.md) | `kai-engineering` | Independently reviews an exact service, change, or supplied operational evidence for customer reliability, recovery, capacity, observability, and readiness. Never performs production actions, commands incidents, or invents measured targets. |
-| [`workflow-incident-response`](../../plugins/kai-engineering/agents/workflow-incident-response.agent.md) | `kai-engineering` | Maintains one incident command picture from supplied operational, security, data, or availability facts: impact-based SEV, status, timeline, hypotheses, human action packets, recovery evidence, and closure. Never performs production actions, sends messages, declares breaches, or monitors continuously. |
+| [`eng-lead-software`](../../plugins/kai-engineering/agents/eng-lead-software.agent.md) | `kai-engineering` | Coordinates an explicitly requested multi-builder software change or packages a finished diff through integration, selective review, post-build PR sizing, and PR delivery. Never implements product code, self-approves, merges, deploys, tags, or releases. |
+| [`eng-builder-frontend`](../../plugins/kai-engineering/agents/eng-builder-frontend.agent.md) | `kai-engineering` | Implements scoped frontend UI and client behavior with repository-native composition, state, accessibility, localization, and tests. Use explicitly for frontend features, fixes, and refactors. Not backend implementation, independent review, or delivery. |
+| [`eng-builder-backend`](../../plugins/kai-engineering/agents/eng-builder-backend.agent.md) | `kai-engineering` | Implements scoped APIs, services, persistence, jobs, libraries, and server-side behavior with repository-native contracts and tests. Use explicitly for backend features, fixes, and refactors. Not frontend implementation, independent review, or delivery. |
 
 ### Technical writing
 
@@ -86,14 +66,13 @@ Design and video judgment from supplied needs and evidence, plus bounded demo pr
 | [`creative-lead-video`](../../plugins/kai-creative/agents/creative-lead-video.agent.md) | `kai-creative` | Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication. |
 | [`workflow-creative-demo-production`](../../plugins/kai-creative/agents/workflow-creative-demo-production.agent.md) | `kai-creative` | Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication. |
 
-### Implementation & system review
+### Implementation review
 
-Independent code review and browser/API/CLI/system acceptance. Implementers retain ownership of their regression tests.
+Selective independent code review. Implementers retain ownership of their changed-behavior tests.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact code change for requirements, correctness, contracts, regressions, and test adequacy. Use for a diff, PR, or implementation review. Returns evidence-based findings; never repairs the code or substitutes for specialized risk acceptance. |
-| [`eng-reviewer-quality`](../../plugins/kai-engineering/agents/eng-reviewer-quality.agent.md) | `kai-engineering` | Independently reviews assembled acceptance across browser, API, CLI, and system surfaces for objective defects and requirement coverage. Preserves UI, accessibility, localization, and RTL checks when relevant. Never patches the product or owns regression tests. |
+| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact code change for requirements, correctness, contracts, regressions, risk, and test adequacy. Use explicitly for a diff, PR, or implementation review. Returns evidence-based findings and never repairs the code. |
 
 ### Private workspace signals
 
@@ -161,11 +140,14 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 
 ### Engineering craft
 
-Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.
+Lean development, shared and domain coding standards, bounded evidence, explicit delivery, and useful visuals.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
+| [`software-development`](../../plugins/kai-engineering/skills/software-development/SKILL.md) | `kai-engineering` | Use when implementing or modifying product code for a feature, fix, refactor, or behavior change. Do not use for review-only, PR merge, release-only, deployment-only, prose-only, metadata-only, or generated-refresh work. |
 | [`coding-standards`](../../plugins/kai-engineering/skills/coding-standards/SKILL.md) | `kai-engineering` | Use when writing, modifying, or refactoring code. |
+| [`frontend-coding-standards`](../../plugins/kai-engineering/skills/frontend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring frontend UI or client behavior. |
+| [`backend-coding-standards`](../../plugins/kai-engineering/skills/backend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring APIs, services, persistence, jobs, libraries, or server-side behavior. |
 | [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
 | [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |

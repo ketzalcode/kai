@@ -1,7 +1,7 @@
 {
   "name": "kai",
   "description": "Lockstep source metadata for the kai-core, kai-engineering, and kai-creative packages.",
-  "version": "21.0.0",
+  "version": "22.0.0",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"
@@ -16,15 +16,12 @@
     "documentation",
     "branding",
     "design",
-    "privacy",
-    "compliance",
-    "security",
-    "reliability",
-    "incident-response",
     "engineering-principles",
     "code-review",
-    "senior-engineer",
-    "architect",
+    "frontend",
+    "backend",
+    "tdd",
+    "agent-collaboration",
     "typescript",
     "react",
     "workflow-automation"
