@@ -8,6 +8,26 @@ This design supersedes the Superpowers methodology decision in
 `development-system-simplification.md` and the active engineering roster
 described before Kai 22.0.0.
 
+## Core philosophy
+
+> Kai is a lean, quality-first suite of specialized agents and skills for
+> agent-to-agent software collaboration. It combines repository-native coding
+> standards, focused TDD, explicit coordination, and evidence-based handoffs
+> without turning routine work into ceremony.
+>
+> Kai keeps direct work direct. It adds agents, process, and validation only
+> when they materially improve correctness, context isolation, or delivery
+> quality. The goal is a high-performing engineering system: small roles,
+> relevant context, proportionate confidence, and fast shipping.
+
+This vision must appear near the beginning of both `README.md` and `AGENTS.md`.
+The README states the product promise for users. AGENTS.md makes the same
+principle binding for contributors working on Kai itself.
+
+Kai differs from complete methodology frameworks because it does not intercept
+every development action. It supplies the smallest useful collaboration
+structure at the moment specialization, isolation, or coordination adds value.
+
 ## Decision
 
 Kai will use a small, explicit engineering roster and one lightweight software
@@ -290,6 +310,7 @@ The implementation must update:
 - source and incubated agent files;
 - agent routes and skill contracts;
 - catalogs, fixtures, package manifests, generated packages, and documentation;
+- the opening vision in `README.md` and `AGENTS.md`;
 - the canonical repository instruction block;
 - release metadata, README status, and changelog.
 
@@ -299,6 +320,7 @@ It receives a short supersession note rather than being rewritten.
 ## Success criteria
 
 - Kai Engineering ships exactly five active agents.
+- `README.md` and `AGENTS.md` open with the approved Kai philosophy.
 - No active agent invokes another engineering agent without an explicit
   coordination request and bounded assignment.
 - Frontend and backend builders use shared plus domain-specific coding guidance.
