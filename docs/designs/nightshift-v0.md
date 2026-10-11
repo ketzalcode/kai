@@ -63,7 +63,8 @@ Nightshift V0:
   Requirements, and Tasks;
 - may produce several bounded pull requests in one run;
 - executes one pull-request slice at a time;
-- uses one isolated worktree and fresh agent session per slice;
+- uses one isolated worktree and fresh top-level agent session per routed
+  stage;
 - opens or updates pull requests when authorized;
 - records evidence, blockers, suggestions, and the safe resume point; and
 - reconciles the run for the operator the next morning.
@@ -125,7 +126,7 @@ CURRENT DIRECTION + APPROVED ENGINEERING SCOPE
           choose next safe ready PR slice
                        |
                        v
-       isolated worktree + fresh agent session
+        isolated worktree + standalone stages
                        |
                        v
               software-development
@@ -191,9 +192,10 @@ For each candidate slice, Nightshift:
 2. rejects work outside the approved scope or current base;
 3. claims or obtains the exact authorized Task;
 4. creates an isolated branch and worktree;
-5. starts a fresh programmatic Copilot session with the routed agent profile,
-   autonomous continuation enabled, interactive questions disabled, and the
-   run's permissions and limits;
+5. starts fresh programmatic Copilot sessions for the routed builder, delivery
+   lead, and any already-required reviewer, with autonomous continuation
+   enabled, interactive questions disabled, and the run's permissions and
+   limits;
 6. applies `software-development` and the relevant domain standards;
 7. implements only the required outcome and directly necessary correctness;
 8. runs proportionate focused validation and named manual scenarios;

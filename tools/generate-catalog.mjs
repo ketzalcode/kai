@@ -44,9 +44,10 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Engineering',
-    blurb: 'Implement bounded frontend and backend work, or explicitly coordinate a complete software change.',
+    blurb: 'Implement bounded frontend and backend work, explicitly coordinate a complete change, or run approved unattended delivery.',
     members: [
       'eng-lead-software', 'eng-builder-frontend', 'eng-builder-backend',
+      'workflow-nightshift',
     ],
   },
   {
@@ -126,6 +127,7 @@ const CATEGORIES = [
     members: [
       'software-development', 'coding-standards',
       'frontend-coding-standards', 'backend-coding-standards',
+      'nightshift-run',
       'research-before-coding',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
       'onboard-to-codebase', 'build-diagrams',

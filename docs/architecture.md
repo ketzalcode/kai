@@ -11,9 +11,9 @@ installable.
 ```text
   kai-engineering                         kai-creative
   +-------------------------------+       +-------------------------------+
-  | 13 agents                     |       | 3 agents                      |
+  | 6 agents                      |       | 3 agents                      |
   | engineering judgment          |       | design and media judgment     |
-  | no JavaScript entry points    |       | 3 JavaScript entry points     |
+  | 1 JavaScript entry point      |       | 3 JavaScript entry points     |
   +---------------+---------------+       +---------------+---------------+
                   |                                       |
                   +-------------------+-------------------+
@@ -56,6 +56,7 @@ plugins/<pack>/agents/
 plugins/<pack>/skills/
 plugins/<pack>/publication.json
 src/core/
+src/engineering/
 src/creative/
 package.json
           |
@@ -68,6 +69,7 @@ plugin.json
 plugins/<pack>/.claude-plugin/plugin.json
 plugins/<pack>/plugin-lock.json
 plugins/kai-core/scripts/
+plugins/kai-engineering/scripts/
 plugins/kai-creative/scripts/
 docs/reference/agents-and-skills.md
 ```

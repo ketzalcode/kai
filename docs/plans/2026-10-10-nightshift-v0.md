@@ -4,7 +4,7 @@ Date: 2026-10-10
 
 Design: `docs/designs/nightshift-v0.md`
 
-Status: In progress
+Status: Complete
 
 Validation agreement: Lean, with focused contract tests and the repository's
 required behavior-change build and release checks.
@@ -22,16 +22,24 @@ silently adding them to pull requests.
 
 ## Implementation decisions
 
-### One workflow profile owns routing
+### The workflow profile owns routing
 
-The runner always launches `workflow-nightshift`. It does not select builders,
-reviewers, or models.
+`workflow-nightshift.agent.md` classifies each slice as `frontend` or
+`backend` and records whether the already-approved Task requires independent
+review. The operator does not select an agent or model.
 
-`workflow-nightshift.agent.md` routes the slice to the current frontend,
-backend, software lead, and selective reviewer profiles. Every profile keeps
-its own `model:` declaration and domain instructions.
+The runner expands that route into standalone stages:
 
-This avoids a second routing table in the run envelope or runner.
+```text
+frontend -> eng-builder-frontend -> eng-lead-software -> optional eng-reviewer-code
+backend  -> eng-builder-backend  -> eng-lead-software -> optional eng-reviewer-code
+```
+
+Each selected profile keeps its own `model:` declaration and domain
+instructions. The runner passes no model override.
+
+Standalone stages are required because nested host agents do not own the
+standalone Core receipts needed to claim and mutate coordinated work.
 
 ### One fresh session per slice
 
@@ -39,13 +47,13 @@ Each approved slice receives:
 
 - one Git branch;
 - one linked worktree;
-- one fresh programmatic `workflow-nightshift` session;
-- one bounded autopilot continuation and AI-credit allowance;
+- one fresh programmatic session per routed stage;
+- bounded autopilot continuation and AI-credit allowances;
 - one exact output contract; and
 - one terminal ledger entry.
 
-The workflow session may dispatch existing agents when its own instructions
-require specialization. The runner itself performs no product reasoning.
+The runner follows the approved route mechanically. It performs no product
+reasoning and never substitutes another profile.
 
 ### Core authority remains at the original workspace
 
@@ -71,7 +79,8 @@ only invariants needed for safe unattended execution:
 - allowed GitHub side effects and URL permissions;
 - stacking policy;
 - non-empty slices with Task reference/version, outcome, acceptance, touched
-  areas, completion check, branch, and dependencies; and
+  areas, completion check, route, required-review flag, branch, and
+  dependencies; and
 - acyclic, known slice dependencies.
 
 The operator does not choose agents or models.
@@ -116,9 +125,13 @@ The run stops launching slices after its deadline, pull-request limit,
 retained-worktree limit, or AI-credit launch budget is exhausted. Host credit
 limits remain soft ceilings and must be described honestly.
 
-### Result contract
+### Result contracts
 
-The workflow session's final response is one JSON object:
+The builder stage returns `completed`, `blocked`, or `failed`, with exact head,
+evidence, suggestions, blocker, and next action. `completed` requires a clean
+committed worktree.
+
+The delivery stage's final response is one JSON object:
 
 ```json
 {
@@ -131,11 +144,15 @@ The workflow session's final response is one JSON object:
     {
       "summary": "<not implemented>",
       "basis": "<observed | hypothesis and evidence>",
-      "whyDeferred": "<delivery-boundary reason>"
+      "whyDeferred": "<delivery-boundary reason>",
+      "benefit": "<expected value>",
+      "costRisk": "<implementation cost or risk>",
+      "priority": "<suggested priority>"
     }
   ],
   "blocker": {
     "kind": "<fact | decision | action | capability | collision | limit>",
+    "owner": "<named authority or fact owner>",
     "context": "<observation, attempts, boundary, recommendation, resume point>",
     "ask": "<one requested decision or action>",
     "answerBy": "<timing or milestone>",
@@ -187,6 +204,7 @@ Cover:
 - skill delivery boundary, blocker behavior, evidence, and report template;
 - publication route;
 - plan validation and dependency-cycle refusal;
+- route expansion uses standalone current profiles;
 - Copilot arguments omit `--model` and include bounded autonomous flags;
 - delivered-result validation;
 - failed/blocked dependency continuation;

@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 13,
-    "skills": 44
+    "agents": 14,
+    "skills": 45
   },
   "agents": [
     "creative-lead-design",
@@ -14,6 +14,7 @@
     "eng-reviewer-code",
     "workflow-creative-demo-production",
     "workflow-epic-init",
+    "workflow-nightshift",
     "workflow-proactive-scan",
     "workflow-weekly-pulse",
     "workflow-workspace-init"
@@ -54,6 +55,7 @@
     "kai-core-workspace-reonboard",
     "mockups-ascii",
     "mockups-html",
+    "nightshift-run",
     "onboard-to-codebase",
     "pr-delivery",
     "pr-review",
