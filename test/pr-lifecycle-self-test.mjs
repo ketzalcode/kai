@@ -72,6 +72,12 @@ test('pr sizing uses the completed diff and reviewability boundaries', () => {
 test('pr delivery reads the shared description reference', () => {
   const delivery = readSkill('pr-delivery');
   assert.match(delivery, /references\/pr-description\.md/);
+  assert.match(delivery, /opens and prepares/);
+  assert.doesNotMatch(delivery, /opens and lands/);
+  assert.match(
+    delivery,
+    /changed behavior, preserved behavior, scope boundary\/dependency, or evidence/,
+  );
 
   const reference = readFileSync(join(
     root,
@@ -82,6 +88,18 @@ test('pr delivery reads the shared description reference', () => {
     'references',
     'pr-description.md',
   ), 'utf8').replace(/\r\n/g, '\n');
+  assert.match(
+    reference,
+    /When a fact is not settled,[\s\S]*Pending decision[\s\S]*Not applicable/,
+  );
+  assert.match(
+    reference,
+    /Include one small ASCII diagram only when it is materially clearer;[\s\S]*omit the[\s\S]*section when it adds no information\./,
+  );
+  assert.match(
+    reference,
+    /Add rollout and removal gates only when[\s\S]*those cases apply\./,
+  );
   assert.match(reference, /^## Overview$/m);
   assert.match(reference, /^## Scoped architecture$/m);
   assert.match(reference, /^## Validation scenarios$/m);

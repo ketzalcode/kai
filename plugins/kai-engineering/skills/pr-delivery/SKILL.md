@@ -19,7 +19,7 @@ re-decides anything another skill owns.
 ```text
 pr-sizing          PR-DELIVERY            kai-core-definition-of-done      workflow-ship
 ---------          -----------            ------------------      -------------
-splits the    -->  opens and lands   -->  says it is        -->   deploys it
+splits the    -->  opens and prepares -->  says it is        -->   deploys it
 work               ONE pull request       release-ready
 
                    branch
@@ -120,7 +120,7 @@ Slugs are kebab-case, lowercase, and short enough to read in a branch list.
 ## 4 - PR description
 
 Read `references/pr-description.md` before drafting or updating the body. Use
-the default overview and validation-scenario sections. Add scoped ASCII
+the `Overview` and `Validation scenarios` sections by default. Add scoped ASCII
 architecture and rollout/removal gates only when their triggers apply.
 
 Describe one accepted delivery slice. Name dependencies on earlier PRs and work
@@ -182,8 +182,7 @@ Before opening the PR:
 
 - Pushing to a protected `main` and reporting `Bypassed rule violations` as
   though it were success.
-- A PR body that describes the fix but never states the problem, so the reviewer
-  cannot disagree with the diagnosis.
+- A PR body that describes the fix but never explains the changed behavior, preserved behavior, scope boundary/dependency, or evidence, so the reviewer cannot disagree with the diagnosis.
 - "Tests pass" with no command, or a Verification section written before the
   command was run.
 - A `feat` branch with no issue and no coordination Task, delivered silently.

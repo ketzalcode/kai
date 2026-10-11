@@ -1,7 +1,7 @@
 # PR description reference
 
-Use verified facts from the final delivery slice. State `Pending decision` or
-`Not applicable` rather than inventing content.
+Use verified facts from the final delivery slice. When a fact is not settled,
+use `Pending decision` or `Not applicable` rather than inventing content.
 
 ## Overview
 
@@ -11,9 +11,8 @@ the important scope boundary or dependency.
 
 ## Scoped architecture
 
-Include one small ASCII diagram when caller flow, ownership, state, or
-dependency order is materially clearer visually. Omit the section when the
-diagram adds no information.
+Include one small ASCII diagram only when it is materially clearer; omit the
+section when it adds no information.
 
 ## Validation scenarios
 
@@ -28,7 +27,8 @@ the description owns durable behavior and evidence not visible elsewhere.
 ## Rollout and removal gates
 
 Use this section only for flags, migrations, compatibility paths, staged
-rollout, rollback, or later cleanup.
+rollout, rollback, or later cleanup. Add rollout and removal gates only when
+those cases apply.
 
 ### Feature-flagged migration profile
 
