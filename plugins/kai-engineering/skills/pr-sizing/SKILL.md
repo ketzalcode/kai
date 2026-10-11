@@ -1,7 +1,7 @@
 ---
 name: pr-sizing
 description: "Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs."
-tools: [read, search]
+tools: [execute, read, search]
 user-invocable: true
 argument-hint: "optional completed diff or delivery goal"
 ---

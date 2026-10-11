@@ -61,6 +61,7 @@ test('builders stop at implementation evidence handoff', () => {
 
 test('pr sizing uses the completed diff and reviewability boundaries', () => {
   const sizing = readSkill('pr-sizing');
+  assert.match(sizing, /tools: \[execute, read, search\]/);
   assert.match(sizing, /complete integrated diff/);
   assert.match(sizing, /four or five primary hand-authored files/);
   assert.match(sizing, /signal, not a cap/);
