@@ -353,7 +353,7 @@ Read this before installing, not after.
 
 ## Status
 
-`v21.0.0` is this checkout's prepared metadata version - not a tag, a release,
+`v22.0.0` is this checkout's prepared metadata version - not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
