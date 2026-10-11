@@ -56,3 +56,42 @@ test('builders stop at implementation evidence handoff', () => {
     assert.match(body, /changed-behavior tests|Tests for changed/);
   }
 });
+
+test('pr sizing uses the completed diff and reviewability boundaries', () => {
+  const sizing = readSkill('pr-sizing');
+  assert.match(sizing, /complete integrated diff/);
+  assert.match(sizing, /four or five primary hand-authored files/);
+  assert.match(sizing, /signal, not a cap/);
+  assert.match(
+    sizing,
+    /Do not split solely because one part is client-side and another is server-side/,
+  );
+  assert.match(sizing, /independently valid and testable/);
+});
+
+test('pr delivery reads the shared description reference', () => {
+  const delivery = readSkill('pr-delivery');
+  assert.match(delivery, /references\/pr-description\.md/);
+
+  const reference = readFileSync(join(
+    root,
+    'plugins',
+    'kai-engineering',
+    'skills',
+    'pr-delivery',
+    'references',
+    'pr-description.md',
+  ), 'utf8').replace(/\r\n/g, '\n');
+  assert.match(reference, /^## Overview$/m);
+  assert.match(reference, /^## Scoped architecture$/m);
+  assert.match(reference, /^## Validation scenarios$/m);
+  assert.match(reference, /^## Rollout and removal gates$/m);
+  for (const scenario of [
+    'Default/inactive',
+    'Enabled success',
+    'Compatibility/error',
+    'Rollback',
+  ]) {
+    assert.match(reference, new RegExp(scenario.replace('/', '\\/')));
+  }
+});
