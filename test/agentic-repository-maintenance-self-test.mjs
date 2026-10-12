@@ -58,7 +58,7 @@ test('daily workflow is the exact shipped setup template', () => {
   assert.equal(workflow, reference);
   assert.equal(existsSync(lockPath), true, 'compiled Agentic Workflow lock must exist');
 
-  assert.match(workflow, /schedule:\s*daily/);
+  assert.match(workflow, /cron:\s*"0 16 \* \* \*"/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /copilot-requests:\s*write/);
   assert.match(workflow, /id:\s*copilot/);
