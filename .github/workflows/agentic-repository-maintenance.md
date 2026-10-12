@@ -9,7 +9,9 @@ permissions:
   actions: read
   copilot-requests: write
 network: defaults
-engine: copilot
+engine:
+  id: copilot
+  model: gpt-5.6-terra
 tools:
   github:
     toolsets: [repos, issues, pull_requests, actions]

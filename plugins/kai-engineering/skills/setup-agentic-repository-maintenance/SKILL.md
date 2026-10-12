@@ -50,6 +50,7 @@ For each option name:
 - coverage of documentation, comments, bugs, and improvements;
 - repository and external permissions;
 - admin, secret, billing, and runner setup;
+- available models, assessment quality, model cost, and fallback behavior;
 - stack/environment compatibility;
 - expected cost and cadence;
 - write authority, issue limits, and deduplication;
@@ -78,6 +79,11 @@ confirmed available, this package includes one validated issue-only option at
 `gh aw compile agentic-repository-maintenance`, retain the generated lock file,
 create the approved `maintenance` label, and validate with
 `gh aw validate agentic-repository-maintenance`.
+
+The reference pins `gpt-5.6-terra` for Kai's review-oriented maintenance run.
+Before reuse, confirm that model is available and acceptable for the target
+repository's quality, cost, and billing constraints. A model change belongs in
+the compared plan and operator sign-off; never silently fall back.
 
 That reference is an option, not the universal implementation. Do not copy it
 to GitLab, Azure DevOps, Bitbucket, a local-only repository, or a GitHub

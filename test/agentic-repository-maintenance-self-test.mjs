@@ -44,6 +44,7 @@ test('agentic repository maintenance setup investigates before acting', () => {
   assert.match(body, /repository host, issue tracker/);
   assert.match(body, /user, service-account, and token permissions/);
   assert.match(body, /administrator-only enablement, secrets, billing/);
+  assert.match(body, /available models, assessment quality, model cost/);
   assert.match(body, /stack-native validation commands/);
   assert.match(body, /network, private dependency, secret, and data-residency constraints/);
   assert.match(body, /Return two or three viable approaches/);
@@ -60,6 +61,8 @@ test('daily workflow is the exact shipped setup template', () => {
   assert.match(workflow, /schedule:\s*daily/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /copilot-requests:\s*write/);
+  assert.match(workflow, /id:\s*copilot/);
+  assert.match(workflow, /model:\s*gpt-5\.6-terra/);
   assert.match(workflow, /contents:\s*read/);
   assert.doesNotMatch(workflow, /contents:\s*write/);
   assert.doesNotMatch(workflow, /pull-requests:\s*write/);
