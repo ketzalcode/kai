@@ -11,7 +11,6 @@ The active documentation describes only the current system.
 | [Development process](development-process.md) | Fast-ship profile, validation levels, nightly checks, version/build workflow, and Monday releases |
 | [Plugin structure](reference/plugin-structure.md) | Repository layout, contributor authoring rules, build mechanics, and semantic versioning |
 | [Agents & skills](reference/agents-and-skills.md) | Generated catalog of the active five-package surface |
-| [Project Management boundary](designs/project-management-plugin.md) | Approved follow-up split between Core A2A execution and optional durable planning |
 
 Kai ships `kai-core`, optional `kai-contributor`, optional
 `kai-project-management`, `kai-engineering`, and `kai-creative`. Five other
@@ -22,6 +21,6 @@ evidence, scratch files, and coordination state belong under an ignored
 `.kai/` workspace and are never part of the documentation tree.
 
 Release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
-Implementation plans and superseded designs are intentionally absent. Git
-history is their archive; active agents should not treat retired architecture
-as current evidence.
+Implemented plans and superseded designs are intentionally absent. Git history
+is their archive; active agents should not treat retired architecture as
+current evidence.

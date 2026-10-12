@@ -76,7 +76,7 @@ explicit opt-in, and `npm test` fails if this file's copy drifts from the
 canonical one, if the markers are missing, or if onboarding stops referencing
 it. **Edit the canonical file, never this copy.**
 
-<!-- >>> kai repository instructions (managed by workflow-workspace-init) >>> -->
+<!-- >>> kai repository instructions (managed by kai-core-workspace-onboarding) >>> -->
 ## Communication style
 
 Think broadly and communicate narrowly. Report decisions, blockers, failures,

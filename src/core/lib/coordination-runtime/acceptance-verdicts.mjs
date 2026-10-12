@@ -68,9 +68,7 @@ export function effectiveApprovals(approvals, record, lookup) {
 }
 
 export function evidenceScope(record) {
-  return canonicalJson([
-    record.kind, record.dimension, record.data.environment ?? null, record.data.deployment_id ?? null,
-  ]);
+  return canonicalJson([record.kind, record.dimension]);
 }
 
 export function effectiveEvidence(evidence, record, lookup) {

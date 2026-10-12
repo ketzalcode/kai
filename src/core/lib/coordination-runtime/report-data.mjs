@@ -8,8 +8,7 @@ import {
 } from './contract.mjs';
 import {
   completionApproval, effectiveApprovals, effectiveEvidence, effectiveReviews,
-  matchesAcceptance, recoveryResolution, requireDeploymentEvidence,
-  requireOperatorApproval, requireReleaseEvidence, requireReviews,
+  matchesAcceptance, recoveryResolution, requireReviews,
 } from './acceptance.mjs';
 import {verifyArtifact, workspaceManifest} from './evidence-content.mjs';
 import {bindEvidenceReadView} from './evidence-context.mjs';
@@ -29,7 +28,7 @@ const bindsSubject = (record, subject) =>
 const contentEquals = (left, right) =>
   left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 
-const terminal = new Set(['completed', 'shipped', 'dropped']);
+const terminal = new Set(['completed', 'dropped']);
 const positive = value => ['approved', 'clear', 'waived', 'passed'].includes(value);
 const negativeValidity = new Set(['stale', 'expired', 'superseded', 'invalidated', 'retired']);
 
@@ -241,22 +240,6 @@ export function buildReport(store, {subject}) {
     }
     if (terminal.has(body.state) && body.state !== 'dropped' && !completionClaims.length) {
       addGap('completion', 'Recorded terminal state retained; current completion proof is missing or stale.');
-    }
-    const recordedPhase = body.state === 'blocked' ? body.resume_state : body.state;
-    if (['release-ready', 'deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
-      check('completion', () => completionApproval(tx, item), 'broken-claim');
-      check('required-reviews', () => requireReviews(tx, item), 'broken-claim');
-      check('release-evidence', () => requireReleaseEvidence(tx, item), 'broken-claim');
-    }
-    if (['deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
-      check('deployment-start', () => requireOperatorApproval(tx, item, 'operator-deploy-start'), 'broken-claim');
-    }
-    if (['production-verification', 'shipped'].includes(recordedPhase)) {
-      check('deployment-complete', () => requireOperatorApproval(tx, item, 'operator-deploy-complete'), 'broken-claim');
-      check('deployment', () => requireDeploymentEvidence(tx, item, 'deployment'), 'broken-claim');
-    }
-    if (recordedPhase === 'shipped') {
-      check('production-verification', () => requireDeploymentEvidence(tx, item, 'production-verification'), 'broken-claim');
     }
     const criteria = body.acceptance.map((text, index) => {
       const support = [

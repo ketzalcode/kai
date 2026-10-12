@@ -113,7 +113,7 @@ export function escapesRoot(root, candidate) {
   return rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel);
 }
 
-export function inspectPrivateLanes(root, lanes = ['.kai/runs', '.kai/review', '.kai/archive', '.kai/personal']) {
+export function inspectPrivateLanes(root, lanes) {
   const gitRoots = [];
   const symbolicLinks = [];
   const unreadable = [];

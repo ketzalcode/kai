@@ -124,7 +124,7 @@ async function seedActiveHierarchy(workspace) {
 test('Project Management owns an independent planning database and emits standalone Task handoffs', async () => {
   await withWorkspace(async workspace => {
     const ids = await seedActiveHierarchy(workspace);
-    const result = await runCLI(['handoff', '--root', workspace], {input: {
+    const input = {
       requirementId: ids.requirement,
       taskId: ids.task,
       title: 'Implement the bounded demo',
@@ -141,7 +141,8 @@ test('Project Management owns an independent planning database and emits standal
       dependsOn: [],
       reviewRequirements: [{role: reviewer.role, kind: 'code-review'}],
       updatedAt: AT,
-    }});
+    };
+    const result = await runCLI(['handoff', '--root', workspace], {input});
     assert.equal(result.exitCode, 0, JSON.stringify(result.result));
     assert.equal(validateTaskBody(result.result.task), result.result.task);
     assert.deepEqual(result.result.task.planning_refs, [
@@ -154,6 +155,15 @@ test('Project Management owns an independent planning database and emits standal
       result.result.task.planning_refs.some(reference => reference.includes('.sqlite')),
       false,
     );
+
+    const retiredState = await runCLI(['handoff', '--root', workspace], {
+      input: {
+        ...input,
+        dependsOn: [{task: 'engineering:task:upstream', requires: 'release-ready'}],
+      },
+    });
+    assert.equal(retiredState.exitCode, 1);
+    assert.equal(retiredState.result.code, 'INVALID_INPUT');
   });
 });
 

@@ -15,7 +15,6 @@ import {taskHandlers} from './task-engine.mjs';
 
 export {
   GRANTABLE_STATES,
-  SHIP_STATES,
   taskStateSatisfies,
 } from './task-engine.mjs';
 

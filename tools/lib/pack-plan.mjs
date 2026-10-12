@@ -900,8 +900,7 @@ export const AGENT_FAMILIES = [
 ];
 
 const ACTIVE_AGENT_IDS = new Set(Object.values(PACKS).flat());
-const INACTIVE_AGENT_IDS = new Set(INCUBATED_AGENT_IDS);
-const DECLARED_AGENT_IDS = new Set([...ACTIVE_AGENT_IDS, ...INACTIVE_AGENT_IDS]);
+const DECLARED_AGENT_IDS = new Set([...ACTIVE_AGENT_IDS, ...INCUBATED_AGENT_IDS]);
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
@@ -919,13 +918,9 @@ export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g')
 
 const AGENT_SHAPED = agentShapedPattern();
 const AGENT_CANDIDATE = agentCandidatePattern();
-const RETIRED_AGENT_IDS = new Set(
-  [...DECLARED_AGENT_IDS]
-    .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
-);
-
-// Exact declared ids remain valid. New durable-role ids use a provider-family
-// namespace with enforced posture and placement.
+// Active agents use a provider-family posture, a supported kind, or one named
+// capability. Incubated IDs remain recognizable references but do not bypass
+// active taxonomy when reintroduced.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
   const namedCapability = NAMED_CAPABILITY_AGENTS[id] ?? null;
@@ -937,12 +932,6 @@ export function agentTaxonomyErrors({ id, pack }) {
   if (pack === 'core') {
     return ['kai-core is an agent-free skills and runtime package'];
   }
-  if (RETIRED_AGENT_FAMILIES.includes(family)) {
-    return RETIRED_AGENT_IDS.has(id)
-      ? []
-      : [`agent family \`${family}-*\` is closed; new agents must use a provider-family posture or a supported kind prefix`];
-  }
-  if (INACTIVE_AGENT_IDS.has(id)) return [];
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
   if (!(family in ROLE_FAMILY_PACK)) {
     return [`agent family \`${family || '(missing)'}-*\` is not supported`];
@@ -968,31 +957,11 @@ export function agentTaxonomyErrors({ id, pack }) {
 export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
   if (NAMED_CAPABILITY_AGENTS[id]) return true;
-  if (family === 'principal') return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
 
-// Conversational roles have no bounded run to report. Research-only roles lack
-// `execute`, so requiring the append-based activity contract would force a
-// broader sandbox solely for observability.
-export const ACTIVITY_EXEMPT = new Map([
-  ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
-  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
-  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
-]);
-
-// `kai-core-work-acting` is the acting half of coordination: verify-lease-
-// before-write, collisions, handoffs, and review routing for a Task the role
-// already holds. A role that never holds a coordinated Task —
-// it only reads team state and writes its own private lane — has nothing to
-// act on, so requiring the contract is miscalibrated. No shipped role claims
-// that exemption today; the map stays as the declared seam for the next one.
-export const ACTING_EXEMPT = new Map([
-]);
-
 export function agentRoutingErrors({
   id, pack = null, body, tools = [], knownSkills = [], knownAgents = [],
-  activityExempt = false, actingExempt = false,
 }) {
   const text = normalizeLF(body ?? '');
   const errors = [];
@@ -1026,9 +995,11 @@ export function agentRoutingErrors({
   }
   const required = ['kai-core-operating-rules'];
   if (requiresCoordinatedRunContracts(id)) {
-    required.push('kai-core-workspace-paths');
-    if (!actingExempt) required.push('kai-core-work-acting');
-    if (!activityExempt) required.push('kai-core-work-activity');
+    required.push(
+      'kai-core-workspace-paths',
+      'kai-core-work-acting',
+      'kai-core-work-activity',
+    );
   }
   for (const skill of required) {
     if (!routed.has(skill)) {
@@ -1039,12 +1010,6 @@ export function agentRoutingErrors({
   const held = tools instanceof Set ? tools : new Set(tools);
   if (routed.size > 0 && !held.has('skill')) {
     errors.push('routes skills but its `tools` list omits `skill`');
-  }
-  if (activityExempt && routed.has('kai-core-work-activity')) {
-    errors.push('is activity-exempt but routes `kai-core-work-activity`; remove the exemption or the route');
-  }
-  if (actingExempt && routed.has('kai-core-work-acting')) {
-    errors.push('is acting-exempt but routes `kai-core-work-acting`; remove the exemption or the route');
   }
   if (pack !== null) {
     errors.push(...publicationRoutingErrors({pack, id, kind: 'agent', body: text}));

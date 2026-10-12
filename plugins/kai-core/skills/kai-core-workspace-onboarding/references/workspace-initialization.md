@@ -41,7 +41,7 @@ For `external`, create no project-local `.kai/`.
 For `repo-local`, install and verify:
 
 ```gitignore
-# >>> kai workspace (managed by workflow-workspace-init) >>>
+# >>> kai workspace (managed by kai-core-workspace-onboarding) >>>
 /.kai/
 /.kai-retired-*/
 **/storageState*.json

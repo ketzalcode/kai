@@ -18,7 +18,7 @@ export const DEFAULT_CONTEXT_RECENT_LIMIT = 8;
 const MAX_RECENT_LIMIT = 8;
 const MAX_MESSAGE_PAGE = 100;
 const MAX_EXCERPT_BYTES = 512;
-const TERMINAL = new Set(['completed', 'shipped', 'dropped']);
+const TERMINAL = new Set(['completed', 'dropped']);
 const bindsSubject = (record, subject) => subjectEquals(record?.subject, subject);
 
 function invalid(message) {

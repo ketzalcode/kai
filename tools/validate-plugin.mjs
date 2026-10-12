@@ -40,7 +40,7 @@ import {
   generatedKeyErrors, generatedRuntimeErrors,
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
-  agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
+  agentSourceFile, skillSourceFile,
   publicationDeclarationInventoryErrors, publicationRoutingErrors,
   sourceAssetIndex,
 } from './lib/pack-plan.mjs';
@@ -202,8 +202,6 @@ for (const agent of agentFiles) {
     tools: parseToolList(agent.fm?.tools) || [],
     knownSkills: skillIds,
     knownAgents: agentIds,
-    activityExempt: ACTIVITY_EXEMPT.has(agent.id),
-    actingExempt: ACTING_EXEMPT.has(agent.id),
   })) err(rel(agent.path), msg);
 }
 

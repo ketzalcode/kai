@@ -372,7 +372,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         const {source, reference, attributed_to, captured_at} = cap.receipt;
         const b = command.payload.body;
         return {source, reference, attributed_to, captured_at, ...Object.fromEntries(
-          ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery'].map(k => [k, b[k]]))};
+          ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'recovery'].map(k => [k, b[k]]))};
       };
       const embedding = createTrustedEmbedding({
         identity, authorize: () => ({roles: catalog.roster.map(e => e.role), grants}),

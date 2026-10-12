@@ -1,5 +1,4 @@
 import {
-  DOD_DIMENSIONS,
   RuntimeError,
   canonicalJson,
   isProducingRun,
@@ -64,50 +63,6 @@ export function completionApproval(tx, item) {
   }
   independent.forEach(approval => verifyVerdict(tx, item, approval, approval.authority));
   return independent[0];
-}
-
-export function requireReleaseEvidence(tx, item) {
-  taskOnly(item, 'release evidence');
-  const evidence = effectiveEvidence(bodies(tx, 'evidence', item), item, lookup(tx))
-    .filter(record => record.kind === 'dod-dimension');
-  for (const dimension of DOD_DIMENSIONS) {
-    const matching = evidence.filter(record => record.dimension === dimension);
-    if (matching.length === 0 || matching.some(record => record.outcome === 'gap')) {
-      fail('EVIDENCE_GAP', `task/${item.id} lacks accepted ${dimension} evidence for its current criteria`);
-    }
-    matching.forEach(record => verifyVerdict(tx, item, record));
-  }
-}
-
-export function requireOperatorApproval(tx, item, kind) {
-  taskOnly(item, 'deployment approval');
-  const approvals = effectiveApprovals(bodies(tx, 'approval', item), item, lookup(tx)).filter(approval =>
-    approval.kind === kind && approval.authority.role === 'operator');
-  if (approvals.length === 0 || approvals.some(approval => approval.decision !== 'approved')) {
-    fail('AUTHORITY_REQUIRED', `task/${item.id} lacks effective ${kind} operator confirmation`);
-  }
-  if (new Set(approvals.map(approval => canonicalJson(approval.deployment))).size !== 1) {
-    fail('AUTHORITY_REQUIRED', 'operator confirmations disagree about the production deployment');
-  }
-  approvals.forEach(approval => verifyVerdict(tx, item, approval, approval.authority));
-  return approvals[0];
-}
-
-export function requireDeploymentEvidence(tx, item, kind) {
-  taskOnly(item, 'deployment evidence');
-  const start = requireOperatorApproval(tx, item, 'operator-deploy-start');
-  const complete = requireOperatorApproval(tx, item, 'operator-deploy-complete');
-  if (canonicalJson(start.deployment) !== canonicalJson(complete.deployment)) {
-    fail('AUTHORITY_REQUIRED', 'deployment completion does not match the confirmed production start');
-  }
-  const evidence = effectiveEvidence(bodies(tx, 'evidence', item), item, lookup(tx)).filter(record =>
-    record.kind === kind
-    && record.data.environment === start.deployment.environment
-    && record.data.deployment_id === start.deployment.deployment_id);
-  if (evidence.length === 0 || evidence.some(record => record.outcome !== 'passed')) {
-    fail('EVIDENCE_GAP', `task/${item.id} lacks passed ${kind} evidence for the confirmed production deployment`);
-  }
-  evidence.forEach(record => verifyVerdict(tx, item, record));
 }
 
 export function recoveryResolution(tx, item, approvalId) {

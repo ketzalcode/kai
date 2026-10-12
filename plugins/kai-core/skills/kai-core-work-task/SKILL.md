@@ -27,15 +27,16 @@ or artifact targets. Direct work remains direct and creates no Task.
 
 ```text
 proposed -> ready -> in-progress -> in-review
-knowledge: in-review -> completed
-product/operational:
-  in-review -> release-ready -> deploying
-  -> production-verification -> shipped
+in-review -> completed
 ```
 
-Blocked, restoration, dropped, lease, recovery, review, deployment, and
-production-verification gates remain explicit. A lifecycle transition never
-substitutes for required review, acceptance, evidence, or operator action.
+`completed` closes the executable A2A record after its named completion
+authority accepts the exact change. It does not mean parent scope is complete,
+released, deployed, or shipped. Those decisions remain outside Core.
+
+Blocked, restoration, dropped, lease, recovery, and review gates remain
+explicit. A lifecycle transition never substitutes for required review,
+acceptance, evidence, or operator action.
 
 ## Commands and leases
 
