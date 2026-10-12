@@ -43,7 +43,7 @@ For `repo-local`, install and verify:
 ```gitignore
 # >>> kai workspace (managed by kai-core-workspace-onboarding) >>>
 /.kai/
-/.kai-retired-*/
+/.kai-migration-*/
 **/storageState*.json
 # <<< kai workspace <<<
 ```

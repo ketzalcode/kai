@@ -14,9 +14,10 @@ Choose one mode. Read only its reference:
   [pack installation](references/pack-installation.md).
 - **Initialize or repair a current workspace:** read
   [workspace initialization](references/workspace-initialization.md).
-- **Reset an unsupported workspace:** stop and tell the operator to select
-  `kai-core-workspace-reonboard`. Never inspect, translate, or import its old
-  private records.
+- **Reshape an unsupported workspace:** stop and tell the operator to select
+  `kai-core-workspace-reonboard`. That procedure inventories durable content,
+  maps it to current package-owned paths, and rebuilds runtime state without
+  loading the old runtime through current commands.
 
 Do not load both references for one request.
 

@@ -50,7 +50,7 @@ carry opaque `planning_refs`, but Core does not interpret them.
 
 Project Management's `handoff` command produces a proposed Core Task body from
 approved Requirement scope. The caller submits it separately to Core. There is
-no mirrored table, migration, old-record import, compatibility alias, or
+no mirrored table, historical runtime-record import, compatibility alias, or
 cross-database transaction.
 
 ## One authority per fact
@@ -95,9 +95,11 @@ project/
 `-- docs/kai/                                  accepted project knowledge
 ```
 
-Schema 6 is a clean break. Unsupported workspaces are re-onboarded. Installing
-a package creates no workspace, and Core onboarding does not initialize the
-optional Project Management database.
+Schema 6 is the only live contract. Unsupported workspaces are re-onboarded by
+moving durable knowledge and artifacts into current package-owned paths,
+rebuilding runtime state, and removing temporary staging after verification.
+Installing a package creates no workspace, and Core onboarding does not
+initialize the optional Project Management database.
 
 ## Department operation
 

@@ -2,8 +2,10 @@
 
 # Workspaces
 
-Kai supports one workspace contract: schema 6. It reads an old schema number
-only to refuse it. There is no migration or historical-record import.
+Kai supports one live workspace contract: schema 6. Current runtimes never
+open an old schema. Explicit re-onboarding can reshape durable knowledge and
+artifacts into current package-owned paths, but it rebuilds runtime state
+instead of importing historical coordination records.
 
 ```text
 .kai/       private, ignored, untracked
@@ -83,14 +85,18 @@ refused.
 
 ## Re-onboarding unsupported workspaces
 
-`kai-core-workspace-reonboard` performs an operator-controlled reset:
+`kai-core-workspace-reonboard` performs an operator-controlled reshape:
 
-1. preserve accepted `docs/kai/`;
-2. rename `.kai/` to an ignored timestamped `.kai-retired-*` backup;
-3. initialize a clean schema-6 workspace; and
-4. initialize optional runtimes again only when requested.
+1. inventory every old private path and preserve existing `docs/kai/`;
+2. map durable knowledge and artifacts to current package-owned routes;
+3. move the old private root to a temporary ignored staging path;
+4. initialize current Core and explicitly requested optional runtimes;
+5. apply and verify every approved durable-content move or transform; and
+6. remove staging after the inventory reconciles and all current checks pass.
 
-No Core or Project Management record is imported.
+Historical leases, activity, approvals, messages, completed coordination
+events, and old runtime databases are not imported. A successful migration
+leaves no compatibility or legacy-backup directory.
 
 ## Validate
 

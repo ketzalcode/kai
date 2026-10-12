@@ -104,4 +104,7 @@ configured `docs/kai/` publication root.
 
 Only schema 6 is supported. Refuse every other manifest with
 `SCHEMA_MISMATCH` and route to `kai-core-workspace-reonboard`. Re-onboarding
-preserves `docs/kai/`, retires `.kai/`, and imports no records.
+preserves existing `docs/kai/`, migrates durable knowledge and artifacts into
+current package-owned routes, rebuilds current runtime state, and removes its
+temporary staging path after verified reconciliation. Historical coordination
+records are not imported.
