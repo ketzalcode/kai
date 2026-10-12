@@ -140,8 +140,15 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
 | [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
-| [`agentic-repository-maintenance`](../../plugins/kai-engineering/skills/agentic-repository-maintenance/SKILL.md) | `kai-engineering` | Use when installing, updating, or validating the opt-in daily Agentic Workflow that audits an engineering repository and files bounded maintenance issues. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
+
+### Engineering automation
+
+Investigate platform feasibility and install approved repository automation without assuming one host or agent runtime.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
+| [`setup-agentic-repository-maintenance`](../../plugins/kai-engineering/skills/setup-agentic-repository-maintenance/SKILL.md) | `kai-engineering` | Use when evaluating and setting up automated repository maintenance after comparing feasible platform, permission, agent, scheduler, and issue-tracker approaches. |
 
 ### Creative methods
 

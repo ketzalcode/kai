@@ -124,8 +124,14 @@ const CATEGORIES = [
       'nightshift-run',
       'research-before-coding',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
-      'onboard-to-codebase', 'agentic-repository-maintenance', 'build-diagrams',
+      'onboard-to-codebase', 'build-diagrams',
     ],
+  },
+  {
+    kind: 'skill',
+    title: 'Engineering automation',
+    blurb: 'Investigate platform feasibility and install approved repository automation without assuming one host or agent runtime.',
+    members: ['setup-agentic-repository-maintenance'],
   },
   {
     kind: 'skill',

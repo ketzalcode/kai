@@ -7,7 +7,7 @@ import {materializePacks, sourceSkillFiles} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const skill = sourceSkillFiles(root).find(
-  entry => entry.id === 'agentic-repository-maintenance',
+  entry => entry.id === 'setup-agentic-repository-maintenance',
 );
 const body = skill
   ? readFileSync(skill.path, 'utf8').replace(/\r\n/g, '\n')
@@ -17,9 +17,9 @@ const referencePath = join(
   'plugins',
   'kai-engineering',
   'skills',
-  'agentic-repository-maintenance',
+  'setup-agentic-repository-maintenance',
   'references',
-  'agentic-repository-maintenance.md',
+  'github-agentic-repository-maintenance.md',
 );
 const workflowPath = join(
   root,
@@ -34,15 +34,21 @@ const lockPath = join(
   'agentic-repository-maintenance.lock.yml',
 );
 
-test('agentic repository maintenance is an Engineering-owned setup skill', () => {
-  assert.ok(skill, 'agentic-repository-maintenance must exist');
+test('agentic repository maintenance setup investigates before acting', () => {
+  assert.ok(skill, 'setup-agentic-repository-maintenance must exist');
   assert.equal(skill.pack, 'engineering');
   assert.match(body, /^user-invocable:\s*true$/m);
-  assert.match(body, /^argument-hint:\s*"setup \| update \| validate"$/m);
-  assert.match(body, /creates no `\.kai` state/);
+  assert.match(body, /^argument-hint:\s*"maintenance goal, cadence, or target repository"$/m);
+  assert.match(body, /creates\s+no `\.kai` state/);
   assert.match(body, /does not perform a manual\s+maintenance audit/);
-  assert.match(body, /at most three deduplicated maintenance\s+issues/);
-  assert.match(body, /cannot push, edit repository content, create a pull request/);
+  assert.match(body, /repository host, issue tracker/);
+  assert.match(body, /user, service-account, and token permissions/);
+  assert.match(body, /administrator-only enablement, secrets, billing/);
+  assert.match(body, /stack-native validation commands/);
+  assert.match(body, /network, private dependency, secret, and data-residency constraints/);
+  assert.match(body, /Return two or three viable approaches/);
+  assert.match(body, /Obtain explicit\s+operator approval before installing tools/);
+  assert.match(body, /Keep assessment and remediation separate/);
 });
 
 test('daily workflow is the exact shipped setup template', () => {
@@ -85,6 +91,6 @@ test('copied Engineering packages include the maintenance setup template', () =>
     packs: ['core', 'engineering'],
   });
   assert.ok(files.has(
-    'kai-engineering/skills/agentic-repository-maintenance/references/agentic-repository-maintenance.md',
+    'kai-engineering/skills/setup-agentic-repository-maintenance/references/github-agentic-repository-maintenance.md',
   ));
 });
