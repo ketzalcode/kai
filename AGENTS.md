@@ -45,11 +45,13 @@ reintroduce their eager declarations or dependency guards. Schema 6 has no
 generic personal lane. Unsupported workspaces are re-onboarded without
 importing historical private records.
 
-The install owners are `kai-core`, `kai-project-management`,
-`kai-engineering`, and `kai-creative`.
+The install owners are `kai-core`, `kai-contributor`,
+`kai-project-management`, `kai-engineering`, and `kai-creative`.
 Keep each source in one owning package. A capability package's
 baseline is core plus itself, with adequate supplied inputs rather than
-compulsory sibling producers. Naming-family tokens do not define install owners.
+compulsory sibling producers. `kai-contributor` is the exception: its direct
+feedback and authoring skills are standalone and create no workspace state.
+Naming-family tokens do not define install owners.
 
 Five further capability packages — product, marketing, revenue, assistant, and
 learning — are incubated under `incubator/`. They are inactive by construction:

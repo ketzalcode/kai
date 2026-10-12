@@ -2,12 +2,15 @@
 
 # Shipped architecture
 
-Kai ships four packages from `plugins/`. Everything under `incubator/` is
+Kai ships five packages from `plugins/`. Everything under `incubator/` is
 inactive and non-installable.
 
 ## Package topology
 
 ```text
+  kai-contributor
+  0 agents; feedback/authoring; no runtime
+
                   optional
   kai-project-management --------+
   0 agents; planning runtime      |
@@ -17,6 +20,7 @@ inactive and non-installable.
 ```
 
 - Core has no dependency on another package.
+- Contributor has no package dependency and owns no workspace state.
 - Project Management may reference Core concepts and opaque Core Task IDs.
 - Engineering and Creative depend only on Core.
 - No agent requires Project Management.
@@ -27,6 +31,7 @@ inactive and non-installable.
 | Owner | Durable authority |
 | --- | --- |
 | `kai-core` | Workspace, standalone Tasks, grants, leases, collisions, recovery, questions, messages, handoffs, reviews, evidence, activity, assets |
+| `kai-contributor` | Public Kai feedback and Kai agent/skill authoring guidance; no durable runtime authority |
 | `kai-project-management` | Direction, Epic, Feature, Requirement, priority, holds, planning dependencies, scope/completion authority, parent closure, planning views |
 | Department | Supplied approved domain scope, implementation, review, and package publication |
 
@@ -56,7 +61,7 @@ cross-database transaction.
 | Core records and commands | `src/core/lib/coordination-runtime/schema.mjs` |
 | Project planning runtime | `src/project-management/project.mjs` |
 | Publication vocabulary | `plugins/<pack>/publication.json` |
-| Package ownership | `plugins/kai-{core,project-management,engineering,creative}/` |
+| Package ownership | `plugins/kai-{core,contributor,project-management,engineering,creative}/` |
 | Release version | `package.json` |
 
 Markdown explains these contracts. Validators do not parse prose as a second
@@ -76,6 +81,7 @@ plugins/kai-creative/scripts/
 ```
 
 All shipped runtimes use Node built-ins only.
+`kai-contributor` ships Markdown skills only.
 
 ## Consumer workspace
 

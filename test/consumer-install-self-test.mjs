@@ -302,6 +302,7 @@ async function runFixture(fixtureName) {
     ok(existsSync(join(projectRoot, '.kai', 'core', 'runtime', 'coordination.sqlite')),
       'initialization creates only the fixed Core runtime store');
     ok(!existsSync(join(projectRoot, '.kai', 'project-management'))
+      && !existsSync(join(projectRoot, '.kai', 'contributor'))
       && !existsSync(join(projectRoot, '.kai', 'engineering'))
       && !existsSync(join(projectRoot, '.kai', 'creative')),
     'initialization creates no optional package directories');

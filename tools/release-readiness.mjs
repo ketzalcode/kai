@@ -65,11 +65,14 @@ function generatedVersions(ref) {
     'plugin.json': readJsonAtRef(ref, 'plugin.json').version,
     'marketplace.metadata': marketplace.metadata?.version,
     'marketplace.kai-core': marketplaceVersion('kai-core'),
+    'marketplace.kai-contributor': marketplaceVersion('kai-contributor'),
     'marketplace.kai-project-management': marketplaceVersion('kai-project-management'),
     'marketplace.kai-engineering': marketplaceVersion('kai-engineering'),
     'marketplace.kai-creative': marketplaceVersion('kai-creative'),
     'plugins/kai-core/plugin.json':
       readJsonAtRef(ref, 'plugins/kai-core/plugin.json').version,
+    'plugins/kai-contributor/plugin.json':
+      readJsonAtRef(ref, 'plugins/kai-contributor/plugin.json').version,
     'plugins/kai-project-management/plugin.json':
       readJsonAtRef(ref, 'plugins/kai-project-management/plugin.json').version,
     'plugins/kai-engineering/plugin.json':

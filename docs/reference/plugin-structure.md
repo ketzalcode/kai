@@ -14,6 +14,7 @@ kai/
 |-- CHANGELOG.md                      manually authored release notes
 |-- plugins/
 |   |-- kai-core/
+|   |-- kai-contributor/
 |   |-- kai-project-management/
 |   |-- kai-engineering/
 |   `-- kai-creative/
@@ -30,9 +31,9 @@ kai/
 ```
 
 Agents and skills are declarative Markdown with YAML frontmatter. Their owning
-package directory is authoritative. Core depends on no capability or
-department. Project Management may depend on Core. Engineering and Creative
-depend on Core but not on Project Management or each other. Incubated source is
+package directory is authoritative. Core and Contributor depend on no other
+package. Project Management may depend on Core. Engineering and Creative depend
+on Core but not on Project Management or each other. Incubated source is
 excluded from discovery, validation, generation, and installation.
 
 ## Authoring agents and skills
@@ -45,8 +46,9 @@ excluded from discovery, validation, generation, and installation.
 - Give every skill a real firing path through an agent route or explicit user
   invocation.
 - Durable producers declare their package-local publication entry point.
-- Put package publication vocabulary in `plugins/<pack>/publication.json`, not
-  in a validator that parses explanatory prose.
+- When a package produces durable Kai assets, put its publication vocabulary in
+  `plugins/<pack>/publication.json`, not in a validator that parses explanatory
+  prose. A package with no durable output declares no empty vocabulary.
 - When an agent or skill is added, removed, or renamed, update `CATEGORIES` in
   `tools/generate-catalog.mjs`; the build regenerates
   `docs/reference/agents-and-skills.md`.
@@ -61,7 +63,7 @@ Choose the kind from the responsibility, not from a title:
 | Named capability role | Holds a standing product entry point whose capability name is clearer than a posture label. | `<family>-<capability>`; exact ID, pack, and profiles are registered in `NAMED_CAPABILITY_AGENTS` |
 | Persona | Represents a user or stakeholder viewpoint without delivery authority. | `persona-<viewpoint>` |
 | Instructor | Teaches or structures learning for the operator. | `instructor-<teaching-scope>` |
-| Skill | Supplies reusable method without an independent authority lane. | `<kebab-case>`; core skills use `kai-core-*` |
+| Skill | Supplies reusable method without an independent authority lane. | `<kebab-case>`; Core skills use `kai-core-*`, Contributor tools use `kai-*` |
 
 A bounded procedure is a user-invocable skill, not a `workflow-*` agent. Keep an
 agent only when the capability needs a durable identity or authority lane.
@@ -73,8 +75,9 @@ The active durable-role provider families are:
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation |
 | `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production |
 
-`kai-core` and `kai-project-management` are deliberately agent-free. Core
-supplies workspace and standalone Task/A2A execution. Project Management is an
+`kai-core`, `kai-contributor`, and `kai-project-management` are deliberately
+agent-free. Core supplies workspace and standalone Task/A2A execution.
+Contributor supplies no runtime or workspace state. Project Management is an
 optional planning capability with its own private runtime.
 
 Use full responsibility words in scope: `frontend`, `backend`, and `software`,
@@ -142,8 +145,9 @@ mutation, activity, or publication boundary. Runtime compatibility comes from
 the relevant executable's `inspect`, not a model probe. Direct work must not
 enter coordinated setup merely because an agent can coordinate.
 
-Use `kai-core-create-agent` for a new or materially revised role and
-`kai-core-create-skill` for reusable method.
+Use `kai-create-agent` for a new or materially revised role and
+`kai-create-skill` for reusable method. Both ship in optional
+`kai-contributor`, not the Core runtime package.
 
 ### Execution profiles and models
 

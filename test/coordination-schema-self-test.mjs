@@ -17,17 +17,29 @@ import {
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
-test('schema 6 publishes four packages with optional agent-free Project Management', () => {
+test('install packages stay separate from schema-6 workspace packages', () => {
   assert.equal(WORKSPACE_CONTRACT.schemaVersion, 6);
-  assert.deepEqual(PACK_ORDER, [
+  assert.deepEqual(WORKSPACE_CONTRACT.packs, [
     'core',
     'project-management',
     'creative',
     'engineering',
   ]);
+  assert.deepEqual(PACK_ORDER, [
+    'core',
+    'contributor',
+    'project-management',
+    'engineering',
+    'creative',
+  ]);
+  assert.deepEqual(packageAgentInventory(root).contributor, []);
   assert.deepEqual(packageAgentInventory(root)['project-management'], []);
   const manifests = planManifests({root, version: '23.0.0'});
-  assert.equal(manifests.length, 4);
+  assert.equal(manifests.length, 5);
+  assert.deepEqual(
+    manifests.find(entry => entry.pack === 'contributor').agents,
+    [],
+  );
   assert.deepEqual(
     manifests.find(entry => entry.pack === 'project-management').agents,
     [],

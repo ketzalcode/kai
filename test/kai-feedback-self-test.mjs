@@ -6,20 +6,20 @@ import {fileURLToPath} from 'node:url';
 import {sourceSkillFiles} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const entry = sourceSkillFiles(root).find(skill => skill.id === 'kai-core-feedback');
+const entry = sourceSkillFiles(root).find(skill => skill.id === 'kai-feedback');
 const body = entry
   ? readFileSync(entry.path, 'utf8').replace(/\r\n/g, '\n')
   : '';
 
-test('kai-core-feedback is a lean user-invocable Core skill', () => {
-  assert.ok(entry, 'kai-core-feedback must exist');
-  assert.equal(entry.pack, 'core');
+test('kai-feedback is a lean user-invocable contributor skill', () => {
+  assert.ok(entry, 'kai-feedback must exist');
+  assert.equal(entry.pack, 'contributor');
   assert.match(body, /^user-invocable:\s*true$/m);
   assert.match(body, /^argument-hint:\s*"what Kai got wrong or missed"$/m);
-  assert.ok(body.split('\n').length <= 125, 'kai-core-feedback must stay lean');
+  assert.ok(body.split('\n').length <= 125, 'kai-feedback must stay lean');
 });
 
-test('kai-core-feedback creates one confirmed public labeled issue', () => {
+test('kai-feedback creates one confirmed public labeled issue', () => {
   assert.match(body, /public GitHub issue/i);
   assert.match(body, /gh auth status/);
   assert.match(body, /gh issue list --repo ketzalcode\/kai/);
@@ -30,7 +30,7 @@ test('kai-core-feedback creates one confirmed public labeled issue', () => {
   assert.match(body, /--body-file/);
 });
 
-test('kai-core-feedback preserves evidence and privacy without success fallbacks', () => {
+test('kai-feedback preserves evidence and privacy without success fallbacks', () => {
   for (const heading of [
     'Expected Kai behavior',
     'Observed behavior',
@@ -46,7 +46,7 @@ test('kai-core-feedback preserves evidence and privacy without success fallbacks
   assert.match(body, /do not silently create an\s+unlabeled issue/);
 });
 
-test('kai-core-feedback does not authorize automated remediation', () => {
+test('kai-feedback does not authorize automated remediation', () => {
   assert.doesNotMatch(body, /copilot-swe-agent|\/agents\/repos|create_pull_request/);
   assert.match(body, /never adds an auto-fix label, assigns an agent, starts a cloud\s+session/);
 });

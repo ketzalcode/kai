@@ -23,9 +23,6 @@
     "engineering-workspace-publication",
     "frontend-coding-standards",
     "html-block-diagrams",
-    "kai-core-create-agent",
-    "kai-core-create-skill",
-    "kai-core-feedback",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
     "kai-core-work-acting",
@@ -36,6 +33,9 @@
     "kai-core-workspace-paths",
     "kai-core-workspace-publication",
     "kai-core-workspace-reonboard",
+    "kai-create-agent",
+    "kai-create-skill",
+    "kai-feedback",
     "mockups-ascii",
     "mockups-html",
     "nightshift-run",
@@ -63,20 +63,20 @@
       "argument_hint": ""
     },
     {
-      "name": "kai-core-create-agent",
+      "name": "kai-core-workspace-onboarding",
+      "argument_hint": "install packs, initialize workspace, or repair binding"
+    },
+    {
+      "name": "kai-create-agent",
       "argument_hint": "agent purpose or existing agent path"
     },
     {
-      "name": "kai-core-create-skill",
+      "name": "kai-create-skill",
       "argument_hint": "skill purpose or existing skill path"
     },
     {
-      "name": "kai-core-feedback",
+      "name": "kai-feedback",
       "argument_hint": "what Kai got wrong or missed"
-    },
-    {
-      "name": "kai-core-workspace-onboarding",
-      "argument_hint": "install packs, initialize workspace, or repair binding"
     },
     {
       "name": "mockups-ascii",

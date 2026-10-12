@@ -9383,9 +9383,6 @@ async function execute({ verb, options: options2, body, host, cwd, env }) {
   }
 }
 
-// src/core/lib/pack-names.mjs
-var PACK_ORDER = WORKSPACE_CONTRACT.packs;
-
 // src/core/lib/coordination-runtime/contract-primitives.mjs
 import { createHash as createHash7 } from "node:crypto";
 var SUBJECT_KINDS = /* @__PURE__ */ new Set(["git", "sha256", "bundle-sha256"]);

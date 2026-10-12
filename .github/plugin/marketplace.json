@@ -5,7 +5,7 @@
     "url": "https://github.com/ketzalcode"
   },
   "metadata": {
-    "description": "Kai core, optional project management, engineering, and creative. Other capability packages are incubated and do not ship.",
+    "description": "Kai core, optional contributor and project management tools, engineering, and creative. Other capability packages are incubated and do not ship.",
     "version": "23.0.0",
     "installSurface": "packs"
   },
@@ -31,6 +31,29 @@
         "saas",
         "engineering",
         "workflow-automation"
+      ]
+    },
+    {
+      "name": "kai-contributor",
+      "source": "./plugins/kai-contributor",
+      "description": "Optional agent-free Kai feedback and agent/skill authoring tools with no workspace runtime.",
+      "version": "23.0.0",
+      "author": {
+        "name": "ketzalcode",
+        "url": "https://github.com/ketzalcode"
+      },
+      "homepage": "https://github.com/ketzalcode/kai",
+      "repository": "https://github.com/ketzalcode/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "feedback",
+        "authoring",
+        "contributor-tools"
       ]
     },
     {

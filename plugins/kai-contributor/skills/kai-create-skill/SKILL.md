@@ -1,5 +1,5 @@
 ---
-name: kai-core-create-skill
+name: kai-create-skill
 description: "Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches."
 tools: [read, edit, search, execute]
 user-invocable: true

@@ -1,5 +1,5 @@
 ---
-name: kai-core-feedback
+name: kai-feedback
 description: "Use when the operator says Kai was incorrect, missed a principle, added too much process, or needs an improvement recorded for the Kai maintainers."
 tools: [execute, read, search, ask_user]
 user-invocable: true

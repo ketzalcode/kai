@@ -27,7 +27,13 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const version = packageJson.version;
-const expectedPacks = ['core', 'creative', 'engineering', 'project-management'];
+const expectedPacks = [
+  'contributor',
+  'core',
+  'creative',
+  'engineering',
+  'project-management',
+];
 const buildCache = new Map();
 
 function build(packs) {
@@ -60,7 +66,7 @@ function assertInstall(files, packs) {
   assert.deepEqual(generatedRuntimeErrors(files, packs), []);
 }
 
-test('exactly four active packages are planned', () => {
+test('exactly five active packages are planned', () => {
   assert.deepEqual([...PACK_ORDER].sort(), expectedPacks);
   assert.deepEqual(
     planManifests({root, version}).map(entry => entry.name).sort(),
@@ -152,6 +158,7 @@ test('marketplace policy and pack planning expose only the current package surfa
   });
   assert.deepEqual(policy.requiredPluginNames, [
     'kai-core',
+    'kai-contributor',
     'kai-project-management',
     'kai-engineering',
     'kai-creative',
@@ -183,6 +190,24 @@ test('Core-only install is closed and loadable', () => {
   );
 });
 
+test('Contributor-only install is closed and loadable', () => {
+  const files = build(['contributor']);
+  assertInstall(files, ['contributor']);
+  const manifest = planManifests({root, version})
+    .find(entry => entry.pack === 'contributor');
+  assert.deepEqual(manifest.agents, []);
+  assert.deepEqual(manifest.skills, [
+    'kai-create-agent',
+    'kai-create-skill',
+    'kai-feedback',
+  ]);
+  assert.equal(
+    [...files.keys()].some(key => key.startsWith('kai-contributor/scripts/')),
+    false,
+  );
+  assert.equal(files.has('kai-contributor/publication.json'), false);
+});
+
 test('Core + Engineering install contains only those packages', () => {
   assertInstall(build(['core', 'engineering']), ['core', 'engineering']);
 });
@@ -202,7 +227,7 @@ test('all packages install as one closed generated surface', () => {
   assertInstall(build(expectedPacks), expectedPacks);
 });
 
-test('only Project Management and departments may depend on Core', () => {
+test('cross-package references reach only Core', () => {
   const owners = new Map([
     ...sourceAgentFiles(root).map(entry => [`agent:${entry.id}`, entry.pack]),
     ...sourceSkillFiles(root).map(entry => [`skill:${entry.id}`, entry.pack]),
@@ -219,6 +244,17 @@ test('only Project Management and departments may depend on Core', () => {
     .map(reference =>
       `${reference.fromPack}:${reference.from} -> ${reference.targetPack}:${reference.target}`);
   assert.deepEqual(violations, []);
+  const contributorReferences = collectReferences(root)
+    .filter(reference => reference.fromPack === 'contributor')
+    .map(reference => ({
+      target: reference.target,
+      targetPack: owners.get(`${reference.kind}:${reference.target}`) ?? null,
+    }));
+  assert.ok(contributorReferences.length > 0);
+  assert.equal(
+    contributorReferences.every(reference => reference.targetPack === 'contributor'),
+    true,
+  );
 });
 
 test('generated executables reject external runtime imports', () => {

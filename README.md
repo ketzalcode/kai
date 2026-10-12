@@ -33,7 +33,7 @@ setup needed.
 
 ## What ships
 
-Four packages. Project Management is optional and agent-free.
+Five packages. Contributor and Project Management are optional and agent-free.
 
 ```text
    kai-engineering                      kai-creative
@@ -61,6 +61,11 @@ Four packages. Project Management is optional and agent-free.
   +----------------------------------------------------------------------+
 
   +-----------------------------------------------------------------------+
+  | kai-contributor (optional)                                            |
+  | feedback and agent/skill authoring; no workspace runtime              |
+  +-----------------------------------------------------------------------+
+
+  +-----------------------------------------------------------------------+
   | kai-project-management (optional)                                     |
   | agent-free planning skills and runtime                                |
   | Direction, Epic, Feature, Requirement, priority, holds, dependencies, |
@@ -76,11 +81,13 @@ The arrows are the whole dependency rule, and it is enforced, not just
 documented: `referenceErrors` in `tools/lib/pack-plan.mjs` fails the build if a
 department pack loads a skill owned by another package, and `kai-core` may
 reach no capability or department at all. Project Management may reach Core;
-Core, Engineering, and Creative do not depend on Project Management.
+Core, Contributor, Engineering, and Creative do not depend on Project
+Management. Contributor has no package dependency or workspace runtime.
 
 | Package | Owns |
 | --- | --- |
 | `kai-core` | Shared skills, workspace machinery, standalone Task/A2A runtime |
+| `kai-contributor` | Optional public feedback and lean Kai agent/skill authoring |
 | `kai-project-management` | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff |
 | `kai-engineering` | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | UI/UX, visual identity, design assets, supported media production |
@@ -121,17 +128,19 @@ copilot plugin marketplace browse kai-plugins
 
 ### 2. Install the packages
 
-`kai-core` first. Project Management and departments build on it:
+Install `kai-core` before Project Management or departments. Contributor is
+standalone and optional:
 
 ```text
 copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-contributor@kai-plugins
 copilot plugin install kai-project-management@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
 
-Core alone is a complete install. Project Management is optional. Add only the
-capabilities and departments you want.
+Core alone is a complete collaboration install. Contributor and Project
+Management are optional. Add only the capabilities and departments you want.
 
 ### 3. Verify it worked
 
@@ -157,7 +166,7 @@ If nothing kai-related appears, the plugin loaded into the old session only.
 For local development, load a checkout without installing it:
 
 ```powershell
-copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-project-management --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
+copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-contributor --plugin-dir plugins\kai-project-management --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
 ```
 
 The cloud coding agent must be configured by its repository owner to load the
@@ -367,7 +376,7 @@ a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
-| Packages | `kai-core`, `kai-project-management`, `kai-engineering`, `kai-creative` |
+| Packages | `kai-core`, `kai-contributor`, `kai-project-management`, `kai-engineering`, `kai-creative` |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 
@@ -378,10 +387,10 @@ a publication, or a host-verification claim.
 | **Install it and finish one real thing** | [Install](#install) and [First five minutes](#first-five-minutes) |
 | **See the shipped architecture** | [Architecture](docs/architecture.md) — package topology, generated JavaScript, workspace layout, and work hierarchy |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
-| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the four packages supply |
+| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the five packages supply |
 | **See what is parked and not shipping** | [Incubator](incubator/README.md) — the five capability packages and the components held out of the active tree |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/architecture.md#host-capabilities) — what differs, and how it degrades |
-| **Tell Kai what it got wrong or missed** | Invoke `kai-core-feedback`; it previews a public, privacy-reviewed issue before filing it with the `kai-feedback` label |
+| **Tell Kai what it got wrong or missed** | Install `kai-contributor`, then invoke `kai-feedback`; it previews a public, privacy-reviewed issue before filing it with the `kai-feedback` label |
 | **Change Kai itself** | [Development process](docs/development-process.md) and [Plugin structure](docs/reference/plugin-structure.md) |
 
 Everything is indexed in **[docs/](docs/README.md)**.

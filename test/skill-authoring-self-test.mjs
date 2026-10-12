@@ -19,8 +19,8 @@ const skills = new Map(sourceSkillFiles(root).map(entry => [
 ]));
 
 test('create-skill keeps reusable resources caller-agnostic and lean', () => {
-  const body = skills.get('kai-core-create-skill');
-  assert.ok(body, 'kai-core-create-skill must exist');
+  const body = skills.get('kai-create-skill');
+  assert.ok(body, 'kai-create-skill must exist');
   assert.match(body, /^user-invocable:\s*true$/m);
   assert.ok(body.split('\n').length <= 130, 'create-skill must stay lean');
   assert.match(body, /The caller may know the resource\. The resource must not know its caller\./);
@@ -37,8 +37,8 @@ test('create-skill keeps reusable resources caller-agnostic and lean', () => {
 });
 
 test('create-agent keeps roles focused and routes shared context just in time', () => {
-  const body = skills.get('kai-core-create-agent');
-  assert.ok(body, 'kai-core-create-agent must exist');
+  const body = skills.get('kai-create-agent');
+  assert.ok(body, 'kai-create-agent must exist');
   assert.match(body, /^user-invocable:\s*true$/m);
   assert.ok(body.split('\n').length <= 130, 'create-agent must stay lean');
   assert.match(body, /An agent\s+is permanent context and coordination cost/);
