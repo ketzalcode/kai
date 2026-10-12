@@ -92,6 +92,34 @@ test('re-onboarding repeats the current path-safety contract before confirmation
   assert.match(skill, /source and destination/i);
 });
 
+test('force re-onboarding requires a tracked-change preview and separate operator approval', () => {
+  const skill = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(skill, /`--force` is a request for the guarded force path, not approval/i);
+  assert.match(skill, /exact tracked paths/i);
+  assert.match(skill, /expected Git disposition/i);
+  assert.match(skill, /explicit operator approval[\s\S]*after[\s\S]*preview/i);
+  assert.match(skill, /repeat[\s\S]*tracking check/i);
+  assert.match(skill, /git rm --cached -r -- \.kai/);
+  assert.match(skill, /Verify `git ls-files -- \.kai` is empty\s+before onboarding/);
+  assert.match(skill, /Apart from the approved index removal, never stage changes/);
+  assert.match(skill, /Never\s+commit, push, or rewrite history/i);
+  assert.match(skill, /git status --short/);
+});
+
+test('force re-onboarding relaxes only tracked legacy structure refusal', () => {
+  const skill = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(skill, /tracked legacy files and unsupported structure\s+inside the exact retirement source/i);
+  assert.match(skill, /does not relax[\s\S]*path-safety[\s\S]*privacy[\s\S]*collision/i);
+  assert.match(skill, /Do not open any file beneath the retired directory after the rename/);
+  assert.match(skill, /Preserve `docs\/kai\/` byte-for-byte/);
+});
+
 test('re-onboarding initializes optional runtimes only when requested', () => {
   const skill = readFileSync(
     new URL('../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md', import.meta.url),
