@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
-## [24.0.2] - 2026-10-12
+## [25.0.0] - 2026-10-12
 
 ### Added
 
@@ -21,6 +21,20 @@ follow semantic versioning.
 - Added deterministic Project Management handoff projection that emits a
   standalone Core Task body with opaque `planning_refs` and never writes the
   Core database.
+- Added a neutral Core package-navigation convention that composes package
+  artifact inventory with optional supplied lifecycle/group projections at the
+  caller boundary. Durable paths stay stable; absent authority renders as
+  `UNGROUPED` and `LIFECYCLE UNKNOWN`.
+- Added feasibility-first `setup-agentic-repository-maintenance` to Engineering.
+  It investigates host, scheduler/agent support, permissions, admin setup,
+  stack, environment, models, and cost before comparing approaches and asking
+  for sign-off. Kai dogfoods the GitHub option daily at 16:00 UTC with
+  `gpt-5.6-terra`; it is read-only and may file only bounded deduplicated issues.
+- Added target-bound `my-insights`, `team-insights`, and `refine-insights`
+  Engineering entry points. Approved profiles stay under
+  `.kai/engineering/insights/<project-id>/`; capture remains source-specific,
+  refinement alone promotes guidance with operator approval, and ordinary work
+  performs at most one optional profile read.
 
 ### Changed
 
@@ -39,6 +53,10 @@ follow semantic versioning.
 - Updated schema-6 onboarding and re-onboarding to use current managed markers,
   verify the clean Core runtime explicitly, and initialize optional Project
   Management state only when the operator requests it.
+- Advanced the Project Management status projection to schema 2. Status rows
+  now expose typed, versioned parent references plus the existing sequence
+  basis so callers can group Features by Epic without making Engineering or
+  Creative depend on Project Management.
 - Made Engineering, Creative, and Nightshift operate from supplied approved
   scope without Project Management. Nightshift now admits an approved goal and
   bounded Tasks, with an optional supplied planning projection.
@@ -4750,7 +4768,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[24.0.2]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.2
+[25.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v25.0.0
 [22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
