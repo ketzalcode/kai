@@ -6,7 +6,9 @@ import {fileURLToPath} from 'node:url';
 import {materializePacks, sourceSkillFiles} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const skill = sourceSkillFiles(root).find(entry => entry.id === 'repository-maintenance');
+const skill = sourceSkillFiles(root).find(
+  entry => entry.id === 'agentic-repository-maintenance',
+);
 const body = skill
   ? readFileSync(skill.path, 'utf8').replace(/\r\n/g, '\n')
   : '';
@@ -15,31 +17,41 @@ const referencePath = join(
   'plugins',
   'kai-engineering',
   'skills',
-  'repository-maintenance',
+  'agentic-repository-maintenance',
   'references',
-  'repository-maintenance.md',
+  'agentic-repository-maintenance.md',
 );
-const workflowPath = join(root, '.github', 'workflows', 'repository-maintenance.md');
-const lockPath = join(root, '.github', 'workflows', 'repository-maintenance.lock.yml');
+const workflowPath = join(
+  root,
+  '.github',
+  'workflows',
+  'agentic-repository-maintenance.md',
+);
+const lockPath = join(
+  root,
+  '.github',
+  'workflows',
+  'agentic-repository-maintenance.lock.yml',
+);
 
-test('repository maintenance is an Engineering-owned opt-in skill', () => {
-  assert.ok(skill, 'repository-maintenance must exist');
+test('agentic repository maintenance is an Engineering-owned setup skill', () => {
+  assert.ok(skill, 'agentic-repository-maintenance must exist');
   assert.equal(skill.pack, 'engineering');
   assert.match(body, /^user-invocable:\s*true$/m);
-  assert.match(body, /^argument-hint:\s*"audit \| setup weekly"$/m);
+  assert.match(body, /^argument-hint:\s*"setup \| update \| validate"$/m);
   assert.match(body, /creates no `\.kai` state/);
-  assert.match(body, /This is assessment work/);
-  assert.match(body, /at most three issues/);
+  assert.match(body, /does not perform a manual\s+maintenance audit/);
+  assert.match(body, /at most three deduplicated maintenance\s+issues/);
   assert.match(body, /cannot push, edit repository content, create a pull request/);
 });
 
-test('weekly workflow is the exact shipped setup template', () => {
+test('daily workflow is the exact shipped setup template', () => {
   const reference = readFileSync(referencePath, 'utf8').replace(/\r\n/g, '\n');
   const workflow = readFileSync(workflowPath, 'utf8').replace(/\r\n/g, '\n');
   assert.equal(workflow, reference);
   assert.equal(existsSync(lockPath), true, 'compiled Agentic Workflow lock must exist');
 
-  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /schedule:\s*daily/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /copilot-requests:\s*write/);
   assert.match(workflow, /contents:\s*read/);
@@ -73,6 +85,6 @@ test('copied Engineering packages include the maintenance setup template', () =>
     packs: ['core', 'engineering'],
   });
   assert.ok(files.has(
-    'kai-engineering/skills/repository-maintenance/references/repository-maintenance.md',
+    'kai-engineering/skills/agentic-repository-maintenance/references/agentic-repository-maintenance.md',
   ));
 });

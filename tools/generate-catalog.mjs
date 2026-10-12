@@ -124,7 +124,7 @@ const CATEGORIES = [
       'nightshift-run',
       'research-before-coding',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
-      'onboard-to-codebase', 'repository-maintenance', 'build-diagrams',
+      'onboard-to-codebase', 'agentic-repository-maintenance', 'build-diagrams',
     ],
   },
   {

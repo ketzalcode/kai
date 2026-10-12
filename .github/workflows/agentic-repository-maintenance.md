@@ -1,6 +1,6 @@
 ---
 on:
-  schedule: weekly on saturday
+  schedule: daily
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,7 @@ safe-outputs:
     deduplicate-by-title: 2
 ---
 
-# Weekly Repository Maintenance
+# Daily Agentic Repository Maintenance
 
 Perform one read-only, evidence-based maintenance audit of this engineering
 repository. Read the repository instructions before inspecting files.
