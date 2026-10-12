@@ -71,6 +71,36 @@ The databases never edit each other. Project Management can emit a Core Task
 body through `handoff`; the caller submits it separately. Core treats supplied
 `planning_refs` as opaque strings.
 
+## Target-bound workspace insights
+
+Kai separates the host session from the repository currently being changed:
+
+```text
+session root     where the host started
+target root      canonical repository or project named by the request
+workspace root   private Kai workspace bound to that project
+project id       exact manifest binding for the target root
+```
+
+A named sibling repository or external checkout becomes the active target.
+Workspace discovery starts from that target instead of ambient `cwd`. The
+target's `AGENTS.md` and compact profile apply only to its exact project
+binding. Multi-repository work maintains a separate binding for each project.
+
+Explicit insight commands create private Core configuration lazily:
+
+```text
+.kai/core/insights/<project-id>/profile.md
+.kai/core/insights/<project-id>/my-insights.md
+.kai/core/insights/<project-id>/team-insights.md
+```
+
+`kai-core-my-insights` captures explicit operator corrections.
+`kai-core-team-insights` extracts candidates only from selected team evidence.
+Neither changes active guidance. `kai-core-refine-insights` reconciles
+candidates and requires approval before updating the compact `profile.md`.
+Ordinary work performs no reflection or source scanning.
+
 ## Typed private work
 
 ```text

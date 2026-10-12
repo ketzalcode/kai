@@ -68,6 +68,9 @@ const CATEGORIES = [
       'kai-core-workspace-onboarding',
       'kai-core-workspace-reonboard',
       'kai-core-workspace-publication',
+      'kai-core-my-insights',
+      'kai-core-team-insights',
+      'kai-core-refine-insights',
     ],
   },
   {

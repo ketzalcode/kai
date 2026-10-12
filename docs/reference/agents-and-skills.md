@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **38 skills**.
+The repository ships **9 agents** and **41 skills**.
 
-The default marketplace supplies **9 agents** and **38 skills** through core, optional project management, engineering, and creative (17 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **41 skills** through core, optional project management, engineering, and creative (20 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -72,6 +72,9 @@ Resolve private schema-6 workspaces and validate Core publication vocabulary.
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-6 workspace, or repairing its current private binding. |
 | [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when reshaping an unsupported Kai workspace into the current schema-6 structure while preserving durable knowledge and artifacts. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable coordination decisions or reports. |
+| [`kai-core-my-insights`](../../plugins/kai-core/skills/kai-core-my-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
+| [`kai-core-team-insights`](../../plugins/kai-core/skills/kai-core-team-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents. |
+| [`kai-core-refine-insights`](../../plugins/kai-core/skills/kai-core-refine-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository. |
 
 ### Task execution
 

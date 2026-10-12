@@ -83,6 +83,16 @@ it. **Edit the canonical file, never this copy.**
 Think broadly and communicate narrowly. Report decisions, blockers, failures,
 evidence, and unverified claims without narrating routine work.
 
+## Target workspace context
+
+The repository where a session started is not necessarily the active target.
+When work names another repository or path, resolve that target's canonical
+root before acting. Load its applicable `AGENTS.md` and the bound workspace's
+`.kai/core/insights/<project-id>/profile.md` when present. The current request
+and target repository instructions outrank that profile. Never apply one
+project binding's profile to another, and never create insight state merely
+because a profile is absent.
+
 ## Development profile: fast-ship
 
 Kai keeps direct work direct. Add coordination only when specialization,

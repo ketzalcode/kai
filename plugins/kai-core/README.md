@@ -12,6 +12,7 @@ coordination used by Engineering, Creative, and optional Project Management.
 | Standalone Task execution | `kai-core-work-task`, `kai-core-work-granting`, `kai-core-work-acting` |
 | Activity and durable evidence | `kai-core-work-activity`, `kai-core-workspace-publication` |
 | Workspace lifecycle | `kai-core-workspace-paths`, `kai-core-workspace-onboarding`, `kai-core-workspace-reonboard` |
+| Target-bound workspace guidance | `kai-core-my-insights`, `kai-core-team-insights`, `kai-core-refine-insights` |
 
 Core contains no agents and no project-planning hierarchy. Direction, Epic,
 Feature, and Requirement records belong to `kai-project-management`.
@@ -40,6 +41,19 @@ docs/kai/README.md
 For repo-local placement, `.kai/` is ignored and untracked. External placement
 keeps the same private layout outside the project. Core does not initialize
 Project Management or empty department directories.
+
+Explicit insight commands create private Markdown only on their first approved
+write:
+
+```text
+.kai/core/insights/<project-id>/profile.md
+.kai/core/insights/<project-id>/my-insights.md
+.kai/core/insights/<project-id>/team-insights.md
+```
+
+The project ID comes from the exact active target binding, not the directory
+where the host session started. Capture remains manual. Normal work reads only
+the compact approved profile when present.
 
 ## Durable assets
 
