@@ -146,7 +146,7 @@ function ownedGeneratedPaths(root) {
   const owned = new Set(['plugin.json', MARKETPLACE, CATALOG]);
   for (const pack of COMMITTED_PACKS) {
     const base = `${PACKS_DIR}/${packPluginName(pack)}`;
-    for (const name of ['plugin.json', 'package.json', 'package-lock.json', 'hooks.json']) {
+    for (const name of ['README.md', 'plugin.json', 'package.json', 'package-lock.json', 'hooks.json']) {
       const rel = `${base}/${name}`;
       if (existsSync(absolute(root, rel))) owned.add(rel);
     }

@@ -654,6 +654,11 @@ export function materializePacks({
   const manifests = planManifests({ root, version, packs });
   const selected = new Set(manifests.map((entry) => entry.pack));
   for (const p of manifests) {
+    const readme = sourcePath(root, p.pack, 'README.md');
+    if (!existsSync(readme)) {
+      throw new Error(`${sourceRel(p.pack, 'README.md')} is missing`);
+    }
+    files.set(`${p.dir}/README.md`, normalizeLF(readFileSync(readme, 'utf8')));
     files.set(`${p.dir}/plugin.json`, `${JSON.stringify(p.manifest, null, 2)}\n`);
     for (const id of p.agents) {
       const body = normalizeLF(readAgentBody(root, id));
@@ -1251,6 +1256,7 @@ export function parseGeneratedKey(key, packs = PACK_ORDER) {
   const pack = packs.find((p) => packPluginName(p) === dir);
   if (!pack) return null;
   const at = { pack, dir };
+  if (rest.length === 1 && rest[0] === 'README.md') return { ...at, kind: 'readme', id: null };
   if (rest.length === 1 && rest[0] === 'plugin.json') return { ...at, kind: 'manifest', id: null };
   if (rest.length === 1 && rest[0] === 'package.json') return { ...at, kind: 'package', id: null };
   if (rest.length === 1 && rest[0] === 'package-lock.json') return { ...at, kind: 'lock', id: null };

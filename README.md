@@ -80,11 +80,11 @@ Kai ships five packages. Install only what you need.
 
 | Package | Owns |
 | --- | --- |
-| `kai-core` | Shared operating rules, optional workspace machinery, standalone Task execution, and multi-agent coordination |
-| `kai-contributor` | Optional public feedback plus lean Kai agent and skill authoring guidance |
-| `kai-project-management` | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, and planning closure |
-| `kai-engineering` | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
-| `kai-creative` | UI/UX, visual identity, design assets, and supported media production |
+| [`kai-core`](plugins/kai-core/README.md) | Shared operating rules, optional workspace machinery, standalone Task execution, and multi-agent coordination |
+| [`kai-contributor`](plugins/kai-contributor/README.md) | Optional public feedback plus lean Kai agent and skill authoring guidance |
+| [`kai-project-management`](plugins/kai-project-management/README.md) | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, and planning closure |
+| [`kai-engineering`](plugins/kai-engineering/README.md) | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
+| [`kai-creative`](plugins/kai-creative/README.md) | UI/UX, visual identity, design assets, and supported media production |
 
 Core is deliberately agent-free. Contributor is also agent-free and standalone:
 it stores no project state and can be installed on its own. Project Management
