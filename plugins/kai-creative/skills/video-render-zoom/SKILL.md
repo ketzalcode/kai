@@ -80,20 +80,19 @@ activity from the plan.
 
 ## Output and authority
 
-Before core workspace or asset rules, Load `kai-core-contract-v1`.
-Without compatible core, bounded focus advice from supplied evidence may
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, bounded focus advice from supplied evidence may
 continue, but not coordination or `.kai` state. Tell the operator to install
 or update core before coordinated rendering resumes.
 Load `kai-core-workspace-paths` before persistent output and Load
-`creative-workspace-publication`, then Load `kai-core-asset-producing` when
-retaining a durable plan or report. Keep raw frames and renders in typed private
-evidence.
+`creative-workspace-publication` when retaining a durable plan or report. Keep
+raw frames and renders in typed private evidence.
 
 Return the requested insights, plan, command, render, or review sheet and any
 gaps. Check that a claimed output file exists and report actual inspection
 and review status separately. A render can exist while visual review remains
 pending. No automatic narration follows, and there is no capture step here.
-Use `kai-core-asset-producing` to record a transition only after the owning
-Creative publication contract and named authority choose it.
+Use Core `asset.transition` only after the owning Creative publication contract
+and named authority choose it.
 Stop at the requested operation; rendering is not publication or evidence that
 the product works.

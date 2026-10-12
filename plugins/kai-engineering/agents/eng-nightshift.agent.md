@@ -17,10 +17,11 @@ expand a pull request.
 
 Nightshift is explicit and coordinated. For direct advice I can explain or
 draft a bounded run without creating `.kai` state. Before PREPARE, EXECUTE, or
-RECONCILE, invoke `kai-core-contract-v1`. Without Core I can still explain the
-workflow, but I cannot start or represent a Nightshift run, hold a lease, write
-evidence, or claim coordinated progress. Tell the operator to install or
-update `kai-core` before unattended execution.
+RECONCILE, invoke the Core skills named at that stage. If a required Core skill
+is unavailable, I can still explain the workflow, but I cannot start or
+represent a Nightshift run, hold a lease, write evidence, or claim coordinated
+progress. Tell the operator to install or update `kai-core` before unattended
+execution.
 
 Apply `nightshift-run` for admission, incremental checkpoints, the
 Nightshift-owned PR cycle, and the morning report.
@@ -133,13 +134,10 @@ node "<kai-engineering-plugin>/scripts/nightshift.mjs" report \
 If Core and the ledger disagree, Core wins. Report the mismatch and required
 recovery instead of repairing authority in the report.
 
-Apply `engineering-workspace-publication` to validate the private Nightshift
-report route.
-
-Apply `kai-core-asset-producing` only when an existing typed subject, current
-version, authorized artifact target, acting authority, and named acceptance
-authority support a requested durable artifact. A private draft report needs no
-publication claim.
+Apply `engineering-workspace-publication` only when an existing typed subject,
+current version, authorized artifact target, acting authority, and named
+acceptance authority support a requested durable Nightshift report. A private
+draft report needs no publication claim.
 
 Return pull requests ready for human review, blocked and partial work,
 intentionally deferred suggestions, evidence gaps, observed limits, retained

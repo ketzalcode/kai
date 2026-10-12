@@ -120,28 +120,6 @@ function diffInventory(golden, live) {
   return out;
 }
 
-// The README status stamp advertises the roster size; it must mirror the live,
-// linted inventory so the quickstart never claims a roster that fails.
-function checkReadmeCounts(errors, inventory) {
-  const readmePath = join(ROOT, 'README.md');
-  if (!existsSync(readmePath)) { errors.push('README.md is missing'); return; }
-  const readme = readFileSync(readmePath, 'utf8');
-  // Scope to the `## Status` section so a compare/changelog phrase can't match.
-  const start = readme.indexOf('## Status');
-  let section = readme;
-  if (start !== -1) {
-    const nextHeading = readme.indexOf('\n## ', start + 1);
-    section = readme.slice(start, nextHeading === -1 ? readme.length : nextHeading);
-  }
-  const m = section.match(/\*\*(\d+)\s+agents\s+and\s+(\d+)\s+skills\*\*/);
-  if (!m) { errors.push('README.md `## Status`: could not find the "**N agents and M skills**" status stamp'); return; }
-  const a = Number(m[1]);
-  const s = Number(m[2]);
-  if (a !== inventory.counts.agents || s !== inventory.counts.skills) {
-    errors.push(`README.md status stamp says ${a} agents / ${s} skills but the loadable inventory has ${inventory.counts.agents} agents / ${inventory.counts.skills} skills`);
-  }
-}
-
 // Every `npm run <script>` the README documents must exist in package.json, so
 // the quickstart never points at a command that isn't there.
 function checkReadmeScripts(errors) {
@@ -206,7 +184,6 @@ if (argv.includes('--update')) {
 
 const errors = [];
 const inventory = checkInventory(errors);
-checkReadmeCounts(errors, inventory);
 checkReadmeScripts(errors);
 if (argv.includes('--self-test')) checkInvalidFixtures(errors);
 

@@ -45,7 +45,7 @@ test('create-agent keeps roles focused and routes shared context just in time', 
   assert.match(body, /\*\*Catalog:\*\*/);
   assert.match(body, /\*\*Agent body:\*\*/);
   assert.match(body, /\*\*Task-local resources:\*\*/);
-  assert.match(body, /invoke `kai-core-contract-v1`\s+immediately before that Core skill/);
+  assert.match(body, /invoke the Core skill directly at\s+that\s+boundary/i);
   assert.match(body, /Do not add an `\*\*Inherits:\*\*` line/);
   assert.match(body, /A conditional route is still just in time/);
   assert.match(body, /Never create a\s+`workflow-\*` agent/);
@@ -82,9 +82,9 @@ test('authoring validation rejects collected Core preflight routes', () => {
   ]);
 
   assert.deepEqual(hoistedSkillRouteErrors([
-    '- Invoke `kai-core-contract-v1` immediately before coordination.',
+    '- Apply `kai-core-operating-rules` when coordination begins.',
     '- Apply `kai-core-workspace-paths` when resolving the workspace.',
-    '- Apply `kai-core-work-acting` immediately before a state write.',
+    '- Record activity only after the run.',
   ].join('\n')), []);
 
   assert.equal(hoistedSkillRouteErrors([

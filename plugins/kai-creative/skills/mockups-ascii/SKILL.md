@@ -22,8 +22,8 @@ surface/state evidence. Unknown surfaces remain unknown; do not invent a
 destination, screen, component, or interaction to fill the sketch. A named
 placement that is a hard constraint stays fixed.
 
-Before applying shared design or scope rules, Load `kai-core-contract-v1`.
-If core is unavailable, a bounded sketch from supplied evidence may continue,
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, a bounded sketch from supplied evidence may continue,
 but not coordinated work or `.kai` state. Tell the operator to install or
 update core before coordinated design resumes.
 
@@ -70,8 +70,8 @@ ASCII is independent of HTML: no automatic HTML stage follows. Inline answers
 need no browser, files, workspace, or hierarchy record. If the caller explicitly
 owes a durable design, Load `kai-core-workspace-paths` before choosing its
 existing target. Load `creative-workspace-publication`, then Load
-`kai-core-asset-producing` before revising or recording an authorized
-transition for that asset.
+`kai-core-work-acting` before recording an authorized transition for that
+asset.
 
 Stop at the mock and recommendation. The operator or explicitly delegated
 designer owns the choice; an unapproved consequential choice remains pending.

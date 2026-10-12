@@ -38,8 +38,8 @@ Four packages. Project Management is optional and agent-free.
 ```text
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
-  |  6 agents                      |   |  3 agents                      |
-  | 13 skills                      |   |  7 skills                      |
+  | focused engineering agents      |   | focused creative agents        |
+  | engineering skills              |   | creative skills                |
   |  1 executable entry point      |   |  3 executable entry points     |
   | frontend/backend, selective     |   | UI/UX, visual identity,        |
   | review, writing, explicit       |   |                                |
@@ -53,8 +53,7 @@ Four packages. Project Management is optional and agent-free.
   +----------------------------------------------------------------------+
   | kai-core                                                            |
   |                                                                      |
-  |  0 agents                                                            |
-  | 15 skills                                                            |
+  |  agent-free shared skills and runtime                                |
   |  4 executable entry points                                           |
   | templates/ (decision, spec, report, publication)                     |
   |                                                                      |
@@ -63,7 +62,7 @@ Four packages. Project Management is optional and agent-free.
 
   +-----------------------------------------------------------------------+
   | kai-project-management (optional)                                     |
-  | 0 agents; 4 skills; 1 executable entry point                          |
+  | agent-free planning skills and runtime                                |
   | Direction, Epic, Feature, Requirement, priority, holds, dependencies, |
   | closure, planning views, and standalone Task handoff                   |
   +-----------------------------------------------------------------------+
@@ -79,15 +78,15 @@ department pack loads a skill owned by another package, and `kai-core` may
 reach no capability or department at all. Project Management may reach Core;
 Core, Engineering, and Creative do not depend on Project Management.
 
-| Package | Agents / skills | Owns |
-| --- | --- | --- |
-| `kai-core` | 0 / 15 | Shared skills, workspace machinery, standalone Task/A2A runtime |
-| `kai-project-management` | 0 / 4 | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff |
-| `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
-| `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
+| Package | Owns |
+| --- | --- |
+| `kai-core` | Shared skills, workspace machinery, standalone Task/A2A runtime |
+| `kai-project-management` | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff |
+| `kai-engineering` | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
+| `kai-creative` | UI/UX, visual identity, design assets, supported media production |
 
-Counts come from `plugins/` and are checked against the generated
-**[agents & skills catalog](docs/reference/agents-and-skills.md)** by `npm test`.
+The generated **[agents & skills catalog](docs/reference/agents-and-skills.md)**
+is the current inventory.
 They describe source ownership, not runtime quality.
 
 `eng-nightshift` is the explicit unattended path. One approved run
@@ -369,7 +368,6 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-project-management`, `kai-engineering`, `kai-creative` |
-| Surface | **9 agents and 39 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

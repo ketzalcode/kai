@@ -82,6 +82,9 @@ export function evaluateReleaseReadiness(input) {
   if (!behaviorChanged) {
     return {ok: true, release: false, reason: 'no-release-needed', errors: [], notes: ''};
   }
+  if (input.currentVersion === input.latestVersion && parseSemver(input.currentVersion)) {
+    return {ok: true, release: false, reason: 'release-not-prepared', errors: [], notes: ''};
+  }
   const errors = [];
   if (!isForwardVersion(input.latestVersion, input.currentVersion)) {
     errors.push(`behavior changed without a forward version: ${input.latestVersion} -> ${input.currentVersion}`);

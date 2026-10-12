@@ -1,7 +1,7 @@
 ---
 name: project-management-workspace-publication
 description: "Use when accepted Direction or planning knowledge may be published from Project Management."
-tools: [read, edit, search]
+tools: [read, edit, execute, search]
 ---
 
 # Project Management workspace publication
@@ -23,4 +23,9 @@ publication root.
 ## Validation and refusal
 
 Return the selected vocabulary, exact source revision, accepted hash,
-destination, and authority. Do not invent a fallback lane.
+destination, and authority. Do not invent a fallback lane. For coordinated
+assets, keep mutable bytes on the typed private route and Load
+`kai-core-work-acting` before `artifact.register` or `asset.transition`. The
+Core runtime validates the Task, pack, path, provenance, accepted hash,
+mirrored public target, and transition. Direct repository files create no Kai
+asset state.

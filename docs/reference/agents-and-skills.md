@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **39 skills**.
+The repository ships **9 agents** and **37 skills**.
 
-The default marketplace supplies **9 agents** and **39 skills** through core, optional project management, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **37 skills** through core, optional project management, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -103,9 +103,9 @@ Own package vocabularies that validate typed private work and accepted public kn
 | [`engineering-workspace-publication`](../../plugins/kai-engineering/skills/engineering-workspace-publication/SKILL.md) | `kai-engineering` | Use when an engineering role may retain or publish durable feature, architecture, decision, investigation, or release knowledge. |
 | [`creative-workspace-publication`](../../plugins/kai-creative/skills/creative-workspace-publication/SKILL.md) | `kai-creative` | Use when a creative role may retain or publish durable design, guidance, decision, report, or media material. |
 
-### Operating contracts & assets
+### Operating and authoring
 
-Shared operating, scope, communication, activity, completion, and durable asset lifecycle contracts.
+Shared operating, communication, activity, and lean agent/skill authoring guidance.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
@@ -113,10 +113,8 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 | [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | `kai-core` | Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals. |
 | [`kai-core-no-self-remediation`](../../plugins/kai-core/skills/kai-core-no-self-remediation/SKILL.md) | `kai-core` | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
-| [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
 | [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | `kai-core` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
 | [`kai-core-create-skill`](../../plugins/kai-core/skills/kai-core-create-skill/SKILL.md) | `kai-core` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
-| [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Use when a validated pack-owned artifact needs a private revision, provenance, acceptance binding, publication, or recorded state transition. |
 
 ### Engineering craft
 

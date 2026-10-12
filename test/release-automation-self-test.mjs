@@ -55,8 +55,17 @@ test('docs-only changes need no version bump', () => {
   });
 });
 
-test('behavior changes require a forward package version', () => {
-  assert.match(evaluate({currentVersion: '2.1.0'}).errors.join('\n'), /forward version/);
+test('behavior changes may wait for intentional release preparation', () => {
+  assert.deepEqual(evaluate({currentVersion: '2.1.0'}), {
+    ok: true, release: false, reason: 'release-not-prepared', errors: [], notes: '',
+  });
+});
+
+test('invalid equal versions do not bypass release validation', () => {
+  assert.match(evaluate({
+    currentVersion: 'invalid',
+    latestVersion: 'invalid',
+  }).errors.join('\n'), /forward version/);
 });
 
 test('README changes are not required', () => {
@@ -87,11 +96,13 @@ test('release notes contain only the selected version section', () => {
   );
 });
 
-test('an already tagged version is not release-ready', () => {
-  assert.match(evaluate({
+test('an already tagged version is not selected for release again', () => {
+  assert.deepEqual(evaluate({
     latestVersion: '20.0.0',
     latestTag: 'v20.0.0',
-  }).errors.join('\n'), /forward version/);
+  }), {
+    ok: true, release: false, reason: 'release-not-prepared', errors: [], notes: '',
+  });
 });
 
 test('release readiness requires an exact version heading', () => {

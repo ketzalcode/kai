@@ -10,15 +10,15 @@
 //     one provider, every reviewed override still placing a skill inheritance
 //     cannot, core's `kai-core-*` namespace held in both directions, no id
 //     emitted by two packs, and role availability decided by roster membership;
-//   • generated-pack guarantees — every agent routes its contracts inline and
-//     carries no copied dependency guard; the probe marker and contract version
-//     remain rigid at their single source, the probe skill and its body;
+//   • generated-pack guarantees — every agent routes its contracts inline,
+//     carries no copied dependency guard, and every generated runtime remains
+//     self-contained;
 //   • cross-pack references — every routed, user-invoked and orchestrated
 //     reference, plus every invoked script, resolves to
 //     core or to the referring body's own pack;
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
-// Run: `node scripts/validate-plugin.mjs` (or `npm run validate`).
+// Run: `node tools/validate-plugin.mjs` (or `npm run validate`).
 // Exit code 0 = contract valid; 1 = one or more violations printed.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
@@ -31,13 +31,12 @@ import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   marketplaceSurfacePolicy,
   materializePacks,
-  CONTRACT_SKILL,
   loadedSkills, packProviders,
   collectReferences, referenceErrors, referenceCycleErrors, planAssets, assetOwnershipErrors,
   planPacks, agentTaxonomyErrors,
   requiresCoordinatedRunContracts, agentRoutingErrors,
   agentProfileModelErrors, agentPromptLimitErrors,
-  partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
+  partitionErrors, namespaceErrors, providerCollisionErrors,
   generatedKeyErrors, generatedRuntimeErrors,
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
@@ -209,12 +208,11 @@ for (const agent of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Generated surface + contract version pin
+// Generated surface
 //
 // Every agent now routes its contracts inline and carries no copied dependency
-// guard, so there is no per-agent block to pin here. What remains is the
-// materialised generated surface (keys, packages, runtime closure) and the
-// single-source contract version, held to the probe skill's name and body.
+// guard, so there is no per-agent block to pin here. The checks below validate
+// the materialised generated surface: keys, packages, and runtime closure.
 // ---------------------------------------------------------------------------
 
 // What the authoritative generator emits, materialised once: the checks below
@@ -228,20 +226,6 @@ if (!generatedPacks.has(coreRepositoryBlock)) {
 
 for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
-
-// The contract version, pinned where it is stated: the probe skill's name and
-// the probe body. Both are held to one constant so a skew is caught even on a
-// build that is otherwise green.
-{
-  const probePath = skillSourceFile(ROOT, CONTRACT_SKILL);
-  for (const e of contractPinErrors({
-    probe: probePath && existsSync(probePath) ? readFileSync(probePath, 'utf8') : null,
-  })) err(e.file, e.msg);
-}
-
-if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
-  err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
-}
 
 // ---------------------------------------------------------------------------
 // Skill firing paths
@@ -638,10 +622,9 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
   }
 
   // ---------------------------------------------------------------------------
-// Release hygiene (#35): a released version must be well-formed and fully
-// documented, and dependency metadata must stay internally consistent. These
-// are static, git-free checks so `npm test` runs them everywhere; the
-// "behavior change requires a bump" gate lives in scripts/release-guard.mjs.
+// Release metadata must be well-formed and internally consistent. Feature
+// changes may retain the current version; release-readiness becomes strict only
+// after an intentional forward version is prepared.
 // ---------------------------------------------------------------------------
 // The repository declares no git dependencies, and none is sanctioned. A git
 // dependency is unreproducible without a pinned SHA and unresolvable for a

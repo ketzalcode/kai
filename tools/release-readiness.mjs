@@ -85,9 +85,12 @@ function printResult(result, json) {
     return;
   }
   if (result.ok) {
-    console.log(result.release
-      ? 'release-readiness: ready'
-      : 'release-readiness: no release needed');
+    const message = result.release
+      ? 'ready'
+      : result.reason === 'release-not-prepared'
+        ? 'release not prepared'
+        : 'no release needed';
+    console.log(`release-readiness: ${message}`);
     return;
   }
   console.error('release-readiness: not ready');

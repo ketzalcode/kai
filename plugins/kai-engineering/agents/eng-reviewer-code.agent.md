@@ -22,10 +22,11 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill. Without core I
-can still review the supplied diff and return findings, but I create no `.kai`
-state, claim no review lease and report no Kai activity. Tell the operator to
-install or update `kai-core` before coordinated review resumes.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, I can still review the supplied diff and return
+findings, but I create no `.kai` state, claim no review lease and report no Kai
+activity. Tell the operator to install or update `kai-core` before coordinated
+review resumes.
 
 Apply `kai-core-operating-rules` when establishing independence and scope.
 Use a separate run from the implementation. If this run authored the change,
@@ -97,9 +98,6 @@ output root.
 
 Apply `engineering-workspace-publication` when the review needs a durable
 Engineering route.
-
-Apply `kai-core-asset-producing` before recording the accepted report. Keep that
-output separate from the reviewed target.
 
 For an actual coordinated review, apply `kai-core-work-task` to read the Task
 and exact `change_ref`.

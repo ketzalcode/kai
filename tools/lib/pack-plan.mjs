@@ -31,13 +31,6 @@ import {
 // (tests, or a generator run against a checkout) but default to this repo.
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// The version-pinned preflight probe skill and the exact refusal token a
-// core-less pack agent must emit. Shared so the generator, the preview and the
-// validator assert on the same constants.
-export const CONTRACT_SKILL = 'kai-core-contract-v1';
-export const CONTRACT_VERSION = '1';
-export const REFUSAL = 'KAI-CORE-MISSING';
-
 // Core's owned namespace. Duplicate exposure is not a guaranteed host contract;
 // it has been measured on one host only (Windows 11, Copilot CLI 1.0.80). A
 // prefix core alone may use removes that ambiguity; see namespaceErrors.
@@ -1028,20 +1021,12 @@ export function agentRoutingErrors({
     if (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill)) continue;
     errors.push(`routes unknown skill \`${skill}\``);
   }
-  const firstCoreRoute = occurrences.find(route => route.id.startsWith(CORE_SKILL_PREFIX));
-  if (firstCoreRoute && firstCoreRoute.id !== CONTRACT_SKILL) {
-    errors.push(`must route \`${CONTRACT_SKILL}\` before every other core skill`);
-  }
-
-  const required = [CONTRACT_SKILL, 'kai-core-operating-rules'];
+  const required = ['kai-core-operating-rules'];
   if (requiresCoordinatedRunContracts(id)) {
     required.push('kai-core-workspace-paths');
     if (!actingExempt) required.push('kai-core-work-acting');
     if (!activityExempt) required.push('kai-core-work-activity');
   }
-  // kai-core-asset-producing is deliberately not required — an agent that
-  // produces no durable artifact should not route it. The per-role table in the
-  // rewritten agents governs where it is routed.
   for (const skill of required) {
     if (!routed.has(skill)) {
       errors.push(`must load \`${skill}\` at the step that needs it`);
@@ -1222,7 +1207,6 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
   const occurrences = routedSkillOccurrences(publicationBody);
   const publicationIds = new Set(Object.values(PUBLICATION_SKILLS));
   const publicationRoutes = occurrences.filter(route => publicationIds.has(route.id));
-  const productionRoutes = occurrences.filter(route => route.id === 'kai-core-asset-producing');
   const foreign = publicationRoutes.filter(route => route.id !== owner);
   for (const route of foreign) {
     errors.push(`cannot route publication skill owned by another pack: \`${route.id}\`; `
@@ -1231,9 +1215,6 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
 
   const entrypoint = publicationEntrypointDeclaration({body, fm});
   if (!entrypoint) {
-    if (productionRoutes.length > 0) {
-      errors.push('direct `kai-core-asset-producing` route requires a declared publication entrypoint');
-    }
     if (publicationRoutes.some(route => route.id === owner)) {
       errors.push(`route to publication entrypoint \`${owner}\` requires frontmatter `
         + `\`${PUBLICATION_ENTRYPOINT_KEY}: ${owner}\``);
@@ -1248,13 +1229,6 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
   }
   if (!publicationRoutes.some(route => route.id === owner)) {
     errors.push(`declared publication entrypoint \`${owner}\` must be routed by this ${kind}`);
-  }
-  for (const productionRoute of productionRoutes) {
-    if (!publicationRoutes.some(route =>
-      route.id === owner && route.index < productionRoute.index)) {
-      errors.push(`each \`kai-core-asset-producing\` route must have an earlier `
-        + `\`${owner}\` route`);
-    }
   }
   return [...new Set(errors)];
 }
@@ -1840,42 +1814,6 @@ export function providerCollisionErrors({ providers }) {
     const cut = key.indexOf(':');
     errs.push(`${key.slice(0, cut)} \`${key.slice(cut + 1)}\` is emitted by `
       + `${owners.map(packPluginName).join(' and ')} — duplicate providers make resolution ambiguous`);
-  }
-  return errs;
-}
-
-// The contract version, pinned everywhere it is stated. The demanded version is
-// the one thing a fully green build can still get wrong: the probe skill's name
-// carries it and the probe body reports it, so both are held to one constant.
-// The copied preflight block that once demanded it in prose is gone — agents now
-// route the probe skill inline — so only the name pin and the probe body remain.
-// Returns `[{ file, msg }]`.
-export function contractPinErrors({
-  probe, skill = CONTRACT_SKILL, version = CONTRACT_VERSION, planRel = 'scripts/lib/pack-plan.mjs',
-}) {
-  const errs = [];
-  const probeRel = `skills/${skill}/SKILL.md`;
-  const add = (file, msg) => errs.push({ file, msg });
-
-  if (!skill.endsWith(`-v${version}`)) {
-    add(planRel, `CONTRACT_SKILL \`${skill}\` and CONTRACT_VERSION "${version}" disagree — the probe `
-      + "skill's name is the version pin, so bumping one without the other ships a probe demanding a "
-      + 'version no shipped skill name promises');
-  }
-
-  if (probe === null || probe === undefined) {
-    add(probeRel, 'missing — every pack agent invokes this skill as its first action');
-    return errs;
-  }
-  const text = normalizeLF(probe);
-  if (!/^KAI_CORE_READY$/m.test(text)) {
-    add(probeRel, 'does not return the exact `KAI_CORE_READY` marker line the preflight matches on');
-  }
-  const declared = text.match(/^contract:\s*(\S+)$/m);
-  if (!declared) add(probeRel, 'does not return a `contract: <version>` line');
-  else if (declared[1] !== version) {
-    add(probeRel, `returns \`contract: ${declared[1]}\`, but its name pins it to ${version} — a skew `
-      + 'here is invisible to the agents that trust it');
   }
   return errs;
 }

@@ -315,7 +315,7 @@ test('specialist and incident agents are removed from the active surface', () =>
   );
 });
 
-test('README overview reflects the released engineering surface', () => {
+test('README overview reflects the current engineering surface without copied counts', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
     .replace(/\r\n/g, '\n');
   const overview = readme.slice(0, readme.indexOf('\n## Install'));
@@ -323,11 +323,11 @@ test('README overview reflects the released engineering surface', () => {
   assert.match(overview, /lean, quality-first suite of specialized agents and skills/);
   assert.match(overview, /Kai keeps direct work direct/);
   assert.match(overview, /agent-to-agent software collaboration/);
-  assert.match(overview, /\|\s*6 agents\s*\|/);
-  assert.match(overview, /\|\s*13 skills\s*\|/);
   assert.match(
     overview,
-    /\| `kai-engineering` \| 6 \/ 13 \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
+    /\| `kai-engineering` \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
   );
+  assert.match(overview, /generated \*\*\[agents & skills catalog\]/);
+  assert.doesNotMatch(overview, /\|\s*\d+\s+(?:agents|skills)\s*\|/);
   assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

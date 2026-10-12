@@ -29,8 +29,8 @@ distinct output path. A finished render is not a prerequisite for a
 placement-only assessment. No zoom or new synthesis is required merely
 because alignment was requested.
 
-Before core workspace or claim checks, Load `kai-core-contract-v1`.
-Without compatible core, bounded advice on supplied evidence may continue,
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, bounded advice on supplied evidence may continue,
 but not coordination or `.kai` state. Tell the operator to install or update
 core before coordinated work resumes.
 Load `content-grounding` when the request includes checking product
@@ -107,9 +107,8 @@ It does not preserve another audio track or mix music. If that is required,
 report the unsupported composition rather than silently dropping that audio.
 
 Load `kai-core-workspace-paths` before persistent output, and Load
-`creative-workspace-publication`, then Load `kai-core-asset-producing` when
-retaining durable plans or reports. Raw clips, recordings, and renders remain
-typed private evidence.
+`creative-workspace-publication` when retaining durable plans or reports. Raw
+clips, recordings, and renders remain typed private evidence.
 
 ## Outcome and stop
 
@@ -120,7 +119,7 @@ steps, and inspection limits. A rejected composition is not a usable plan.
 
 No automatic synthesis follows. Script changes need their author; another
 paid attempt needs its own authorization through the creation operation.
-Use `kai-core-asset-producing` to record a transition only after the owning
-Creative publication contract and named authority choose it.
+Use Core `asset.transition` only after the owning Creative publication contract
+and named authority choose it.
 Stop at the requested result, not publication or a claim that video proves
 the product works.

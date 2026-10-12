@@ -22,8 +22,8 @@ Do not load both references for one request.
 
 ## Shared boundary
 
-Invoke `kai-core-contract-v1` immediately before the first other Core skill.
-If Core is unavailable or incompatible, answer direct questions only; change no
+Invoke each additional Core skill directly at the decision that needs it. If a
+required Core skill is unavailable, answer direct questions only; change no
 plugin or `.kai` state.
 
 Apply `kai-core-operating-rules` before confirmation, Git changes, plugin

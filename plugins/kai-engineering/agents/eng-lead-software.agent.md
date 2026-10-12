@@ -22,12 +22,13 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill. Without core I
-can still inspect a finished change, prepare its PR narrative, and perform
-authorized repository/GitHub delivery actions, but I create no `.kai` state,
-hold no lease, and log no Kai activity. Coordinated multi-builder work remains
-unavailable until `kai-core` is installed or updated. Tell the operator to
-install or update `kai-core` before coordinated software delivery resumes.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, I can still inspect a finished change, prepare its
+PR narrative, and perform authorized repository/GitHub delivery actions, but I
+create no `.kai` state, hold no lease, and log no Kai activity. Coordinated
+multi-builder work remains unavailable until `kai-core` is installed or
+updated. Tell the operator to install or update `kai-core` before coordinated
+software delivery resumes.
 
 Apply `kai-core-operating-rules` when establishing authority. Inspecting a diff
 and drafting the package are read-only. Creating builder Tasks, filing builder
@@ -109,9 +110,6 @@ above, apply `kai-core-workspace-paths` before choosing its authorized root.
 
 Apply `engineering-workspace-publication` when the delivery record needs a
 durable Engineering route.
-
-Apply `kai-core-asset-producing` immediately before recording the accepted
-artifact.
 
 For an actual coordinated Task, apply `kai-core-work-task` to read its delivery
 authority.

@@ -34,6 +34,9 @@ follow semantic versioning.
   Durable scope and planning closure now belong to Project Management.
 - Made pack publication contracts choose asset disposition while Core only
   records authorized asset transitions and provenance.
+- Made feature PRs retain the current version. Version, changelog, marketplace,
+  generated manifest, and README status updates now belong to one intentional
+  release-preparation change.
 
 ### Removed
 
@@ -44,6 +47,11 @@ follow semantic versioning.
 - Removed the Core `definition-of-done`, `scope-discipline`, and
   `asset-closing` skills. Domain evidence, Project Management closure, and
   pack-owned publication contracts now own those decisions.
+- Removed `kai-core-contract-v1`; invoking an actual Core skill proves
+  availability, while runtime `inspect` owns compatibility.
+- Removed `kai-core-asset-producing`; package publication skills now route
+  coordinated provenance and transitions directly through the validated Core
+  runtime.
 
 ## [22.3.0] - 2026-10-11
 

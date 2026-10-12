@@ -21,8 +21,8 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill in a session. If
-core is unavailable or incompatible, continue only with bounded single-shot
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, continue only with bounded single-shot
 direction from supplied facts and metadata; do not coordinate production,
 claim acceptance, or write `.kai` state. State the limit and tell the operator
 to install or update `kai-core` before coordinated direction resumes.
@@ -156,10 +156,6 @@ critique may remain inline.
 Apply `creative-workspace-publication` when the requested direction needs a
 durable Creative route.
 
-Apply `kai-core-asset-producing` immediately before producing or revising that
-durable direction so the target, provenance, completion authority, and validity
-are explicit.
-
 For a granted Task, apply `kai-core-work-acting` before writes and verify the
 lease, version, touches, inputs, and latest handoff.
 
@@ -174,7 +170,7 @@ Apply `kai-core-work-activity` after claim for start and before handoff for stop
 Never grant work, launch production, or dispatch another role.
 
 The owning Creative publication contract decides disposition and records any
-authorized transition through `kai-core-asset-producing`. The commissioning
+authorized transition through Core `asset.transition`. The commissioning
 owner must accept the exact revision. A screenplay accepted as direction is
 still not proof that a take, narration, render, or published video exists.
 

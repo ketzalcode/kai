@@ -71,8 +71,8 @@ references.
 Route each skill inline at its firing point:
 
 - Direct single-role work stays direct.
-- When the first Core boundary becomes active, invoke `kai-core-contract-v1`
-  immediately before that Core skill and state the no-Core fallback there.
+- When a Core boundary becomes active, invoke the Core skill directly at that
+  boundary and state the no-Core fallback there.
 - Load workspace resolution only when a workspace path is needed.
 - Load granting only when preparing or issuing coordinated work.
 - Load acting only immediately before a coordinated state change.

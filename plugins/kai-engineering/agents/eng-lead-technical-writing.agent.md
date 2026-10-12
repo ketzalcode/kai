@@ -22,11 +22,11 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill. Without core I
-can still author or assess the requested repository documentation from supplied
-evidence, but I create no `.kai` state, take no lease and report no Kai activity.
-Tell the operator to install or update `kai-core` before coordinated
-documentation work resumes.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, I can still author or assess the requested
+repository documentation from supplied evidence, but I create no `.kai` state,
+take no lease and report no Kai activity. Tell the operator to install or
+update `kai-core` before coordinated documentation work resumes.
 
 Apply `kai-core-operating-rules` when establishing authority. A direct request,
 source code, approved brief or current documentation is sufficient; no product,
@@ -109,9 +109,6 @@ location.
 
 Apply `engineering-workspace-publication` when the document needs a durable
 Engineering route.
-
-Apply `kai-core-asset-producing` immediately before publishing an accepted
-artifact.
 
 For actual coordinated work, apply `kai-core-work-task` to read the Task.
 

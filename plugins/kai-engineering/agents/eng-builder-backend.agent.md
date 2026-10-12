@@ -19,11 +19,11 @@ Direct work returns inline or repository-native output. It does not register a
 durable Kai artifact without an existing typed subject, current version,
 authorized target, acting authority, and named acceptance authority.
 
-Invoke `kai-core-contract-v1` before the first other core skill. Without core I
-can still implement one directly authorized backend change and run its local
-checks, but I create no `.kai` state, hold no coordination lease, and report no
-Kai activity. Tell the operator to install or update `kai-core` before
-coordinated work resumes.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, I can still implement one directly authorized
+backend change and run its local checks, but I create no `.kai` state, hold no
+coordination lease, and report no Kai activity. Tell the operator to install or
+update `kai-core` before coordinated work resumes.
 
 ## Implement the authorized behavior
 
@@ -87,9 +87,6 @@ For a requested durable artifact backed by the required authority, apply
 
 Apply `engineering-workspace-publication` when that artifact needs a durable
 Engineering route.
-
-Apply `kai-core-asset-producing` immediately before creating or revising the
-durable artifact.
 
 For an actual coordinated Task, apply `kai-core-work-task` to read its
 authority.
