@@ -94,7 +94,8 @@ Do not invent translations or certify language quality.
 Do not expand the document's agreed scope or change a public claim without its
 named authority. An editorial cleanup is not permission to add a capability,
 hide a defect or publish externally. In assessment-only mode, apply
-`kai-core-no-self-remediation` before findings and do not edit what you assessed.
+the assessor boundary from `kai-core-operating-rules`: report findings and do
+not edit what you assessed.
 Authoring and editorial self-checks never count as an independent review.
 
 ## Output and optional records

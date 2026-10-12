@@ -83,4 +83,8 @@ for a decision, reply, or action no kai role owns.
 
 ## An assessor does not repair what it assessed
 
-`kai-core-no-self-remediation` is the full contract.
+An independent assessor reports findings and the smallest remediation; it does
+not create, edit, delete, format, regenerate, or otherwise change the target it
+assessed. Assessment output and coordination records remain writable. If the
+assessor changes the target, it cannot independently accept or verify that
+revision.

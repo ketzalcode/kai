@@ -103,7 +103,6 @@ const CATEGORIES = [
     blurb: 'Shared operating, communication, activity, and lean agent/skill authoring guidance.',
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
-      'kai-core-no-self-remediation',
       'kai-core-peer-communication',
       'kai-core-create-agent', 'kai-core-create-skill',
     ],

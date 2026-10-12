@@ -52,6 +52,9 @@ follow semantic versioning.
 - Removed `kai-core-asset-producing`; package publication skills now route
   coordinated provenance and transitions directly through the validated Core
   runtime.
+- Removed `kai-core-no-self-remediation`; its concise assessor write boundary
+  now lives in Core operating rules and active assessor role instructions,
+  while runtime independence checks remain authoritative.
 
 ## [22.3.0] - 2026-10-11
 

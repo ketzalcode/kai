@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **37 skills**.
+The repository ships **9 agents** and **36 skills**.
 
-The default marketplace supplies **9 agents** and **37 skills** through core, optional project management, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **36 skills** through core, optional project management, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -111,7 +111,6 @@ Shared operating, communication, activity, and lean agent/skill authoring guidan
 | ---- | ------- | ------------ |
 | [`kai-core-operating-rules`](../../plugins/kai-core/skills/kai-core-operating-rules/SKILL.md) | `kai-core` | The universal rules every kai role follows: role kinds, staying in lane, test ownership, human-only gates, shipping honesty, and @operator. Load whenever acting as a kai role. |
 | [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | `kai-core` | Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals. |
-| [`kai-core-no-self-remediation`](../../plugins/kai-core/skills/kai-core-no-self-remediation/SKILL.md) | `kai-core` | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | `kai-core` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
 | [`kai-core-create-skill`](../../plugins/kai-core/skills/kai-core-create-skill/SKILL.md) | `kai-core` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |

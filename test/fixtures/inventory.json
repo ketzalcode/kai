@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 9,
-    "skills": 37
+    "skills": 36
   },
   "agents": [
     "creative-lead-design",
@@ -25,7 +25,6 @@
     "html-block-diagrams",
     "kai-core-create-agent",
     "kai-core-create-skill",
-    "kai-core-no-self-remediation",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
     "kai-core-work-acting",

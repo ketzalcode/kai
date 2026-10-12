@@ -298,42 +298,6 @@ const exists = (asset) => assetIndex.has(asset);
 }
 
 // ---------------------------------------------------------------------------
-// Assessor roster and the kai-core-no-self-remediation contract
-//
-// The taxonomy leans on roles that judge without acting on what they judge. An
-// assessor that quietly fixes what it found destroys the independence that made
-// the assessment worth having, and does it invisibly: the finding is never
-// reported because it no longer reproduces.
-//
-// That constraint is directional (write your evidence, not the target under
-// review) and a `tools` grant is a capability, so it cannot be expressed in
-// frontmatter — one `edit` grant covers both sides of the line. Pinning the
-// roster here is what stops the contract from silently falling off a role
-// during an unrelated edit, which is the failure a prose-only rule invites.
-// ---------------------------------------------------------------------------
-const ASSESSOR_CONTRACT = 'kai-core-no-self-remediation';
-const ASSESSOR_ROLES = [
-  'eng-reviewer-code',
-  'eng-lead-technical-writing',
-];
-{
-  if (!skillIds.has(ASSESSOR_CONTRACT)) {
-    err(`skill:${ASSESSOR_CONTRACT}`, 'missing (the assessor write contract the roster depends on)');
-  }
-  for (const id of ASSESSOR_ROLES) {
-    const agent = agentFiles.find((a) => a.id === id);
-    if (!agent) {
-      err('scripts/validate-plugin.mjs', `assessor roster names \`${id}\`, which is not an agent — update the roster or restore the agent`);
-      continue;
-    }
-    const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
-    if (!loadedSkills(raw).has(ASSESSOR_CONTRACT)) {
-      err(rel(agent.path), `is on the assessor roster but never loads \`${ASSESSOR_CONTRACT}\``);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Inherited-skill tool requirements
 //
 // A skill whose procedure is mandatory can require a capability the agent must

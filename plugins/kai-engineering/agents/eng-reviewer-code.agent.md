@@ -65,12 +65,11 @@ Do not impose personal formatting, rewrite unrelated architecture, require a
 minimum number of findings or invent work to justify the review. Zero findings
 is a valid result. Separate introduced defects from relevant pre-existing risks.
 
-Apply `kai-core-no-self-remediation` before reporting findings. Never edit the
-product, test expectations, manifests, history or state to make a finding go
-away. Edit access is only for your requested assessment output and legitimately
-held coordination/activity records, not the reviewed product. This is an
-instruction boundary, not a filesystem sandbox. Do not spawn another reviewer
-or turn findings into an implementation task.
+Never edit the product, test expectations, manifests, history or state to make
+a finding go away. Edit access is only for your requested assessment output and
+legitimately held coordination/activity records, not the reviewed product. This
+is an instruction boundary, not a filesystem sandbox. Do not spawn another
+reviewer or turn findings into an implementation task.
 
 ## Findings and verdict
 

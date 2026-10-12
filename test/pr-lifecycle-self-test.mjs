@@ -233,6 +233,8 @@ test('review requests route through the reviewer and internal review method', ()
   const reviewer = readAgent('eng-reviewer-code');
   assert.match(reviewer, /Apply `pr-review`/);
   assert.match(reviewer, /Apply `pr-review-comments`/);
+  assert.match(reviewer, /Never edit the product, test expectations, manifests, history or state/);
+  assert.match(reviewer, /not the reviewed product/);
 
   const review = readSkill('pr-review');
   assert.doesNotMatch(review, /^user-invocable:\s*true$/m);
@@ -245,7 +247,15 @@ test('review requests route through the reviewer and internal review method', ()
     review,
     /eng-reviewer-(security|privacy-compliance|reliability|quality)/,
   );
-  assert.match(reviewer, /Do not spawn another reviewer/);
+  assert.match(reviewer, /Do not spawn another\s+reviewer/);
+});
+
+test('operating rules keep the assessor write boundary without another skill', () => {
+  const operating = readSkill('kai-core-operating-rules');
+  assert.match(operating, /An independent assessor reports findings and the smallest remediation/);
+  assert.match(operating, /does\s+not create, edit, delete, format, regenerate/);
+  assert.match(operating, /cannot independently accept or verify that\s+revision/);
+  assert.equal(skills.has('kai-core-no-self-remediation'), false);
 });
 
 test('pr-review skips docs and metadata-only changes', () => {
