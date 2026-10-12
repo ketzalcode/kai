@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
-## [24.0.1] - 2026-10-12
+## [24.0.2] - 2026-10-12
 
 ### Added
 
@@ -67,6 +67,11 @@ follow semantic versioning.
 
 ### Fixed
 
+- Added a required installed README to each of the five plugins. Every package
+  now documents its roles or skills, installation, workspace materialization,
+  exact private `.kai` asset routes, accepted `docs/kai` publication routes,
+  and package boundaries. Package generation and tests fail if a README is
+  missing or its declared publication paths drift.
 - Replaced permanent `.kai-retired-*` re-onboarding backups with a verified
   reshape: reconcile durable conventions, initiative artifacts, decisions,
   briefs, designs, and package artifacts; rebuild current runtime state; then
@@ -4745,7 +4750,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[24.0.1]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.1
+[24.0.2]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.2
 [22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
