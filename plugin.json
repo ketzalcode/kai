@@ -1,7 +1,7 @@
 {
   "name": "kai",
   "description": "Lockstep source metadata for kai-core, kai-contributor, kai-project-management, kai-engineering, and kai-creative.",
-  "version": "24.0.0",
+  "version": "24.0.1",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"
