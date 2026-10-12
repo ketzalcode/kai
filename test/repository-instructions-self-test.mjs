@@ -34,6 +34,9 @@ test('Kai dogfoods the exact canonical block', () => {
 
 test('the canonical block defines lean development without Superpowers', () => {
   assert.match(block, /Kai keeps direct work direct/);
+  assert.match(block, /Use the current checkout for a small, isolated change when it is safe/);
+  assert.match(block, /`<git-root>\/\.worktrees\/<short-name>`/);
+  assert.match(block, /Never create a sibling top-level worktree folder/);
   assert.match(block, /focused TDD/);
   assert.match(block, /targeted automated checks\s+and named manual scenarios/);
   assert.match(block, /proportionate validation/);

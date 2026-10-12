@@ -13,6 +13,12 @@ isolation, or independent work materially improves the result.
   direct work for clear changes, one decision for material ambiguity, concise
   design approval for architecture, and root-cause investigation for uncertain
   defects.
+- Use the current checkout for a small, isolated change when it is safe. Create
+  a worktree only for a dirty or conflicting checkout, concurrent branch work,
+  or explicitly requested isolation. Reuse the repository's established
+  worktree location; otherwise use `<git-root>/.worktrees/<short-name>` after
+  verifying it is ignored. Never create a sibling top-level worktree folder for
+  routine work.
 - Use focused TDD for reproduced defects and stable contracts. Stabilize
   uncertain design before expanding tests.
 - Use proportionate validation. Before handoff, run targeted automated checks

@@ -46,16 +46,48 @@ the operator to install or update `kai-core` before resuming.
    collisions, path escapes, changed project bindings, or overlapping external
    workspace and project roots.
 4. Check whether the resolved source is tracked. For repo-local placement run
-   `git ls-files -- .kai .kai-retired-*` from the exact project Git root. For
-   external placement, refuse a source inside any Git work tree and verify each
-   target project contains no project-local `.kai/`.
-5. If any source path is tracked, report the exact paths and stop. Never run
-   `git rm --cached`, rewrite history, or move tracked private state.
+   `git ls-files -z -- .kai .kai-retired-*` from the exact project Git root and
+   retain the exact tracked paths for the preview. For external placement,
+   refuse a source inside any Git work tree and verify each target project
+   contains no project-local `.kai/`.
+5. By default, if any source path is tracked, report the exact paths and stop.
+   Never run `git rm --cached` without the guarded force approval below, and
+   never rewrite history. Continue only through the guarded force path when the
+   operator explicitly requests it.
 6. Verify each target project's `docs/kai/` is outside the source. Record
    whether it exists, but do not move, rewrite, or regenerate existing files.
 7. If package installation state or version alignment is uncertain, reinstall
    or update the current `kai-core` and selected active capability packages,
    verify them, and start a fresh session before continuing.
+
+## Guarded force path
+
+`--force` is a request for the guarded force path, not approval. It relaxes
+only the default refusal for tracked legacy files and unsupported structure
+inside the exact retirement source. It does not relax path-safety, privacy,
+publication preservation, project-binding, placement, destination collision,
+or fresh-session requirements.
+
+Before asking for approval, show one exact change preview containing:
+
+- every tracked source path reported by Git;
+- the source-to-backup rename and collision check;
+- the exact `git rm --cached -r -- .kai` index command;
+- the expected Git disposition of every tracked path: a staged deletion at its
+  original path, with the original bytes retained only in the ignored retired
+  backup;
+- the exact managed `.gitignore` change, if any;
+- every preserved `docs/kai/` path;
+- the clean onboarding and verification commands;
+- confirmation that no retired records or optional package state will be
+  imported; and
+- the repository status command that will expose the resulting deletions and
+  ignore-block edit for human PR review.
+
+Obtain explicit operator approval for force re-onboarding after showing that
+preview. Approval must name or unambiguously accept the tracked paths, backup
+destination, index removal, and repository-visible deletions. A prior request
+containing `--force` does not satisfy this confirmation gate.
 
 ## Confirm
 
@@ -70,16 +102,17 @@ Show the operator:
 - the placement-specific current onboarding command that will run afterward.
 
 Continue only after an explicit confirmation covering the rename and clean
-onboarding.
+onboarding. For force re-onboarding, use the stronger approval gate above.
 
 ## Reset
 
 Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
 
 1. Immediately before the rename, repeat the same path-safety validation for
-   the resolved source and destination and recheck tracking, placement,
-   registry/project bindings, collision absence, and preserved publication
-   roots. Stop on any drift.
+   the resolved source and destination and repeat the tracking check,
+   placement, registry/project bindings, collision absence, and preserved
+   publication roots. In force mode, require the tracked path set to match the
+   approved preview exactly. Stop on any drift.
 2. For repo-local placement only, update Kai's managed ignore block to include
    both:
 
@@ -93,9 +126,14 @@ Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
    block and do not create a project-local private root.
 4. Rename `<workspace-root>/.kai/` atomically to the resolved sibling backup.
 5. Do not open any file beneath the retired directory after the rename.
-6. Run `kai-core-workspace-onboarding` with the same resolved placement and
+6. In force mode, run `git rm --cached -r -- .kai` from the exact project Git
+   root. This stages only deletion of the approved legacy paths while retaining
+   their bytes in the ignored backup. Verify `git ls-files -- .kai` is empty
+   before onboarding. Stop and report a partial result if either command fails;
+   never create the new private root while legacy `.kai` paths remain tracked.
+7. Run `kai-core-workspace-onboarding` with the same resolved placement and
    target projects to create a new schema-6 workspace.
-7. Verify the clean Core workspace:
+8. Verify the clean Core workspace:
 
    ```text
    node "<kai-core-plugin>/scripts/workspace-doctor.mjs" \
@@ -104,7 +142,7 @@ Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
      --root "<workspace-root>"
    ```
 
-8. Core onboarding creates no optional runtime. Initialize Project Management
+9. Core onboarding creates no optional runtime. Initialize Project Management
    afterward only when the operator explicitly requested it:
 
    ```text
@@ -113,6 +151,11 @@ Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
    ```
 
    Never infer optional package state from the retired workspace.
+10. For repo-local placement, run `git status --short`,
+    `git diff --cached --name-status -- .kai`, and
+    `git diff -- .gitignore`. Report every repository-visible change for human
+    review. Apart from the approved index removal, never stage changes. Never
+    commit, push, or rewrite history.
 
 If onboarding fails, preserve both `docs/kai/` and the retired backup. Report
 the failure; do not restore or import historical private state automatically.
