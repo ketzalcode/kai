@@ -1,6 +1,6 @@
 {
   "name": "kai-core",
-  "version": "23.0.0",
+  "version": "24.0.0",
   "description": "kai-core: shared operating contracts, schema-6 workspace machinery, and standalone Task/A2A execution.",
   "skills": "skills"
 }
