@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **38 skills**.
+The repository ships **9 agents** and **41 skills**.
 
-The default marketplace supplies **9 agents** and **38 skills** through core, optional project management, engineering, and creative (17 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **41 skills** through core, optional project management, engineering, and creative (20 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -140,6 +140,9 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
 | [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
+| [`my-insights`](../../plugins/kai-engineering/skills/my-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
+| [`team-insights`](../../plugins/kai-engineering/skills/team-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents. |
+| [`refine-insights`](../../plugins/kai-engineering/skills/refine-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
 
 ### Engineering automation

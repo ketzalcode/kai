@@ -16,15 +16,36 @@ docs/kai/   committed accepted knowledge
 Directories appear only on the first valid write. Installing a pack creates no
 pack directory.
 
+## Target binding
+
+Keep four identities distinct:
+
+```text
+session root     where the host session started
+target root      canonical repository or project the current request names
+workspace root   private Kai workspace bound to that project
+project id       exact manifest binding for the target root
+```
+
+The session root is not durable ownership. When the operator names a sibling
+repository, external checkout, or other project path, resolve that target
+before workspace discovery and use the target path instead of ambient `cwd`.
+Validate exactly one manifest project whose canonical path matches the target,
+then keep the target root, workspace root, and project ID together for the
+current task. Rebind when the target changes. Multi-repository work carries one
+binding per repository; never apply one target's instructions or private
+context to another.
+
 ## Resolution
 
 Resolve the workspace before any coordinated read or write.
 
-1. Discover `.kai/manifest.json` for `repo-local` placement or use the
-   registered external workspace binding.
+1. Starting from the resolved target root, discover `.kai/manifest.json` for
+   `repo-local` placement or use that project's registered external workspace
+   binding.
 2. Validate exact native paths, project identity, workspace identity, case,
    links, junctions, nested Git roots, and publication-root containment.
-3. Resolve the configured project and its `publication_root`.
+3. Resolve the configured project ID and its `publication_root`.
 4. Treat `.kai/core/runtime/coordination.sqlite` as the only Core coordination
    authority.
 
