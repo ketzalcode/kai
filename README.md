@@ -1,21 +1,37 @@
-# Kai
+<p align="center">
+  <img src="https://github.com/ketzalcode.png?size=160" alt="Kai" width="120">
+</p>
+
+<h1 align="center">Kai</h1>
+
+<p align="center">
+  <strong>Specialized AI collaboration for software teams that value quality without ceremony.</strong><br>
+  <em>Direct by default. Coordinated when it matters.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ketzalcode/kai/actions/workflows/nightly.yml"><img alt="Nightly" src="https://github.com/ketzalcode/kai/actions/workflows/nightly.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/ketzalcode/kai/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ketzalcode/kai?style=flat-square&label=release"></a>
+  <a href="https://docs.github.com/copilot/how-tos/use-copilot-agents/use-copilot-cli"><img alt="GitHub Copilot CLI" src="https://img.shields.io/badge/GitHub%20Copilot-CLI-8957E5?style=flat-square&logo=githubcopilot&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/ketzalcode/kai?style=flat-square"></a>
+</p>
 
 Kai is a lean, quality-first suite of specialized agents and skills for
 agent-to-agent software collaboration in the GitHub Copilot CLI.
 
-Its mission is simple: help developers ship better software with the right
-expertise and evidence, without turning every change into a workflow.
+**The mission:** help developers ship better software with the right expertise
+and evidence, without turning every change into a workflow.
 Kai keeps direct work direct. It adds specialization, review, coordination, or
 planning only when those things materially improve the result.
 
-The vision is a composable engineering team with small roles, relevant context,
-clear authority, and proportionate validation. Agents should disagree when the
-evidence calls for it, stay inside their lane, and leave work understandable to
-the next person or session.
+**The vision:** a composable engineering team with small roles, relevant
+context, clear authority, and proportionate validation. Agents should disagree
+when the evidence calls for it, stay inside their lane, and leave work
+understandable to the next person or session.
 
-Kai is open source. It ships declarative Markdown agents and skills plus small,
-dependency-free Node runtimes for the capabilities that need durable state.
-There is no service to run, no framework to adopt, and no MCP server bundled.
+**Built to stay lean:** declarative Markdown agents and skills plus small,
+dependency-free Node runtimes only where durable state is necessary. There is
+no service to run, no framework to adopt, and no MCP server bundled.
 
 ## What Kai provides
 

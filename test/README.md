@@ -24,11 +24,8 @@ public generated entrypoint once.
 Additional developer commands remain separate:
 
 - `npm run validate` validates plugin source.
-- `npm run docs:check` checks generated catalog drift.
-- `npm run host-contract` checks the distinct frontmatter and golden-inventory
-  contract.
-- `npm run pack-preview:check` checks the committed generated package tree.
-- `npm run check-syntax` parses shipped JavaScript and PowerShell.
+- `npm run docs:check` checks generated catalog and package drift.
+- `npm run consumer-install:self-test` reruns copied-package acceptance alone.
 
-These commands are not implied by `npm test` and must be run when their owned
-surface changes.
+Use these commands for narrower evidence. `npm test` already runs copied-package
+acceptance; `npm run build:check` remains a separate generated-drift gate.

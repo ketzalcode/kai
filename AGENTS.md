@@ -129,12 +129,12 @@ An intentional release-preparation change batches release metadata:
    consumer scripts.
 4. Run release readiness against the intended base and head.
 
-The daily Linux/Node 24 nightly runs `npm test`, `npm run build:check`,
-`npm run consumer-install:self-test`, and release readiness. Unreleased behavior
-with the currently tagged version is valid but is not release-ready. The Monday
-workflow tags and creates the GitHub release only when an explicit forward
-version is present on the exact successful nightly SHA. Do not tag or publish
-from a feature PR.
+The daily Linux/Node 24 nightly runs `npm test`, `npm run build:check`, and
+release readiness. `npm test` already includes copied-package acceptance.
+Unreleased behavior with the currently tagged version is valid but is not
+release-ready. The Monday workflow tags and creates the GitHub release only
+when an explicit forward version is present on the exact successful nightly
+SHA. Do not tag or publish from a feature PR.
 
 If the expected previous tag is absent locally, fetch tags or use a
 deterministic merge-base ref for release-readiness. Never weaken the check to

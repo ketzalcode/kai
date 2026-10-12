@@ -160,14 +160,8 @@ and notification behavior are unchanged; broad core redesign was not reopened.
 
 The results below record the learning unit before the `7.0.0` integration batch.
 
-The permitted sequence completed with exit code 0:
-
-```powershell
-node scripts\host-contract.mjs --update
-npm run docs:generate
-npm run pack-preview -- --write
-git diff --check
-```
+The historical generation sequence is retired. Re-entry uses the active process
+in [`../README.md`](../README.md).
 
 Host generation reported **56 agents / 57 skills**; the inventory file did not
 change. Catalog generation moved all five links and the method link to learning,

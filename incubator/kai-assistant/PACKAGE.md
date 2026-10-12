@@ -115,9 +115,8 @@ the contract this package is supposed to meet, not as evidence it does.
   `agentRoutingErrors`, `agentPromptLimitErrors`, and the frontmatter loader
   contract all return clean for both agents.
 - **Runtime unverified.** No agent, skill, or scenario in this package has been
-  executed against a live host. The generation commands that ran are
-  `node scripts/host-contract.mjs --update`, `npm run docs:generate`, and
-  `npm run pack-preview -- --write`.
+  executed against a live host. Historical generation commands are retired;
+  re-entry uses the active process in [`../README.md`](../README.md).
 - **`session_store_sql` availability unverified.** `extract-writing-style`
   names `session_store_sql` as its primary source for a corpus extraction
   (`SKILL.md:4,176`), but neither `personal-assistant` nor `persona-self`

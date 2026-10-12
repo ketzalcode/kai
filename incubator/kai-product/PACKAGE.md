@@ -90,14 +90,8 @@ performed during this source refactor.
 
 ## Evidence and limits
 
-The authorized generation sequence completed with exit code 0:
-
-```powershell
-node scripts\host-contract.mjs --update
-npm run docs:generate
-npm run pack-preview -- --write
-git diff --check
-```
+The historical generation sequence is retired. Re-entry uses the active process
+in [`../README.md`](../README.md).
 
 Inventory reports 56 agents and 57 skills without changing the golden inventory.
 Catalog generation writes the ten-role Product group and the product method.

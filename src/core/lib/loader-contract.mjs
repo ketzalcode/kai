@@ -3,11 +3,8 @@
 // Single source of truth for what kai declares and requires of its own entries,
 // not for how a Copilot host parses them; no file here can hold that authority.
 // How a host parses those declarations is the host's own concern and is not
-// asserted here. Both guards import this contract so they cannot drift from
-// each other:
-//   • validate-plugin.mjs — proves the shipped source obeys the contract;
-//   • host-contract.mjs    — builds the expected discoverable inventory and
-//     proves malformed kai frontmatter is rejected before release.
+// asserted here. validate-plugin.mjs proves the shipped source obeys the
+// contract; focused unit cases prove malformed frontmatter is rejected.
 //
 // Dependency-free (no imports) so any host/runner can load it.
 

@@ -4,6 +4,10 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
+  loaderErrors,
+  parseFrontmatter,
+} from '../src/core/lib/loader-contract.mjs';
+import {
   agentTaxonomyErrors,
   collectReferences,
   hoistedSkillRouteErrors,
@@ -49,6 +53,69 @@ test('create-agent keeps roles focused and routes shared context just in time', 
   assert.match(body, /Do not add an `\*\*Inherits:\*\*` line/);
   assert.match(body, /A conditional route is still just in time/);
   assert.match(body, /Never create a\s+`workflow-\*` agent/);
+});
+
+test('loader contract rejects malformed agent and skill frontmatter', () => {
+  const cases = [
+    ['skill', 'argument-hint-array', [
+      'name: argument-hint-array',
+      'description: malformed argument hint',
+      'tools: [read]',
+      'user-invocable: true',
+      'argument-hint: [file, area]',
+    ], /argument-hint.*inline array/i],
+    ['skill', 'tools-not-array', [
+      'name: tools-not-array',
+      'description: malformed tools',
+      'tools: read',
+    ], /tools.*inline array/i],
+    ['agent', 'unsupported-tool', [
+      'name: unsupported-tool',
+      'description: malformed tool',
+      'tools: [read, teleport]',
+    ], /not in kai's tool vocabulary/i],
+    ['agent', 'skill-key-on-agent', [
+      'name: skill-key-on-agent',
+      'description: malformed agent affordance',
+      'tools: [read]',
+      'user-invocable: true',
+    ], /skill-only/i],
+    ['agent', 'model-array', [
+      'name: model-array',
+      'description: malformed model',
+      'model: [gpt-5, claude]',
+      'tools: [read]',
+    ], /model.*quoted scalar string/i],
+    ['agent', 'model-non-string', [
+      'name: model-non-string',
+      'description: malformed model',
+      'model: true',
+      'tools: [read]',
+    ], /model.*quoted scalar string/i],
+    ['agent', 'model-unapproved', [
+      'name: model-unapproved',
+      'description: malformed model',
+      'model: "unreviewed-model"',
+      'tools: [read]',
+    ], /approved agent model set/i],
+    ['agent', 'name-mismatch', [
+      'name: a-different-name',
+      'description: malformed identity',
+      'tools: [read]',
+    ], /name .* must equal/i],
+    ['agent', 'disable-model-invocation-value', [
+      'name: disable-model-invocation-value',
+      'description: malformed invocation control',
+      'tools: [read]',
+      'disable-model-invocation: sometimes',
+    ], /disable-model-invocation.*true.*false/i],
+  ];
+
+  for (const [kind, id, lines, expected] of cases) {
+    const parsed = parseFrontmatter(['---', ...lines, '---', ''].join('\n'));
+    assert.equal(parsed.ok, true, `${id} frontmatter must parse before validation`);
+    assert.match(loaderErrors(kind, id, parsed.fm).join('\n'), expected, id);
+  }
 });
 
 test('active agents use responsibility identities rather than workflow prefixes', () => {

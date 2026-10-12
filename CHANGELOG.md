@@ -48,6 +48,11 @@ follow semantic versioning.
 - Made feature PRs retain the current version. Version, changelog, marketplace,
   generated manifest, and README status updates now belong to one intentional
   release-preparation change.
+- Simplified the active validation surface: malformed loader cases now run
+  directly in the authoring suite, package tests reuse generated builds, and
+  nightly no longer repeats copied-package acceptance after `npm test`.
+- Refreshed the README hero with the KetzalCode mark, release/nightly/license
+  badges, and a clearer mission and vision without expanding it into a manual.
 
 ### Removed
 
@@ -69,6 +74,9 @@ follow semantic versioning.
 - Removed the `kai-core-create-agent`, `kai-core-create-skill`, and
   `kai-core-feedback` IDs. Their Contributor replacements are clean breaks with
   no compatibility aliases.
+- Removed the retired `pack-preview`, golden-inventory `host-contract`,
+  standalone syntax scanner, incubated Microsoft Learn extractor, schema-5
+  fixtures, and their stale npm commands.
 
 ## [22.3.0] - 2026-10-11
 

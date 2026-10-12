@@ -72,12 +72,12 @@ dispatch. It uses one Linux runner and Node 24:
 npm ci
 npm test
 npm run build:check
-npm run consumer-install:self-test
 npm run release-readiness
 ```
 
 There is no operating-system or Node-version matrix. The target wall time is
-five minutes. A failure blocks the next automatic release but does not rewrite
+five minutes. `npm test` includes copied-package acceptance; nightly does not
+run it twice. A failure blocks the next automatic release but does not rewrite
 the status of already merged work.
 
 ## Version, build, and release

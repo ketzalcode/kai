@@ -171,14 +171,8 @@ production `shipped`.
 The following results record the package unit before the `7.0.0` integration
 batch; they are not a new runtime or policy validation claim.
 
-The authorized generation sequence completed with exit code 0:
-
-```powershell
-node scripts\host-contract.mjs --update
-npm run docs:generate
-npm run pack-preview -- --write
-git diff --check
-```
+The historical generation sequence is retired. Re-entry uses the active process
+in [`../README.md`](../README.md).
 
 Host inventory reports 56 agents and 57 skills; the golden inventory is unchanged.
 Catalog generation updates the six role paths and revenue grouping. Pack emission
