@@ -17,7 +17,7 @@ review, PR delivery, and bounded Nightshift execution.
 
 Methods include `software-development`, shared/frontend/backend coding
 standards, repository onboarding, research, PR sizing, review, review comments,
-PR delivery, diagrams, and `nightshift-run`.
+PR delivery, `repository-maintenance`, diagrams, and `nightshift-run`.
 
 ## Install
 

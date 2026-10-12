@@ -1,0 +1,78 @@
+import assert from 'node:assert/strict';
+import {existsSync, readFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
+import test from 'node:test';
+import {fileURLToPath} from 'node:url';
+import {materializePacks, sourceSkillFiles} from '../tools/lib/pack-plan.mjs';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const skill = sourceSkillFiles(root).find(entry => entry.id === 'repository-maintenance');
+const body = skill
+  ? readFileSync(skill.path, 'utf8').replace(/\r\n/g, '\n')
+  : '';
+const referencePath = join(
+  root,
+  'plugins',
+  'kai-engineering',
+  'skills',
+  'repository-maintenance',
+  'references',
+  'repository-maintenance.md',
+);
+const workflowPath = join(root, '.github', 'workflows', 'repository-maintenance.md');
+const lockPath = join(root, '.github', 'workflows', 'repository-maintenance.lock.yml');
+
+test('repository maintenance is an Engineering-owned opt-in skill', () => {
+  assert.ok(skill, 'repository-maintenance must exist');
+  assert.equal(skill.pack, 'engineering');
+  assert.match(body, /^user-invocable:\s*true$/m);
+  assert.match(body, /^argument-hint:\s*"audit \| setup weekly"$/m);
+  assert.match(body, /creates no `\.kai` state/);
+  assert.match(body, /This is assessment work/);
+  assert.match(body, /at most three issues/);
+  assert.match(body, /cannot push, edit repository content, create a pull request/);
+});
+
+test('weekly workflow is the exact shipped setup template', () => {
+  const reference = readFileSync(referencePath, 'utf8').replace(/\r\n/g, '\n');
+  const workflow = readFileSync(workflowPath, 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(workflow, reference);
+  assert.equal(existsSync(lockPath), true, 'compiled Agentic Workflow lock must exist');
+
+  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /copilot-requests:\s*write/);
+  assert.match(workflow, /contents:\s*read/);
+  assert.doesNotMatch(workflow, /contents:\s*write/);
+  assert.doesNotMatch(workflow, /pull-requests:\s*write/);
+  assert.match(workflow, /create-issue:/);
+  assert.match(workflow, /max:\s*3/);
+  assert.match(workflow, /deduplicate-by-title:\s*2/);
+  assert.doesNotMatch(workflow, /create-pull-request|assign-to-agent|close-issue/);
+});
+
+test('maintenance audit covers evidence-backed docs, comments, bugs, and improvements', () => {
+  const workflow = readFileSync(referencePath, 'utf8');
+  for (const expected of [
+    /README and package-level documentation/,
+    /comments, TODOs, and FIXMEs/,
+    /reproducible bugs or exact contract contradictions/,
+    /concrete improvements with a named current owner/,
+    /Search open issues/,
+    /If no material finding remains, create no issue/,
+    /Never include secrets, personal data/,
+  ]) {
+    assert.match(workflow, expected);
+  }
+});
+
+test('copied Engineering packages include the maintenance setup template', () => {
+  const files = materializePacks({
+    root,
+    version: JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version,
+    packs: ['core', 'engineering'],
+  });
+  assert.ok(files.has(
+    'kai-engineering/skills/repository-maintenance/references/repository-maintenance.md',
+  ));
+});
