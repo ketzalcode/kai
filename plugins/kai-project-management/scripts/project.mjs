@@ -569,6 +569,15 @@ function projectStatus(database) {
   const byKey = new Map(all.map((entry) => [`${entry.kind}\0${entry.id}`, entry]));
   const rows = all.map((entry) => {
     const blockers = [];
+    const parentKind = entry.kind === "direction" ? null : entry.kind === "epic" ? "direction" : entry.kind === "feature" ? "epic" : "feature";
+    const parentId = parentKind === null ? null : entry.body[`${parentKind}_id`];
+    const parentRecord = parentKind === null ? null : byKey.get(`${parentKind}\0${parentId}`) ?? null;
+    if (parentKind !== null && parentRecord === null) {
+      blockers.push({
+        code: "PARENT_MISSING",
+        message: `${parentKind}/${parentId} does not exist`
+      });
+    }
     if (entry.body.hold) blockers.push({ code: "HOLD", message: entry.body.hold.reason });
     if (entry.kind === "feature") {
       for (const dependency of entry.body.depends_on_features) {
@@ -587,11 +596,16 @@ function projectStatus(database) {
       completion_disposition: entry.body.completion_disposition,
       priority: entry.body.priority,
       owner: entry.body.owner,
+      parent: parentKind === null ? null : {
+        kind: parentKind,
+        id: parentId,
+        version: parentRecord?.version ?? null
+      },
       blockers
     };
   }).sort((left, right) => left.priority - right.priority || left.kind.localeCompare(right.kind) || left.id.localeCompare(right.id));
   return {
-    schema_version: 1,
+    schema_version: 2,
     through_seq: Number(database.prepare(
       "SELECT COALESCE(MAX(seq), 0) AS seq FROM events"
     ).get().seq),
