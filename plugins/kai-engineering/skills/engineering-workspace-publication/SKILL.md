@@ -1,7 +1,7 @@
 ---
 name: engineering-workspace-publication
 description: "Use when an engineering role may retain or publish durable feature, architecture, decision, investigation, or release knowledge."
-tools: [read, edit, search]
+tools: [read, edit, execute, search]
 ---
 
 # Engineering workspace publication
@@ -42,6 +42,9 @@ unless named authority accepts a sanitized revision as an investigation report.
 - Refuse a pack/path mismatch, collision, link, junction, nested Git root, or
   destination outside the configured project publication root.
 
-Return the validated vocabulary choice to the caller. The shared production
-contract owns path derivation, acceptance binding, publication, provenance, and
-closure.
+Return the validated vocabulary choice to the caller. For coordinated assets,
+keep mutable bytes on the typed private route and Load `kai-core-work-acting`
+before `artifact.register` or `asset.transition`. The runtime validates the
+Task, pack, path, provenance, exact accepted hash, mirrored public target, and
+transition. A refusal stops publication. Direct repository files use their
+repository-native path and create no Kai asset state.

@@ -67,7 +67,9 @@ package's directory.
 3. File every agent and skill under a heading in `CATEGORIES` in
    `tools/generate-catalog.mjs`.
 4. Re-establish the package's core-only dependencies: an incubated agent may
-   name a role that no longer exists.
+   name a role or skill that no longer exists. In particular, replace retired
+   `kai-core-contract-v1` and `kai-core-asset-producing` routes with direct
+   task-local Core routes and the owning package publication skill.
 5. Run `npm run build`, `npm test`, `npm run build:check`, and
    `npm run consumer-install:self-test`. Run `npm run host-contract:update`
    too when the host inventory or loader contract changes.

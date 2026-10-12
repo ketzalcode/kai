@@ -10,9 +10,9 @@ Use this skill only for a deliberate clean reset to the current workspace
 contract. It is not a migration. Require explicit operator confirmation after
 showing the exact paths and commands that will change.
 
-Before resolving workspace paths, Load `kai-core-contract-v1`, then Load
-`kai-core-workspace-paths` and use its current resolution and refusal contract.
-If compatible core is unavailable, ordinary single-shot domain assistance may
+Before resolving workspace paths, Load `kai-core-workspace-paths` and use its
+current resolution and refusal contract. If that Core skill is unavailable,
+ordinary single-shot domain assistance may
 continue, but do not coordinate work, alter `.kai` state, or re-onboard. Tell
 the operator to install or update `kai-core` before resuming.
 

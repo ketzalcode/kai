@@ -22,8 +22,8 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill in a session. If
-core is unavailable or incompatible, continue only with a bounded single-shot
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, continue only with a bounded single-shot
 assessment or command for supplied files; do not claim coordinated work,
 record acceptance, or write `.kai` state. State the limit and tell the operator
 to install or update `kai-core` before coordinated production resumes.
@@ -139,11 +139,8 @@ When the existing typed subject and authorities above are present, apply
 
 Apply `creative-workspace-publication` when a requested plan, report, or final
 media file needs a durable Creative route.
-
-Apply `kai-core-asset-producing` immediately before creating or revising that
-durable output so target, provenance, custody, completion authority, and
-validity are explicit. Raw media remains typed private evidence unless the
-accepted media rule approves a safe durable destination.
+Raw media remains typed private evidence unless the accepted media rule
+approves a safe durable destination.
 
 For a granted Task, apply `kai-core-work-acting` before writes and verify lease,
 version, touches, inputs, and latest handoff.
@@ -159,7 +156,7 @@ Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 
 The owning Creative publication contract decides disposition and records any
-authorized transition through `kai-core-asset-producing`. Preserve exact paths,
+authorized transition through Core `asset.transition`. Preserve exact paths,
 revision/status, limitations, validity owner, pending reviews, and missing
 stages. No external publication: the operator retains publication and
 distribution authority.

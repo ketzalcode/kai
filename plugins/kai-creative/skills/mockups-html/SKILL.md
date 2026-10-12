@@ -24,10 +24,10 @@ or proposed values stay labeled; supplied tokens are evidence, not authority
 to establish a new visual system. Screenshots do not establish source-token
 truth. A screenshot of today's UI does not replace a desired-state mock.
 
-Before applying shared rules, Load `kai-core-contract-v1`. Without compatible
-core, bounded visual advice from supplied evidence may continue, but do not
-coordinate work or write `.kai` state. Tell the operator to install or update
-core before coordinated design resumes.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, bounded visual advice from supplied evidence may
+continue, but do not coordinate work or write `.kai` state. Tell the operator
+to install or update core before coordinated design resumes.
 Use supplied or repository-native evidence when choosing actual tokens or components.
 An option that changes approved scope remains an unadopted proposal, separate
 from the in-scope recommendation.
@@ -81,10 +81,10 @@ prose-sufficient or settled question may receive no new mock; an unavailable
 requested artifact remains a named gap.
 
 Load `kai-core-workspace-paths` before choosing a persistent target.
-Load `creative-workspace-publication`, then Load `kai-core-asset-producing`
-when retaining, revising, or recording an authorized transition for a durable
-design. Use the caller's validated typed target; do not create planning scope
-for a mock.
+Load `creative-workspace-publication` when retaining or revising a durable
+design, then Load `kai-core-work-acting` before recording an authorized
+transition. Use the caller's validated typed target; do not create planning
+scope for a mock.
 
 Stop at the mock and recommendation. Do not lock or adopt a consequential
 choice without its owner/authority. Do not implement production frontend

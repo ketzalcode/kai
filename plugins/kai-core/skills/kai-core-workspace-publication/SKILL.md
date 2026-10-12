@@ -1,7 +1,7 @@
 ---
 name: kai-core-workspace-publication
 description: "Use when a core role may retain or publish durable coordination decisions or reports."
-tools: [read, edit, search]
+tools: [read, edit, execute, search]
 ---
 
 # Core workspace publication
@@ -35,7 +35,9 @@ format, target project, and destination ownership against that declaration.
 - A path collision, link, junction, nested Git root, namespace mismatch, or
   destination outside the configured project publication root is a refusal.
 
-Return the validated vocabulary choice to the caller. The shared production
-contract derives the private path, binds acceptance, mirrors the accepted
-revision, records provenance, removes scratch, and archives retained private
-material.
+Return the validated vocabulary choice to the caller. For coordinated assets,
+keep mutable bytes on the typed private route and Load `kai-core-work-acting`
+before `artifact.register` or `asset.transition`. The runtime validates the
+Task, pack, path, provenance, exact accepted hash, mirrored public target, and
+transition. A refusal stops publication. Direct repository files use their
+repository-native path and create no Kai asset state.

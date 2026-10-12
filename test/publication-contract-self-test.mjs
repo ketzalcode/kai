@@ -79,15 +79,6 @@ test('non-producers need no negative declaration', () => {
   }), []);
 });
 
-test('direct asset production outside a publication skill fails', () => {
-  assert.match(publicationRoutingErrors({
-    pack: 'engineering',
-    id: 'bypass',
-    body: 'Use `kai-core-asset-producing` now.',
-    fm: {},
-  }).join('\n'), /publication entrypoint|direct/i);
-});
-
 test('the shipped route corpus obeys positive publication ordering', () => {
   const entries = [
     ...sourceAgentFiles(root),
@@ -95,35 +86,12 @@ test('the shipped route corpus obeys positive publication ordering', () => {
   ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
   assert.ok(
     entries.some(entry =>
-      /publication-entrypoint:|kai-core-asset-producing/.test(entry.body)),
+      /publication-entrypoint:/.test(entry.body)),
     'expected at least one shipped publication route',
   );
   const errors = entries.flatMap(entry =>
     publicationRoutingErrors(entry).map(message => `${entry.rel}: ${message}`));
   assert.deepEqual(errors, []);
-});
-
-test('each asset-production route requires an earlier owning publication route', () => {
-  assert.match(publicationRoutingErrors({
-    pack: 'engineering',
-    id: 'reversed',
-    body: [
-      'Load `kai-core-asset-producing` to create the artifact.',
-      'Load `engineering-workspace-publication` to validate publication.',
-    ].join('\n'),
-    fm: {'publication-entrypoint': 'engineering-workspace-publication'},
-  }).join('\n'), /before|precede|earlier/i);
-
-  assert.deepEqual(publicationRoutingErrors({
-    pack: 'engineering',
-    id: 'separated',
-    body: [
-      'Load `engineering-workspace-publication` to validate publication.',
-      'Load `kai-core-workspace-paths` to resolve the destination.',
-      'Load `kai-core-asset-producing` to create the artifact.',
-    ].join('\n'),
-    fm: {'publication-entrypoint': 'engineering-workspace-publication'},
-  }), []);
 });
 
 test('publication declarations reject traversal and arbitrary roots', () => {

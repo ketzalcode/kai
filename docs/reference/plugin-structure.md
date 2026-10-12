@@ -137,10 +137,10 @@ characters.
 
 An inline route is a decision boundary, not a manifest. Do not collect possible
 Core skills under `PREPARE`, `Dependencies`, `Required skills`, or
-`**Inherits:**`. Route `kai-core-contract-v1` immediately before the first Core
-skill that the active branch needs, then route later skills only at their own
-workspace, grant, mutation, activity, publication, or closure step. Direct work
-must not enter coordinated setup merely because an agent can coordinate.
+`**Inherits:**`. Route each Core skill directly at its own workspace, grant,
+mutation, activity, or publication boundary. Runtime compatibility comes from
+the relevant executable's `inspect`, not a model probe. Direct work must not
+enter coordinated setup merely because an agent can coordinate.
 
 Use `kai-core-create-agent` for a new or materially revised role and
 `kai-core-create-skill` for reusable method.
@@ -198,14 +198,12 @@ seam, human gate, completion condition, and runtime fit.
 3. Edit only the canonical
    `plugins/<package>/agents/<agent-id>.agent.md`. Keep filename and
    frontmatter `name` identical; declare `description`, quoted `model`,
-   `durable-output-producer`, and only tools required by real actions.
-4. Route skills inside the instruction that needs them. Route
-   `kai-core-contract-v1` immediately before the first other core skill; do not
-   add an eager inheritance list, dependency-guard block, or collected preflight
-   paragraph.
-5. Set `durable-output-producer: true` only for an authorized typed Kai
-   artifact branch. Route the owning package's publication skill immediately
-   before `kai-core-asset-producing`; non-producers route neither.
+   and only tools required by real actions.
+4. Route skills inside the instruction that needs them. Do not add an eager
+   inheritance list, dependency-guard block, or collected preflight paragraph.
+5. Declare `publication-entrypoint: <owning-package-skill>` only when the agent
+   has an authorized typed Kai artifact branch. Route that publication skill at
+   the branch; non-producers declare and route neither.
 6. For an added, removed, or renamed agent, update exactly one `CATEGORIES`
    entry in `tools/generate-catalog.mjs` and search agents, skills,
    examples, tests, and documentation for the old and new IDs.
@@ -238,13 +236,12 @@ packages execute without checkout `node_modules`.
 ## Contributor validation
 
 The binding fast-ship and validation-agreement rules are in `AGENTS.md`. The
-usual Lean release preparation is:
+usual Lean feature validation is:
 
 ```powershell
 npm test
 npm run build:check
 npm run consumer-install:self-test
-node tools\release-readiness.mjs --base <available-tag-or-merge-base> --head HEAD --json
 git diff --check
 ```
 
@@ -254,7 +251,7 @@ the schedules, release guard, and evidence expectations.
 
 ## Versioning
 
-Kai follows semantic versioning:
+Kai follows semantic versioning when preparing a release:
 
 | Change | Version |
 | --- | --- |
@@ -263,7 +260,9 @@ Kai follows semantic versioning:
 | Compatible fix | patch |
 | Documentation- or test-only | no bump required |
 
-`package.json` is the only edited version source:
+Feature PRs do not bump versions. An intentional release-preparation change
+batches all merged behavior since the previous tag. `package.json` is the only
+edited version source:
 
 ```powershell
 npm version <x.y.z> --no-git-tag-version
@@ -276,10 +275,11 @@ comparison link manually.
 
 ## Release boundary
 
-After merge, the Monday workflow owns tagging and GitHub release creation. It
-uses the exact SHA validated by the latest successful nightly and skips when
-`main` moved, the version is already tagged, release facts are incomplete, or
-generated output was not clean.
+After release preparation merges, the Monday workflow owns tagging and GitHub
+release creation. It uses the exact SHA validated by the latest successful
+nightly and skips when `main` moved, no forward version was prepared, the
+version is already tagged, release facts are incomplete, or generated output
+was not clean.
 
 Feature PRs must not tag, publish, or manually create the release. A missing
 local expected tag is not a reason to weaken release-readiness: fetch tags or

@@ -8,9 +8,10 @@ argument-hint: "approved outcome and target workspace"
 
 # Create a Project Management Epic
 
-Invoke `kai-core-contract-v1` before the first other Core skill. If Core is
-unavailable, ordinary direct work may continue, but do not initialize or
-mutate `.kai` state; tell the operator to install or update `kai-core`.
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, ordinary direct work may continue, but do not
+initialize or mutate `.kai` state; tell the operator to install or update
+`kai-core`.
 
 Prepare and submit one proposed Epic. This procedure never activates it,
 creates descendants, changes priority, or starts implementation.

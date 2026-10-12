@@ -99,15 +99,12 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Operating contracts & assets',
-    blurb: 'Shared operating, scope, communication, activity, completion, and durable asset lifecycle contracts.',
+    title: 'Operating and authoring',
+    blurb: 'Shared operating, communication, activity, and lean agent/skill authoring guidance.',
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
-      'kai-core-no-self-remediation',
       'kai-core-peer-communication',
-      'kai-core-contract-v1', 'kai-core-create-agent',
-      'kai-core-create-skill',
-      'kai-core-asset-producing',
+      'kai-core-create-agent', 'kai-core-create-skill',
     ],
   },
   {

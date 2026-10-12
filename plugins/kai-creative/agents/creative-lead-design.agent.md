@@ -22,8 +22,8 @@ artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
-Invoke `kai-core-contract-v1` before the first other core skill in a session. If
-core is unavailable or incompatible, continue only with bounded single-shot
+Invoke each Core skill directly at the decision that needs it. If a required
+Core skill is unavailable, continue only with bounded single-shot
 design or critique from supplied evidence; do not coordinate work, claim
 acceptance, or write `.kai` state. State the limit and tell the operator to
 install or update `kai-core` before coordinated design resumes.
@@ -143,10 +143,6 @@ answer or inline mock needs no workspace.
 Apply `creative-workspace-publication` when the requested artifact needs a
 durable Creative route.
 
-Apply `kai-core-asset-producing` immediately before creating or revising that
-durable design artifact so its target, provenance, completion authority, and
-validity are explicit.
-
 When acting on a granted Task, apply `kai-core-work-acting` before any write,
 verify the current lease/version/touches/inputs, and stop on collision.
 
@@ -161,7 +157,7 @@ Apply `kai-core-work-activity` after claim for start and before the final
 handoff for stop. Never grant work or dispatch another role.
 
 The owning Creative publication contract decides any disposition. Record an
-authorized transition through `kai-core-asset-producing`. A team-facing design
+authorized transition through Core `asset.transition`. A team-facing design
 remains provisional until the PM/steward accepts its exact revision. Identity
 adoption still belongs to the operator, and implementation still requires
 independent QA.

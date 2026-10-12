@@ -57,6 +57,13 @@ the Task, actor, exact actions, version, and lease. Apply only those actions.
 - `review.record`, `approval.record`, `evidence.register`,
   `artifact.register`, and `asset.transition` bind exact subject versions.
 
+For a coordinated durable asset, validate vocabulary and destination through
+the owning package publication skill first. Register the exact private bytes
+with `artifact.register`; publish only the independently accepted hash to its
+mirrored typed target; then record the authorized state with
+`asset.transition`. Runtime refusals are authoritative. Direct repository files
+create no Kai asset state.
+
 The producing actor never accepts its own output where independent acceptance
 is required. Product-design acceptance comes from the declared
 `completion_authority`, which must never be `creative-lead-design` itself when

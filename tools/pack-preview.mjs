@@ -3,10 +3,9 @@
 //
 // Two jobs, one partition (tools/lib/pack-plan.mjs):
 //   • preview   — a throwaway committed-slice or multi-plugin build (`--out`/`--all`) that
-//     answers the host-behaviour questions gating the split: does a fail-closed
-//     preflight hold on a real agent, what happens when core is absent or
-//     version-skewed, which provider wins a name collision, and what a pack does
-//     when it references an uninstalled pack. Preview output ships nothing.
+//     answers the host-behaviour questions gating the split: which provider wins
+//     a name collision and what a pack does when it references an uninstalled
+//     pack. Preview output ships nothing.
 //   • gate      — the same rules the self-test proves by mutation, run over the
 //     live tree as four named CI gates (`--gate`), so a red build names the
 //     guarantee that broke.
@@ -15,9 +14,9 @@
 //     (`--ci-runtime-binaries <pack>`), so publishing a pack never means editing
 //     the workflow to make that pack legal.
 //
-// Run: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N] | --all
+// Run: node tools/pack-preview.mjs --out <dir> [--no-core] | --all
 //      node tools/pack-preview.mjs --self-test
-//      node tools/pack-preview.mjs --gate <partition|collision|partial-install|version-skew|all>
+//      node tools/pack-preview.mjs --gate <partition|collision|partial-install|routing|all>
 //      node tools/pack-preview.mjs --ci-matrix | --ci-runtime-binaries <pack>
 //
 import {
@@ -29,14 +28,14 @@ import {
   parseFrontmatter, parseToolList,
 } from '../src/core/lib/loader-contract.mjs';
 import {
-  PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER,
   packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
   normalizeLF,
   collectReferences, referenceErrors, packProviders,
   planAssets, assetOwnershipErrors,
   generatedKeyErrors, generatedRuntimeErrors,
-  partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
+  partitionErrors, namespaceErrors, providerCollisionErrors,
   agentRoutingErrors,
   publicationSkillForPack, publicationEntrypointDeclaration, publicationRoutingErrors,
   ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -46,12 +45,9 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// The partition, the contract-skill name and the refusal token live once in
-// scripts/lib/pack-plan.mjs. Re-exported here so callers and the locked partition
-// doc that name them on pack-preview keep resolving.
-export {
-  PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks,
-};
+// The partition lives once in tools/lib/pack-plan.mjs and is re-exported for
+// callers that build previews.
+export { PACKS, planPacks };
 
 // The two-plugin preview defaults to learning, a capability with a real local
 // method. It selects the canonical partition.
@@ -72,49 +68,6 @@ const declaredTools = (body) => {
 
 const frontmatter = (body) => normalizeLF(body).match(/^---\n[\s\S]*?\n---/)?.[0] ?? null;
 
-
-// Deterministic evaluation of the preflight's own rule against a built preview:
-// read what `kai-core-contract-v1` would return from the built core, if any, and
-// apply the three conditions the preflight states. This is what makes the
-// core-absent and version-skew arms answerable without a live host.
-export function evaluatePreflight(out) {
-  const probe = join(out, 'kai-core-preview', 'skills', CONTRACT_SKILL, 'SKILL.md');
-  if (!existsSync(probe)) {
-    return { ok: false, reply: REFUSAL, detail: `no ${CONTRACT_SKILL} skill is installed (core absent)` };
-  }
-  const text = normalizeLF(readFileSync(probe, 'utf8'));
-  if (!/^KAI_CORE_READY$/m.test(text)) {
-    return { ok: false, reply: REFUSAL, detail: `${CONTRACT_SKILL} returns no KAI_CORE_READY marker` };
-  }
-  const declared = text.match(/^contract:\s*(\S+)$/m);
-  if (!declared) {
-    return { ok: false, reply: REFUSAL, detail: `${CONTRACT_SKILL} returns no contract version` };
-  }
-  if (declared[1] !== CONTRACT_VERSION) {
-    return {
-      ok: false,
-      reply: REFUSAL,
-      detail: `core speaks contract ${declared[1]}, the preflight requires ${CONTRACT_VERSION} (version skew)`,
-    };
-  }
-  return {
-    ok: true,
-    reply: null,
-    detail: `core reports contract ${CONTRACT_VERSION} — department agents continue silently`,
-  };
-}
-
-function reportPreflight(out) {
-  const pf = evaluatePreflight(out);
-  console.log(`\npreflight: ${pf.reply ?? 'ready'} — ${pf.detail}`);
-}
-
-// Core's copy of the probe: the real shipped skill, or a synthesized build when
-// --contract asks for a version core does not actually speak. Skew is only
-// testable if the preview can lie about the version on purpose.
-const contractSkillText = (contract) => (contract === 1
-  ? normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'))
-  : contractSkill(contract));
 
 // The pack partition (PACKS) and the skill->provider rule (planPacks) are
 // defined once in scripts/lib/pack-plan.mjs and imported above.
@@ -140,7 +93,7 @@ function writePlugin(dir, name, description, agentIds, skills) {
 // the interesting failures are what a pack does when a pack it references is
 // not installed, and what core alone can still do.
 export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== 'core'),
-  withCore = true, contract = 1 }) {
+  withCore = true }) {
   rmSync(out, { recursive: true, force: true });
   const plan = planPacks();
   const built = [];
@@ -149,9 +102,6 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
     const dir = join(out, 'kai-core-preview');
     writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
       PACKS.core, plan.core);
-    // plan.core already copied the real probe; this rewrite is what a --contract
-    // other than 1 uses to build a core the agents must refuse.
-    writeSkill(dir, CONTRACT_SKILL, contractSkillText(contract));
     built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
   }
 
@@ -162,28 +112,6 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
     built.push({ name: `kai-${p}-preview`, dir, agents: PACKS[p].length });
   }
   return { built, plan };
-}
-
-// Synthesize a probe reporting an arbitrary contract version. Only the skew arms
-// use this: contract 1 is served by the real shipped skill.
-export function contractSkill(contractVersion) {
-  return [
-    '---',
-    `name: ${CONTRACT_SKILL}`,
-    'description: "Reports that kai-core is loaded and which contract version it '
-      + 'provides. Use as the first action of any kai pack agent."',
-    '---',
-    '',
-    '# kai core contract',
-    '',
-    'Report these two lines to the calling agent verbatim, then stop:',
-    '',
-    '```text',
-    'KAI_CORE_READY',
-    `contract: ${contractVersion}`,
-    '```',
-    '',
-  ].join('\n');
 }
 
 function writeSkill(dir, id, text, companions = []) {
@@ -199,8 +127,8 @@ function writeSkill(dir, id, text, companions = []) {
 // The two-plugin preview `--out` builds: core plus one department. It is a
 // selection of the same partition `--all` uses, so the roster it ships can no
 // longer disagree with PACKS.
-export function build({ out, withCore = true, contract = 1, pack = 'learning' }) {
-  const { plan } = buildAll({ out, packs: [pack], withCore, contract });
+export function build({ out, withCore = true, pack = 'learning' }) {
+  const { plan } = buildAll({ out, packs: [pack], withCore });
   return {
     coreDir: withCore ? join(out, 'kai-core-preview') : null,
     packDir: join(out, `kai-${pack}-preview`),
@@ -259,22 +187,6 @@ function selfTest() {
   }).some(error => /may only reach its own pack or kai-core/.test(error.msg)),
   'foreign package reference is rejected');
 
-  const scratch = join(ROOT, 'test', '.pack-preview-self-test');
-  rmSync(scratch, {recursive: true, force: true});
-  try {
-    const noCore = join(scratch, 'no-core');
-    buildAll({out: noCore, packs: ['creative'], withCore: false});
-    ok(evaluatePreflight(noCore).reply === REFUSAL,
-      'missing Core contract fails closed');
-
-    const skew = join(scratch, 'version-skew');
-    buildAll({out: skew, packs: ['creative'], contract: 2});
-    ok(evaluatePreflight(skew).reply === REFUSAL,
-      'version-skewed Core contract fails closed');
-  } finally {
-    rmSync(scratch, {recursive: true, force: true});
-  }
-
   ok(namespaceErrors({core: [], local: {engineering: ['kai-core-sneaky']}})
     .some(message => /claims core's `kai-core-\*` namespace/.test(message)),
   'namespace escape is rejected');
@@ -302,15 +214,6 @@ function selfTest() {
     ),
   }).some(message => /belongs to another pack/.test(message)),
   'foreign publication entrypoint is rejected');
-  ok(publicationRoutingErrors({
-    pack: 'engineering',
-    id: 'bypass',
-    kind: 'skill',
-    body: 'Load `kai-core-asset-producing` now.',
-    fm: {},
-  }).some(message => /direct `kai-core-asset-producing` route/.test(message)),
-  'direct asset-producing bypass is rejected');
-
   ok(generatedRuntimeErrors(new Map([
     ['kai-core/plugin.json', '{}'],
     ['kai-core/scripts/start.mjs', "import runtime from '@scope/runtime';\n"],
@@ -330,7 +233,7 @@ function selfTest() {
 //
 // The self-test proves each rule with a mutation. These run the same functions
 // over the live tree, split into four named gates so a red build says which
-// guarantee broke — "partition" and "version-skew" are different problems with
+// guarantee broke — "partition" and "routing" are different problems with
 // different owners, and a single "self-test failed" line makes the reader go
 // find out which. Every gate is a pure read of the repository.
 // ---------------------------------------------------------------------------
@@ -362,7 +265,7 @@ function gateCollision() {
 // A department installed with kai-core and nothing else: every reference
 // resolves, every invoked script travels with the pack that invokes it, and
 // hooks has one owner. There is one agent shape now, so there is no guard block
-// to police here — agent routing is gated in gateSkew.
+// to police here — agent routing is gated in gateRouting.
 function gatePartialInstall() {
   const files = materializePacks({ root: ROOT, version: GATE_VERSION });
   const refs = collectReferences(ROOT);
@@ -380,16 +283,9 @@ function gatePartialInstall() {
   ].map((e) => `${e.file}: ${e.msg}`);
 }
 
-// The contract version wherever it is stated, and the explicit agent route
-// shape: every agent routes the pinned probe first and loads its required
-// contracts inline.
-function gateSkew() {
-  const errs = contractPinErrors({
-    probe: existsSync(skillPath(CONTRACT_SKILL))
-      ? readFileSync(skillPath(CONTRACT_SKILL), 'utf8')
-      : null,
-  }).map((e) => `${e.file}: ${e.msg}`);
-
+// Every agent loads its required contracts inline.
+function gateRouting() {
+  const errs = [];
   const knownSkills = new Set(rosterSkillIds());
   const knownAgents = new Set(sourceAgentFiles(ROOT).map((a) => a.id));
   for (const agent of sourceAgentFiles(ROOT)) {
@@ -408,27 +304,6 @@ function gateSkew() {
     }
   }
 
-  const dir = join(ROOT, 'test', '.pack-preview-gate-skew');
-  rmSync(dir, {recursive: true, force: true});
-  try {
-    const arm = (name, opts) => {
-      const out = join(dir, name);
-      buildAll({ out, packs: ['creative'], ...opts });
-      return evaluatePreflight(out);
-    };
-    const ready = arm('ready', {});
-    const absent = arm('no-core', { withCore: false });
-    const skew = arm('skew', { contract: 2 });
-    if (!ready.ok) errs.push(`a real core does not pass its own preflight: ${ready.detail}`);
-    if (absent.reply !== REFUSAL) {
-      errs.push(`an absent core does not fail closed with ${REFUSAL}: ${absent.detail}`);
-    }
-    if (skew.reply !== REFUSAL) {
-      errs.push(`a core speaking another contract version does not fail closed with ${REFUSAL}: ${skew.detail}`);
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
   return errs;
 }
 
@@ -436,7 +311,7 @@ const GATES = new Map([
   ['partition', gatePartition],
   ['collision', gateCollision],
   ['partial-install', gatePartialInstall],
-  ['version-skew', gateSkew],
+  ['routing', gateRouting],
 ]);
 
 function runGates(name) {
@@ -474,7 +349,6 @@ if (args.includes('--self-test')) {
     out,
     packs: packsArg ? packsArg.split(',') : undefined,
     withCore: !args.includes('--no-core'),
-    contract: Number(flag('--contract', '1')),
   });
   for (const b of r.built) {
     console.log(`  ${b.name.padEnd(28)} ${String(b.agents).padStart(2)} agents  ${b.dir}`);
@@ -483,21 +357,18 @@ if (args.includes('--self-test')) {
   for (const [p, l] of Object.entries(r.plan.local)) {
     if (l.length) console.log(`  ${p} owns ${l.length}: ${l.join(', ')}`);
   }
-  reportPreflight(out);
 } else if (args.includes('--out')) {
   const out = flag('--out');
   const r = build({
     out,
     withCore: !args.includes('--no-core'),
-    contract: Number(flag('--contract', '1')),
   });
   console.log(`core skills: ${r.core.length}${r.coreDir ? '' : ' (OMITTED)'}`);
   console.log(`pack agents: ${r.agents.length}, pack-local skills: ${r.local.length}`);
   console.log(r.coreDir ? `core: ${r.coreDir}` : 'core: not built');
   console.log(`pack: ${r.packDir}`);
-  reportPreflight(out);
 } else {
-  console.error('usage: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
+  console.error('usage: node tools/pack-preview.mjs --out <dir> [--no-core]');
   console.error('       node tools/pack-preview.mjs --all --out <dir>');
   console.error('       node tools/pack-preview.mjs --self-test');
   console.error(`       node tools/pack-preview.mjs --gate <${[...GATES.keys()].join('|')}|all>`);

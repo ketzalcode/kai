@@ -1,7 +1,7 @@
 ---
 name: creative-workspace-publication
 description: "Use when a creative role may retain or publish durable design, guidance, decision, report, or media material."
-tools: [read, edit, search]
+tools: [read, edit, execute, search]
 ---
 
 # Creative workspace publication
@@ -42,6 +42,9 @@ does not make a binary safe to commit.
 - Refuse a pack/path mismatch, collision, link, junction, nested Git root, or
   destination outside the configured project publication root.
 
-Return the validated vocabulary choice to the caller. The shared production
-contract owns path derivation, acceptance binding, publication, provenance, and
-closure.
+Return the validated vocabulary choice to the caller. For coordinated assets,
+keep mutable bytes on the typed private route and Load `kai-core-work-acting`
+before `artifact.register` or `asset.transition`. The runtime validates the
+Task, pack, path, provenance, exact accepted hash, mirrored public target, and
+transition. A refusal stops publication. Direct repository files use their
+repository-native path and create no Kai asset state.

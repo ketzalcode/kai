@@ -233,6 +233,8 @@ test('review requests route through the reviewer and internal review method', ()
   const reviewer = readAgent('eng-reviewer-code');
   assert.match(reviewer, /Apply `pr-review`/);
   assert.match(reviewer, /Apply `pr-review-comments`/);
+  assert.match(reviewer, /Never edit the product, test expectations, manifests, history or state/);
+  assert.match(reviewer, /not the reviewed product/);
 
   const review = readSkill('pr-review');
   assert.doesNotMatch(review, /^user-invocable:\s*true$/m);
@@ -245,7 +247,15 @@ test('review requests route through the reviewer and internal review method', ()
     review,
     /eng-reviewer-(security|privacy-compliance|reliability|quality)/,
   );
-  assert.match(reviewer, /Do not spawn another reviewer/);
+  assert.match(reviewer, /Do not spawn another\s+reviewer/);
+});
+
+test('operating rules keep the assessor write boundary without another skill', () => {
+  const operating = readSkill('kai-core-operating-rules');
+  assert.match(operating, /An independent assessor reports findings and the smallest remediation/);
+  assert.match(operating, /does\s+not create, edit, delete, format, regenerate/);
+  assert.match(operating, /cannot independently accept or verify that\s+revision/);
+  assert.equal(skills.has('kai-core-no-self-remediation'), false);
 });
 
 test('pr-review skips docs and metadata-only changes', () => {
@@ -315,7 +325,7 @@ test('specialist and incident agents are removed from the active surface', () =>
   );
 });
 
-test('README overview reflects the released engineering surface', () => {
+test('README overview reflects the current engineering surface without copied counts', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
     .replace(/\r\n/g, '\n');
   const overview = readme.slice(0, readme.indexOf('\n## Install'));
@@ -323,11 +333,11 @@ test('README overview reflects the released engineering surface', () => {
   assert.match(overview, /lean, quality-first suite of specialized agents and skills/);
   assert.match(overview, /Kai keeps direct work direct/);
   assert.match(overview, /agent-to-agent software collaboration/);
-  assert.match(overview, /\|\s*6 agents\s*\|/);
-  assert.match(overview, /\|\s*13 skills\s*\|/);
   assert.match(
     overview,
-    /\| `kai-engineering` \| 6 \/ 13 \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
+    /\| `kai-engineering` \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
   );
+  assert.match(overview, /generated \*\*\[agents & skills catalog\]/);
+  assert.doesNotMatch(overview, /\|\s*\d+\s+(?:agents|skills)\s*\|/);
   assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

@@ -21,7 +21,7 @@ inside this repository only.
 | Workspace resolution, private schema-6 placement, and typed path grammar | `kai-core-workspace-paths`, `kai-core-workspace-onboarding` |
 | Direction, Epic, Feature, Requirement, priority, holds, dependencies, and closure | `project-management-work-hierarchy`, `project-management-work-stewardship` |
 | Pack-owned artifact vocabularies and formats | each package's `*-workspace-publication` skill |
-| Recording durable asset provenance, publication, and authorized transitions | `kai-core-asset-producing` |
+| Recording durable asset provenance and authorized transitions | `artifact.register` and `asset.transition` through `kai-core-work-acting` |
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 
@@ -30,11 +30,12 @@ inside this repository only.
 An agent loads each shared contract inline, in the instruction that needs it,
 never hoisted into a manifest section — a collected list recreates the eager
 preload this design removed. It carries no `**Inherits:**` line and no
-dependency-guard block. It routes `kai-core-contract-v1` just before its first
-other core skill, and in the same paragraph states, in its own words, what it
-still does and refuses when core is unavailable: ordinary single-shot domain
-work may continue, but Kai coordination and `.kai` state may not, so it tells the
-operator to install or update `kai-core` before resuming coordinated work.
+dependency-guard block. It invokes each Core skill directly at the decision
+that needs it. The agent states what it still does and refuses when a required
+Core skill is unavailable: ordinary single-shot domain work may continue, but
+Kai coordination and `.kai` state may not, so it tells the operator to install
+or update `kai-core` before resuming coordinated work. Runtime and workspace
+compatibility come from the relevant executable's `inspect`, not a model probe.
 
 `npm test` enforces those on-demand routes and the absence of any guard block.
 
@@ -107,26 +108,31 @@ never to work done in a consumer workspace. Users pull updates with
 metadata, not an update gate;
 keep it honest anyway.
 
-Any PR that changes shipped plugin behavior must, in the **same PR**:
+Feature PRs do **not** bump versions or prepare release notes. They change the
+authoritative source, tests, and generated output only. If an agent or skill is
+added, removed, or renamed, update its one `CATEGORIES` entry in
+`tools/generate-catalog.mjs`; `npm run build` regenerates the catalog and
+installable packages. Run the agreed local validation and record exact evidence
+and unverified areas in the PR. Kai has no pull-request or push CI.
+
+An intentional release-preparation change batches release metadata:
 
 1. Set the version only through
    `npm version <x.y.z> --no-git-tag-version`. `package.json` is the edited
-   authority. In a clean checkout run `npm ci`, then `npm run build`; the build
-   writes `plugin.json`, every package manifest and lock, all marketplace
-   version fields, generated references, and bundled consumer scripts.
-2. Add a dated **`CHANGELOG.md`** entry under the new version
-   (Added / Changed / Fixed / Removed as relevant) **and its `[x.y.z]:`
-   comparison link**. Refresh the README `## Status` text.
-3. If you added, removed, or renamed an agent or skill, file it in `CATEGORIES`
-   in `tools/generate-catalog.mjs`; `npm run build` regenerates
-   `docs/reference/agents-and-skills.md`.
-4. Run the agreed local validation and record the exact evidence and
-   unverified areas in the PR. Kai has no pull-request or push CI.
+   authority.
+2. Add the dated **`CHANGELOG.md`** section and comparison link, then refresh
+   README `## Status`.
+3. In a clean checkout run `npm ci`, then `npm run build`; the build writes all
+   manifests, locks, marketplace versions, generated references, and bundled
+   consumer scripts.
+4. Run release readiness against the intended base and head.
 
 The daily Linux/Node 24 nightly runs `npm test`, `npm run build:check`,
-`npm run consumer-install:self-test`, and release readiness. The Monday
-workflow tags and creates the GitHub release only from the exact successful
-nightly SHA. Do not tag or publish from a feature PR.
+`npm run consumer-install:self-test`, and release readiness. Unreleased behavior
+with the currently tagged version is valid but is not release-ready. The Monday
+workflow tags and creates the GitHub release only when an explicit forward
+version is present on the exact successful nightly SHA. Do not tag or publish
+from a feature PR.
 
 If the expected previous tag is absent locally, fetch tags or use a
 deterministic merge-base ref for release-readiness. Never weaken the check to
