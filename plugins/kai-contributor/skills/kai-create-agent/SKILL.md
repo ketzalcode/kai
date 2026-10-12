@@ -1,5 +1,5 @@
 ---
-name: kai-core-create-agent
+name: kai-create-agent
 description: "Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them."
 tools: [read, edit, search, execute]
 user-invocable: true

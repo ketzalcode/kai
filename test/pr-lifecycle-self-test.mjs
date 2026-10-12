@@ -337,7 +337,7 @@ test('README overview reflects the current engineering surface without copied co
     overview,
     /\| `kai-engineering` \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
   );
-  assert.match(overview, /generated \*\*\[agents & skills catalog\]/);
+  assert.match(overview, /generated \*\*\[agents (?:and|&) skills catalog\]/);
   assert.doesNotMatch(overview, /\|\s*\d+\s+(?:agents|skills)\s*\|/);
   assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

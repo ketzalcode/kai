@@ -13,7 +13,6 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { join, dirname, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packPluginName, PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
 import {incubatedIds} from './incubation-contract.mjs';
 import { bundlePack } from './bundle.mjs';
 import {
@@ -31,6 +30,15 @@ import {
 // (tests, or a generator run against a checkout) but default to this repo.
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+export const PACK_ORDER = Object.freeze([
+  'core',
+  'contributor',
+  'project-management',
+  'engineering',
+  'creative',
+]);
+export const packPluginName = pack => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
+
 // Core's owned namespace. Duplicate exposure is not a guaranteed host contract;
 // it has been measured on one host only (Windows 11, Copilot CLI 1.0.80). A
 // prefix core alone may use removes that ambiguity; see namespaceErrors.
@@ -42,6 +50,7 @@ export const PUBLICATION_SKILLS = Object.freeze({
   engineering: 'engineering-workspace-publication',
   creative: 'creative-workspace-publication',
 });
+export const PUBLICATION_PACKS = Object.freeze(Object.keys(PUBLICATION_SKILLS));
 
 export function publicationSkillForPack(pack) {
   return PUBLICATION_SKILLS[pack] ?? null;
@@ -367,14 +376,9 @@ export const SKILL_OWNER_OVERRIDES = Object.freeze({});
 
 // Retained source and validation cover every active package. Publication is a
 // separate decision, but the active partition and the default index are now the
-// same four packages: an unfinished package is incubated, not half-shipped.
+// same active packages: an unfinished package is incubated, not half-shipped.
 export const COMMITTED_PACKS = [...PACK_ORDER];
-export const PUBLISHED_PACKS = Object.freeze([
-  'core',
-  'project-management',
-  'engineering',
-  'creative',
-]);
+export const PUBLISHED_PACKS = Object.freeze([...PACK_ORDER]);
 
 // No pack declares a runtime npm dependency, and none may. The host copies
 // plugin trees and never runs npm, so a declared dependency could only resolve
@@ -384,11 +388,6 @@ export const PUBLISHED_PACKS = Object.freeze([
 // instructions name and the operator installs deliberately. `generatedRuntimeErrors`
 // and `planAssetClosure` enforce this, so there is no dependency plan to declare.
 
-// Re-exported from the shipped module so there is exactly one definition. That
-// module is what consumer code imports; duplicating the name here would let the
-// two drift without anything failing.
-export { packPluginName, PACK_ORDER };
-
 // A functional, non-marketing manifest description. Published copy is refined at
 // the marketplace flip; scaffolding only needs to say what the plugin is. A pack
 // whose name does not describe a department states its capability here instead,
@@ -397,6 +396,7 @@ export { packPluginName, PACK_ORDER };
 // cannot hold.
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: shared operating contracts, schema-6 workspace machinery, and standalone Task/A2A execution.',
+  contributor: 'Optional agent-free Kai feedback and agent/skill authoring tools with no workspace runtime.',
   'project-management': 'Optional agent-free Direction, Epic, Feature, and Requirement planning over standalone kai-core Tasks.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
   engineering: 'Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.',
@@ -455,7 +455,7 @@ export function sourceSkillFiles(root = REPO_ROOT) {
 export function publicationDeclarationInventoryErrors(
   entries,
   root = REPO_ROOT,
-  packs = PACK_ORDER,
+  packs = PUBLICATION_PACKS,
 ) {
   const errors = [];
   for (const pack of packs) {
@@ -631,7 +631,11 @@ export function planManifests({
       pack,
       name,
       dir: name,
-      kind: isCore ? 'core' : pack === 'project-management' ? 'capability' : 'department',
+      kind: isCore
+        ? 'core'
+        : new Set(['contributor', 'project-management']).has(pack)
+          ? 'capability'
+          : 'department',
       agents,
       skills,
       manifest,
@@ -845,9 +849,9 @@ export function marketplaceSurfacePolicy({
 // ---------------------------------------------------------------------------
 // Cross-pack references
 //
-// A department pack installs with kai-core and nothing else. Every reference a
-// shipped body makes therefore has to resolve inside its own pack or inside
-// core, on all three paths a skill can reach a session — loaded,
+// A capability or department pack cannot assume a sibling install. Every
+// reference a shipped body makes therefore has to resolve inside its own pack
+// or inside core, on all three paths a skill can reach a session — loaded,
 // user-invoked, orchestrated — plus the non-markdown assets an instruction
 // tells someone to run. In the monolith all of them resolve trivially, which is
 // exactly why the break is invisible until a user installs one pack.
@@ -1196,10 +1200,6 @@ export function publicationEntrypointDeclaration({body, fm}) {
 export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill', body, fm}) {
   const errors = [];
   const owner = publicationSkillForPack(pack);
-  if (!owner) {
-    return [`${id}: cannot derive an owning publication skill from source pack ${pack ?? '(missing)'}`];
-  }
-
   const publicationBody = normalizeLF(body ?? '').replace(
     /\bUse(\s+(?:the\s+)?`[a-z0-9][a-z0-9-]*`)/gi,
     'Load$1',
@@ -1207,13 +1207,20 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
   const occurrences = routedSkillOccurrences(publicationBody);
   const publicationIds = new Set(Object.values(PUBLICATION_SKILLS));
   const publicationRoutes = occurrences.filter(route => publicationIds.has(route.id));
+  const entrypoint = publicationEntrypointDeclaration({body, fm});
+  if (!owner) {
+    if (entrypoint || publicationRoutes.length > 0) {
+      errors.push(`${packPluginName(pack)} has no durable publication vocabulary; `
+        + `${id} must not declare or route a publication entrypoint`);
+    }
+    return errors;
+  }
   const foreign = publicationRoutes.filter(route => route.id !== owner);
   for (const route of foreign) {
     errors.push(`cannot route publication skill owned by another pack: \`${route.id}\`; `
       + `${packPluginName(pack)} owns \`${owner}\``);
   }
 
-  const entrypoint = publicationEntrypointDeclaration({body, fm});
   if (!entrypoint) {
     if (publicationRoutes.some(route => route.id === owner)) {
       errors.push(`route to publication entrypoint \`${owner}\` requires frontmatter `

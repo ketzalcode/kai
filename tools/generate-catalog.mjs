@@ -99,12 +99,19 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Operating and authoring',
-    blurb: 'Shared operating, communication, activity, and lean agent/skill authoring guidance.',
+    title: 'Operating contracts',
+    blurb: 'Shared operating, communication, and activity guidance.',
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
       'kai-core-peer-communication',
-      'kai-core-create-agent', 'kai-core-create-skill',
+    ],
+  },
+  {
+    kind: 'skill',
+    title: 'Contributor tools',
+    blurb: 'Optional feedback and lean Kai agent/skill authoring guidance.',
+    members: [
+      'kai-feedback', 'kai-create-agent', 'kai-create-skill',
     ],
   },
   {

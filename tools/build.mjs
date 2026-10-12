@@ -21,6 +21,7 @@ import {
   parseGeneratedKey,
   planManifests,
   publicationContract,
+  PUBLICATION_PACKS,
   publicationSkillForPack,
   syncPublicationTableRegion,
 } from './lib/pack-plan.mjs';
@@ -31,6 +32,7 @@ const CATALOG = 'docs/reference/agents-and-skills.md';
 const MARKETPLACE_REPOSITORY = 'https://github.com/ketzalcode/kai';
 const MARKETPLACE_KEYWORDS = Object.freeze({
   core: ['saas', 'engineering', 'workflow-automation'],
+  contributor: ['feedback', 'authoring', 'contributor-tools'],
   'project-management': ['planning', 'project-management', 'workflow-automation'],
   engineering: ['engineering', 'security', 'reliability'],
   creative: ['design', 'creative', 'media'],
@@ -111,7 +113,7 @@ export function buildPlan(root = ROOT) {
     plan.set(path, normalizeLF(content));
   }
 
-  for (const pack of COMMITTED_PACKS) {
+  for (const pack of PUBLICATION_PACKS) {
     const contract = publicationContract(pack, root);
     const rel = repoPath(relative(root, contract.skillPath));
     const body = readFileSync(contract.skillPath, 'utf8');
@@ -149,7 +151,8 @@ function ownedGeneratedPaths(root) {
       if (existsSync(absolute(root, rel))) owned.add(rel);
     }
     for (const rel of walkFiles(root, `${base}/scripts`)) owned.add(rel);
-    owned.add(`${base}/skills/${publicationSkillForPack(pack)}/SKILL.md`);
+    const publicationSkill = publicationSkillForPack(pack);
+    if (publicationSkill) owned.add(`${base}/skills/${publicationSkill}/SKILL.md`);
   }
   return [...owned].sort();
 }

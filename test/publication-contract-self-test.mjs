@@ -10,6 +10,7 @@ import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
   PACK_ORDER,
+  PUBLICATION_PACKS,
   publicationContract,
   publicationDeclarationInventoryErrors,
   publicationRoutingErrors,
@@ -40,12 +41,14 @@ function withEngineeringContract(mutate, verify) {
   }
 }
 
-test('each shipped package has one valid publication declaration', () => {
-  for (const pack of PACK_ORDER) {
+test('each publishing package has one valid publication declaration', () => {
+  for (const pack of PUBLICATION_PACKS) {
     const contract = publicationContract(pack);
     assert.equal(contract.pack, pack);
     assert.ok(contract.entries.length > 0);
   }
+  assert.equal(PACK_ORDER.includes('contributor'), true);
+  assert.equal(PUBLICATION_PACKS.includes('contributor'), false);
 });
 
 test('publication inventory follows structured declarations', () => {
@@ -77,6 +80,15 @@ test('non-producers need no negative declaration', () => {
   assert.deepEqual(publicationRoutingErrors({
     pack: 'engineering', id: 'reader', body: 'Read repository files.', fm: {},
   }), []);
+  assert.deepEqual(publicationRoutingErrors({
+    pack: 'contributor', id: 'reader', body: 'Read repository files.', fm: {},
+  }), []);
+  assert.match(publicationRoutingErrors({
+    pack: 'contributor',
+    id: 'invalid-producer',
+    body: 'Load `kai-core-workspace-publication`.',
+    fm: {},
+  }).join('\n'), /no durable publication vocabulary/i);
 });
 
 test('the shipped route corpus obeys positive publication ordering', () => {

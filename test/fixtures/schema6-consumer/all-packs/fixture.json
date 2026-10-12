@@ -1,6 +1,6 @@
 {
   "name": "all packs",
-  "packs": ["core", "project-management", "engineering", "creative"],
+  "packs": ["core", "contributor", "project-management", "engineering", "creative"],
   "artifact": {
     "pack": "core",
     "type": "decisions",
