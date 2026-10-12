@@ -16,6 +16,14 @@
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/ketzalcode/kai?style=flat-square"></a>
 </p>
 
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#how-kai-is-organized">Packages</a> ·
+  <a href="docs/reference/agents-and-skills.md">Catalog</a> ·
+  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="https://github.com/ketzalcode/kai/releases">Releases</a>
+</p>
+
 Kai is a lean, quality-first suite of specialized agents and skills for
 agent-to-agent software collaboration in the GitHub Copilot CLI.
 
@@ -31,7 +39,7 @@ understandable to the next person or session.
 
 **Built to stay lean:** declarative Markdown agents and skills plus small,
 dependency-free Node runtimes only where durable state is necessary. There is
-no service to run, no framework to adopt, and no MCP server bundled.
+no service to run and no framework to adopt.
 
 ## What Kai provides
 
@@ -53,7 +61,7 @@ no service to run, no framework to adopt, and no MCP server bundled.
 Most requests need only a directly invoked agent and the repository in front of
 it. A Kai workspace is optional.
 
-## Current package architecture
+## How Kai is organized
 
 Kai ships five packages. Install only what you need.
 
@@ -63,7 +71,7 @@ Kai ships five packages. Install only what you need.
                        no runtime or workspace
 
   kai-project-management ------> kai-core <------ kai-engineering
-       optional planning         Task/A2A          software delivery
+       optional planning         execution         software delivery
                                       ^
                                       |
                                 kai-creative
@@ -72,17 +80,16 @@ Kai ships five packages. Install only what you need.
 
 | Package | Owns |
 | --- | --- |
-| `kai-core` | Shared operating rules, optional workspace machinery, standalone Task execution, and A2A coordination |
+| `kai-core` | Shared operating rules, optional workspace machinery, standalone Task execution, and multi-agent coordination |
 | `kai-contributor` | Optional public feedback plus lean Kai agent and skill authoring guidance |
 | `kai-project-management` | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, and planning closure |
 | `kai-engineering` | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production |
 
 Core is deliberately agent-free. Contributor is also agent-free and standalone:
-it has no runtime, workspace state, publication vocabulary, or dependency on
-Core. Project Management owns planning; Core does not interpret planning
-records. Engineering and Creative can work from supplied approved scope without
-Project Management.
+it stores no project state and can be installed on its own. Project Management
+owns planning; Core does not interpret planning records. Engineering and
+Creative can work from supplied approved scope without Project Management.
 
 The generated **[agents and skills catalog](docs/reference/agents-and-skills.md)**
 is the authoritative inventory.
@@ -118,8 +125,8 @@ The host copies plugin files; consumers do not run npm or install package
 dependencies. After installing or updating a package, start a **new Copilot
 session** so the host reloads the catalog.
 
-Detailed selection, update, and workspace instructions are in
-[Plugin structure](docs/reference/plugin-structure.md) and
+The [catalog](docs/reference/agents-and-skills.md) describes each package's
+agents and skills. Workspace setup is documented separately in
 [Workspaces](docs/workspaces.md).
 
 ## Start with one real task
@@ -173,8 +180,8 @@ schema and paths.
   bounded request that one role can complete well.
 - **Progressive disclosure.** Catalog metadata selects a capability; full
   instructions and references load only when the task reaches them.
-- **One owner per fact.** Core owns execution and A2A state. Project Management
-  owns planning. Departments own domain work and publication vocabularies.
+- **One owner per fact.** Core owns execution and coordination state. Project
+  Management owns planning. Departments own domain work and publication rules.
 - **Evidence over ceremony.** Tests and review scale with changed behavior and
   risk, not with a fixed process template.
 - **Honest authority.** A producer cannot independently accept its own output.
@@ -183,23 +190,10 @@ schema and paths.
 - **Current contracts only.** Unsupported workspaces are re-onboarded rather
   than carried through compatibility layers.
 
-## Boundaries
-
-- Kai ships no MCP servers. Browser-backed creative work uses a Playwright MCP
-  server configured by the operator.
-- Kai does not generate speech. Supplied narration can be aligned and mixed.
-- The cloud coding agent and Copilot CLI have different host capabilities;
-  cloud sessions cannot assume local scripts, live peer agents, or a human
-  receipt journal.
-- Nothing under `incubator/` ships or appears in the marketplace.
-- `kai-feedback` files public issues only after a privacy review and explicit
-  confirmation. It does not start automated remediation.
-
 ## Status
 
-`v23.0.0` is the prepared release version for the current five-package
-architecture. It is not a release until the guarded weekly release workflow
-tags the exact successful nightly SHA.
+Repository version: `v23.0.0`. The release badge shows the latest published
+version; the nightly badge shows validation status for current `main`.
 
 For the durable details:
 
@@ -211,7 +205,6 @@ For the durable details:
 | Contributor and package conventions | [Plugin structure](docs/reference/plugin-structure.md) |
 | Validation and release process | [Development process](docs/development-process.md) |
 | Release history | [Changelog](CHANGELOG.md) |
-| Inactive capabilities | [Incubator](incubator/README.md) |
 
 ## Contributing
 
