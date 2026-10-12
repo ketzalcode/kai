@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
-## [24.0.0] - 2026-10-12
+## [24.0.1] - 2026-10-12
 
 ### Added
 
@@ -32,8 +32,10 @@ follow semantic versioning.
   `in-progress`, `in-review`, `blocked`, `completed`, and `dropped`.
   `completed` closes the accepted A2A execution record; release, deployment,
   shipment, and parent-scope closure remain outside Core.
-- Split workspace/runtime authority as a clean schema-6 contract. Unsupported
-  workspaces re-onboard; no records are migrated or mirrored.
+- Split workspace/runtime authority as a schema-6-only live contract.
+  Unsupported workspaces reshape durable knowledge and artifacts into current
+  package-owned paths, rebuild current runtime state, and do not mirror
+  historical coordination records.
 - Updated schema-6 onboarding and re-onboarding to use current managed markers,
   verify the clean Core runtime explicitly, and initialize optional Project
   Management state only when the operator requests it.
@@ -62,6 +64,19 @@ follow semantic versioning.
   bypass the responsibility-based taxonomy when reintroduced.
 - Refreshed the README hero with the KetzalCode mark, release/nightly/license
   badges, and a clearer mission and vision without expanding it into a manual.
+
+### Fixed
+
+- Replaced permanent `.kai-retired-*` re-onboarding backups with a verified
+  reshape: reconcile durable conventions, initiative artifacts, decisions,
+  briefs, designs, and package artifacts; rebuild current runtime state; then
+  remove temporary staging and any prior retired-directory inputs.
+- Allowed tracked legacy `.kai` metadata to re-onboard only through an exact
+  change preview, separate operator approval, approved Git index cleanup, and
+  human-reviewable repository changes.
+- Kept small safe changes in the current checkout and placed necessary
+  short-lived worktrees under the repository's established location or
+  `<git-root>/.worktrees/` instead of creating sibling source folders.
 
 ### Removed
 
@@ -4730,7 +4745,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[24.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.0
+[24.0.1]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.1
 [22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
