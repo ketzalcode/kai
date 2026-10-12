@@ -16,9 +16,8 @@ Re-entry needs an independent review of the component's responsibility,
 triggers, inputs, output contract, consumer, stopping point, grounding rules,
 and focused evidence, plus operator sign-off.
 
-Inactive code is not automatically executed or syntax-checked.
-`tools/check-syntax.mjs` does not scan this directory, and the current test
-suite does not import the parked creative capture command. See
+Inactive code is not automatically executed or validated by the active suite.
+The current tests do not import the parked creative capture command. See
 [`kai-creative/README.md`](kai-creative/README.md) for its exact verification
 boundary and re-entry requirements.
 
@@ -70,6 +69,4 @@ package's directory.
    name a role or skill that no longer exists. In particular, replace retired
    `kai-core-contract-v1` and `kai-core-asset-producing` routes with direct
    task-local Core routes and the owning package publication skill.
-5. Run `npm run build`, `npm test`, `npm run build:check`, and
-   `npm run consumer-install:self-test`. Run `npm run host-contract:update`
-   too when the host inventory or loader contract changes.
+5. Run `npm run build`, `npm test`, and `npm run build:check`.

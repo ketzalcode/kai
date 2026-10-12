@@ -105,28 +105,23 @@ test('marketplace generation repairs missing and duplicate scratch entries', asy
   cpSync(join(root, 'plugin.json'), join(scratch, 'plugin.json'));
 
   const expectedNames = PUBLISHED_PACKS.map(packPluginName);
-  const cases = [
-    ['missing', sourceMarketplace.plugins.slice(0, -1)],
-    ['duplicate', [
-      ...sourceMarketplace.plugins,
-      structuredClone(sourceMarketplace.plugins[0]),
-    ]],
+  const malformedPlugins = [
+    ...sourceMarketplace.plugins.slice(0, -1),
+    structuredClone(sourceMarketplace.plugins[0]),
   ];
   try {
-    for (const [label, plugins] of cases) {
-      writeFileSync(
-        join(scratch, '.github', 'plugin', 'marketplace.json'),
-        `${JSON.stringify({...sourceMarketplace, plugins}, null, 2)}\n`,
-      );
-      const planned = JSON.parse(
-        buildPlan(scratch).get('.github/plugin/marketplace.json'),
-      );
-      assert.deepEqual(
-        planned.plugins.map(plugin => plugin.name),
-        expectedNames,
-        `${label} scratch inventory is replaced by the published package declarations`,
-      );
-    }
+    writeFileSync(
+      join(scratch, '.github', 'plugin', 'marketplace.json'),
+      `${JSON.stringify({...sourceMarketplace, plugins: malformedPlugins}, null, 2)}\n`,
+    );
+    const planned = JSON.parse(
+      buildPlan(scratch).get('.github/plugin/marketplace.json'),
+    );
+    assert.deepEqual(
+      planned.plugins.map(plugin => plugin.name),
+      expectedNames,
+      'missing and duplicate scratch entries are replaced by package declarations',
+    );
   } finally {
     rmSync(scratch, {recursive: true, force: true});
   }
@@ -134,18 +129,6 @@ test('marketplace generation repairs missing and duplicate scratch entries', asy
 
 test('npm test runs the repository validator first', () => {
   assert.match(packageJson.scripts.test, /^npm run validate && /);
-});
-
-test('unknown pack-preview build ownership flags fail without compatibility guidance', () => {
-  const cli = join(root, 'tools', 'pack-preview.mjs');
-  for (const flag of ['--write', '--check']) {
-    const result = spawnSync(process.execPath, [cli, flag], {
-      cwd: root,
-      encoding: 'utf8',
-    });
-    assert.notEqual(result.status, 0, `${flag} must fail`);
-    assert.doesNotMatch(`${result.stdout}${result.stderr}`, /migrat|retired|no longer supported/i);
-  }
 });
 
 test('marketplace policy and pack planning expose only the current package surface', () => {
@@ -273,7 +256,7 @@ test('generated executables reject external runtime imports', () => {
 });
 
 test('generated script filenames are stable for identical source', () => {
-  const first = materializePacks({root, version, packs: expectedPacks});
+  const first = build(expectedPacks);
   const second = materializePacks({root, version, packs: expectedPacks});
   const names = files => [...files.keys()]
     .filter(key => key.includes('/scripts/') && key.endsWith('.mjs'))

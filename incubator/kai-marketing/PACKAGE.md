@@ -130,14 +130,8 @@ current SEO standards were verified during the refactor.
 The following results record the package unit before the `7.0.0` integration
 batch; they are not a new runtime or policy validation claim.
 
-The authorized sequence completed with exit code 0:
-
-```powershell
-node scripts\host-contract.mjs --update
-npm run docs:generate
-npm run pack-preview -- --write
-git diff --check
-```
+The historical generation sequence is retired. Re-entry uses the active process
+in [`../README.md`](../README.md).
 
 Host inventory writes 56 agents and 57 skills without changing the golden
 inventory. Catalog generation places the four roles and two methods in their

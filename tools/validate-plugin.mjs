@@ -127,7 +127,7 @@ for (const f of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Frontmatter + host-loader contract (shared with host-contract.mjs)
+// Frontmatter and loader contract
 // ---------------------------------------------------------------------------
 for (const f of allFiles) {
   const raw = readFileSync(f.path, 'utf8');

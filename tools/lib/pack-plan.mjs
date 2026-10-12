@@ -1,7 +1,6 @@
 // The single machine-readable source of the pack partition and the per-pack
-// manifest contract. The preview/generator (scripts/pack-preview.mjs) and the
-// validator (scripts/validate-plugin.mjs) both import from here, so the pack
-// partition is defined once and every path agrees on it byte-for-byte.
+// manifest contract. The build, validator, and package tests import from here,
+// so the pack partition is defined once and every path agrees byte-for-byte.
 //
 // Read-only and pure: this module reads plugin-local agents/skills and computes
 // plans and gate decisions. Writing derived files or managed regions to disk is

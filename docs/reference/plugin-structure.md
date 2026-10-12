@@ -211,8 +211,8 @@ seam, human gate, completion condition, and runtime fit.
 6. For an added, removed, or renamed agent, update exactly one `CATEGORIES`
    entry in `tools/generate-catalog.mjs` and search agents, skills,
    examples, tests, and documentation for the old and new IDs.
-7. Run `npm run build`, `npm test`, `npm run build:check`, and
-   `npm run consumer-install:self-test`, then inspect the generated diff.
+7. Run `npm run build`, `npm test`, and `npm run build:check`, then inspect the
+   generated diff. `npm test` includes copied-package acceptance.
 
 Existing public names remain stable unless the change explicitly accepts the
 breaking surface.
@@ -245,7 +245,6 @@ usual Lean feature validation is:
 ```powershell
 npm test
 npm run build:check
-npm run consumer-install:self-test
 git diff --check
 ```
 

@@ -32,8 +32,7 @@ installable. Concretely, for this file:
 
 - it is no longer a top-level `.mjs` under `src/creative/`, so it is not a pack
   entry point and `plugins/kai-creative/scripts/` no longer contains it;
-- `tools/check-syntax.mjs` scans `src/`, `tools/` and `examples/` only, so it is
-  not syntax-gated.
+- the active test/build surface does not import or bundle it.
 
 The parked command currently has no execution coverage. It imports the shipped
 parsers from `../../../src/creative/lib/screenplay.mjs`, but no current test
@@ -41,8 +40,7 @@ imports it. `test/creative-screenplay-self-test.mjs` covers the active parser
 contract only. No current capture-specific test, npm script, or workflow exists.
 
 The daily `.github/workflows/nightly.yml` job runs `npm ci`, `npm test`,
-`npm run build:check`, `npm run consumer-install:self-test`, and release
-readiness on Linux/Node 24.15.0. The Monday
+`npm run build:check`, and release readiness on Linux/Node 24.15.0. The Monday
 `.github/workflows/release.yml` workflow releases only the exact SHA from the
 latest successful nightly. Neither workflow executes this parked file.
 
@@ -69,7 +67,6 @@ Being here is not a queue position. Re-entry needs the review described in
    behavior, add that file to the root `test` script, and update
    `test/package-build-self-test.mjs` if the public entry-point expectation
    changes.
-4. Run `npm run build`, `npm test`, `npm run build:check`, and
-   `npm run consumer-install:self-test`.
+4. Run `npm run build`, `npm test`, and `npm run build:check`.
 
 [#226]: https://github.com/RubenSaucedo/kai/issues/226
