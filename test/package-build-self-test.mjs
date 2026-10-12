@@ -56,6 +56,7 @@ function assertInstall(files, packs) {
   assert.deepEqual(emittedPacks(files), expectedPluginNames(packs));
   for (const pack of packs) {
     const name = packPluginName(pack);
+    assert.ok(files.has(`${name}/README.md`), `${name} emits its README`);
     assert.ok(files.has(`${name}/plugin.json`), `${name} emits its manifest`);
     assert.ok(
       [...files.keys()].some(key =>
@@ -89,6 +90,33 @@ test('package metadata uses package.json as the version authority', () => {
     marketplace.plugins.map(plugin => plugin.name),
     PUBLISHED_PACKS.map(packPluginName),
   );
+});
+
+test('every installed package explains its workspace and durable asset surface', () => {
+  const files = build(expectedPacks);
+  for (const pack of expectedPacks) {
+    const name = packPluginName(pack);
+    const readme = files.get(`${name}/README.md`);
+    assert.match(readme, new RegExp(`^# ${name}$`, 'm'));
+    assert.match(readme, /Installing this plugin/i);
+    assert.match(readme, /Direct/i);
+
+    const publicationPath = join(root, 'plugins', name, 'publication.json');
+    if (pack === 'contributor') {
+      assert.match(readme, /creates no `\.kai\/` or `docs\/kai\/` state/i);
+      continue;
+    }
+
+    assert.match(readme, /Private workspace/i);
+    assert.match(readme, /Accepted publication/i);
+    const contract = JSON.parse(readFileSync(publicationPath, 'utf8'));
+    for (const entry of contract.entries) {
+      assert.match(readme, new RegExp(entry.privateForm
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      assert.match(readme, new RegExp(entry.publicForm
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
+  }
 });
 
 test('marketplace generation repairs missing and duplicate scratch entries', async () => {

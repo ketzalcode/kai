@@ -287,8 +287,11 @@ test('README overview reflects the current engineering surface without copied co
   assert.match(overview, /agent-to-agent software collaboration/);
   assert.match(
     overview,
-    /\| `kai-engineering` \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
+    /\| \[`kai-engineering`\]\(plugins\/kai-engineering\/README\.md\) \| Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery \|/,
   );
+  for (const pack of ['core', 'contributor', 'project-management', 'engineering', 'creative']) {
+    assert.match(overview, new RegExp(`plugins/kai-${pack}/README\\.md`));
+  }
   assert.match(overview, /generated \*\*\[agents (?:and|&) skills catalog\]/);
   assert.doesNotMatch(overview, /\|\s*\d+\s+(?:agents|skills)\s*\|/);
 });
