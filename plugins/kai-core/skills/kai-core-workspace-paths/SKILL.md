@@ -83,22 +83,6 @@ The manifest does not list installed packs or pre-create their trees. For
 external placement, `workspace_root` and project paths are exact registered
 absolute paths; the project itself contains no `.kai/`.
 
-## Workspace insights
-
-Workspace insights are private Core configuration, not coordination state or a
-publishable artifact:
-
-```text
-.kai/core/insights/<project-id>/profile.md
-.kai/core/insights/<project-id>/my-insights.md
-.kai/core/insights/<project-id>/team-insights.md
-```
-
-Create this directory only on the first explicit insight write. `profile.md`
-is the compact approved read path. The other files retain source-specific
-candidates and citations. Resolve `<project-id>` from the active target binding;
-never copy, merge, or infer insights across project IDs or workspaces.
-
 ## Typed artifact grammar
 
 Every durable private artifact path includes its owning pack, allowed type,

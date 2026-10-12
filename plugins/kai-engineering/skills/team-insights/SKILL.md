@@ -1,5 +1,5 @@
 ---
-name: kai-core-team-insights
+name: team-insights
 description: "Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents."
 tools: [execute, read, edit, search, web, ask_user]
 user-invocable: true
@@ -24,7 +24,7 @@ current workspace exists, stop and route explicit onboarding.
 Write only to:
 
 ```text
-<workspace-root>/.kai/core/insights/<project-id>/team-insights.md
+<workspace-root>/.kai/engineering/insights/<project-id>/team-insights.md
 ```
 
 Create the package-owned insight directory only for this explicit write.
@@ -55,5 +55,5 @@ equivalent candidates and retain conflicting evidence for refinement.
   outrank an isolated comment.
 - Keep secrets, personal data, private conversation, and copied source code out
   of the durable file.
-- Do not edit `profile.md`; `kai-core-refine-insights` owns promotion.
+- Do not edit `profile.md`; `refine-insights` owns promotion.
 - Do not create or modify a skill from team evidence.

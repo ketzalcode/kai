@@ -72,9 +72,6 @@ Resolve private schema-6 workspaces and validate Core publication vocabulary.
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-6 workspace, or repairing its current private binding. |
 | [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when reshaping an unsupported Kai workspace into the current schema-6 structure while preserving durable knowledge and artifacts. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable coordination decisions or reports. |
-| [`kai-core-my-insights`](../../plugins/kai-core/skills/kai-core-my-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
-| [`kai-core-team-insights`](../../plugins/kai-core/skills/kai-core-team-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents. |
-| [`kai-core-refine-insights`](../../plugins/kai-core/skills/kai-core-refine-insights/SKILL.md) | `kai-core` | Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository. |
 
 ### Task execution
 
@@ -143,6 +140,9 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
 | [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
+| [`my-insights`](../../plugins/kai-engineering/skills/my-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
+| [`team-insights`](../../plugins/kai-engineering/skills/team-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents. |
+| [`refine-insights`](../../plugins/kai-engineering/skills/refine-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
 
 ### Engineering automation

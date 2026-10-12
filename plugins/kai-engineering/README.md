@@ -18,7 +18,8 @@ review, PR delivery, and bounded Nightshift execution.
 Methods include `software-development`, shared/frontend/backend coding
 standards, repository onboarding, research, PR sizing, review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
-diagrams, and `nightshift-run`.
+diagrams, `nightshift-run`, and the manual `my-insights`, `team-insights`, and
+`refine-insights` workspace-learning commands.
 
 ## Install
 
@@ -38,6 +39,19 @@ tests, configuration, and documentation without creating Kai state.
 Coordinated work uses Core Tasks and
 `.kai/core/runtime/coordination.sqlite`. Engineering creates a package-owned
 asset directory only when an authorized durable artifact is actually produced.
+
+Explicit insight commands create private Engineering guidance only on their
+first approved write:
+
+```text
+.kai/engineering/insights/<project-id>/profile.md
+.kai/engineering/insights/<project-id>/my-insights.md
+.kai/engineering/insights/<project-id>/team-insights.md
+```
+
+The project ID comes from Core's exact active target binding, not the directory
+where the host session started. Capture remains manual. Normal work reads only
+the compact approved profile when present.
 
 ## Durable assets
 

@@ -1,5 +1,5 @@
 ---
-name: kai-core-my-insights
+name: my-insights
 description: "Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository."
 tools: [execute, read, edit, search, ask_user]
 user-invocable: true
@@ -24,7 +24,7 @@ stop and route explicit onboarding; never create an unbound `.kai/` tree.
 Write only to:
 
 ```text
-<workspace-root>/.kai/core/insights/<project-id>/my-insights.md
+<workspace-root>/.kai/engineering/insights/<project-id>/my-insights.md
 ```
 
 Create the package-owned insight directory only for this explicit write.
@@ -56,5 +56,5 @@ instructions or active profile guidance; never silently replace them.
   source code out of the file.
 - Use the narrowest useful scope. Repository-specific guidance is not a global
   Kai default.
-- Do not edit `profile.md`; `kai-core-refine-insights` owns promotion.
+- Do not edit `profile.md`; `refine-insights` owns promotion.
 - Do not create or modify a skill from an insight.

@@ -87,19 +87,21 @@ Workspace discovery starts from that target instead of ambient `cwd`. The
 target's `AGENTS.md` and compact profile apply only to its exact project
 binding. Multi-repository work maintains a separate binding for each project.
 
-Explicit insight commands create private Core configuration lazily:
+Explicit Engineering insight commands create private package configuration
+lazily:
 
 ```text
-.kai/core/insights/<project-id>/profile.md
-.kai/core/insights/<project-id>/my-insights.md
-.kai/core/insights/<project-id>/team-insights.md
+.kai/engineering/insights/<project-id>/profile.md
+.kai/engineering/insights/<project-id>/my-insights.md
+.kai/engineering/insights/<project-id>/team-insights.md
 ```
 
-`kai-core-my-insights` captures explicit operator corrections.
-`kai-core-team-insights` extracts candidates only from selected team evidence.
-Neither changes active guidance. `kai-core-refine-insights` reconciles
-candidates and requires approval before updating the compact `profile.md`.
-Ordinary work performs no reflection or source scanning.
+Engineering's `my-insights` captures explicit operator corrections.
+`team-insights` extracts candidates only from selected team evidence. Neither
+changes active guidance. `refine-insights` reconciles candidates and requires
+approval before updating the compact `profile.md`. Ordinary work performs no
+reflection or source scanning. Core owns only the target/workspace/project
+binding used to isolate those files.
 
 ## Typed private work
 

@@ -1,5 +1,5 @@
 ---
-name: kai-core-refine-insights
+name: refine-insights
 description: "Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository."
 tools: [execute, read, edit, search, ask_user]
 user-invocable: true
@@ -18,9 +18,9 @@ session root, then require its valid workspace and exact manifest project ID.
 Read:
 
 ```text
-<workspace-root>/.kai/core/insights/<project-id>/profile.md
-<workspace-root>/.kai/core/insights/<project-id>/my-insights.md
-<workspace-root>/.kai/core/insights/<project-id>/team-insights.md
+<workspace-root>/.kai/engineering/insights/<project-id>/profile.md
+<workspace-root>/.kai/engineering/insights/<project-id>/my-insights.md
+<workspace-root>/.kai/engineering/insights/<project-id>/team-insights.md
 ```
 
 Missing files mean no evidence from that source. Read the target's applicable
