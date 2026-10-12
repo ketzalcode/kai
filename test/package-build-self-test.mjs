@@ -27,7 +27,7 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const version = packageJson.version;
-const expectedPacks = ['core', 'creative', 'engineering'];
+const expectedPacks = ['core', 'creative', 'engineering', 'project-management'];
 const buildCache = new Map();
 
 function build(packs) {
@@ -60,7 +60,7 @@ function assertInstall(files, packs) {
   assert.deepEqual(generatedRuntimeErrors(files, packs), []);
 }
 
-test('exactly three active packages are planned', () => {
+test('exactly four active packages are planned', () => {
   assert.deepEqual([...PACK_ORDER].sort(), expectedPacks);
   assert.deepEqual(
     planManifests({root, version}).map(entry => entry.name).sort(),
@@ -150,7 +150,12 @@ test('marketplace policy and pack planning expose only the current package surfa
     mkt: {metadata: {installSurface: 'legacy-rollback'}},
     monolithName: 'kai',
   });
-  assert.deepEqual(policy.requiredPluginNames, ['kai-core', 'kai-engineering', 'kai-creative']);
+  assert.deepEqual(policy.requiredPluginNames, [
+    'kai-core',
+    'kai-project-management',
+    'kai-engineering',
+    'kai-creative',
+  ]);
   assert.ok(policy.forbiddenPluginNames.includes('kai'));
   assert.match(policy.errors.join('\n'), /must be "packs"/);
 });
@@ -182,6 +187,13 @@ test('Core + Engineering install contains only those packages', () => {
   assertInstall(build(['core', 'engineering']), ['core', 'engineering']);
 });
 
+test('Core + Project Management install contains only those packages', () => {
+  assertInstall(
+    build(['core', 'project-management']),
+    ['core', 'project-management'],
+  );
+});
+
 test('Core + Creative install contains only those packages', () => {
   assertInstall(build(['core', 'creative']), ['core', 'creative']);
 });
@@ -190,7 +202,7 @@ test('all packages install as one closed generated surface', () => {
   assertInstall(build(expectedPacks), expectedPacks);
 });
 
-test('department packages do not depend on each other', () => {
+test('only Project Management and departments may depend on Core', () => {
   const owners = new Map([
     ...sourceAgentFiles(root).map(entry => [`agent:${entry.id}`, entry.pack]),
     ...sourceSkillFiles(root).map(entry => [`skill:${entry.id}`, entry.pack]),
@@ -201,11 +213,9 @@ test('department packages do not depend on each other', () => {
       ...reference,
       targetPack: owners.get(`${reference.kind}:${reference.target}`) ?? null,
     }))
-    .filter(reference =>
-      reference.fromPack !== 'core'
-      && reference.targetPack !== null
-      && reference.targetPack !== 'core'
-      && reference.targetPack !== reference.fromPack)
+    .filter(reference => reference.targetPack !== null
+      && reference.targetPack !== reference.fromPack
+      && !(reference.fromPack !== 'core' && reference.targetPack === 'core'))
     .map(reference =>
       `${reference.fromPack}:${reference.from} -> ${reference.targetPack}:${reference.target}`);
   assert.deepEqual(violations, []);

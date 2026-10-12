@@ -1,30 +1,6 @@
 # Workspace Initialization
 
-Read this reference only for schema-5 initialization or current binding repair.
-
-## Direction
-
-The operator supplies exactly:
-
-```markdown
-# Vision
-
-<enduring destination>
-
-# Mission
-
-<who the repository serves and why>
-
-# Current Goal
-
-<one observable, time-bounded Current Goal>
-
-# Out of Scope
-
-- <explicit exclusion>
-```
-
-Onboarding validates these bytes and never invents or replaces them.
+Read this reference only for schema-6 initialization or current binding repair.
 
 ## Manifest
 
@@ -34,13 +10,12 @@ Pass the approved values to the initializer:
 {
   "plugin": "kai-core",
   "version": "<plugin-version>",
-  "schema_version": 5,
+  "schema_version": 6,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_id": "<stable-id>",
   "placement": "<external|repo-local>",
   "workspace_root": "<absolute external root or '.'>",
   "private_root": ".kai",
-  "direction": "docs/kai/DIRECTION.md",
   "projects": [
     {
       "id": "<project-id>",
@@ -81,11 +56,10 @@ or rewrite history without explicit authorization.
 
 Initialization is manifest-last and failure-clean. Stop on:
 
-- missing or invalid Direction;
 - path or registry conflict;
 - tracked private state without an approved plan;
 - non-zero initializer, doctor, or inspect result; or
 - any state that changed after approval.
 
-Do not create a Markdown board, backlog, milestone, thread, hierarchy log, or
-empty department directory.
+Do not create a Markdown board, backlog, milestone, thread, planning log,
+optional runtime, or empty package directory.

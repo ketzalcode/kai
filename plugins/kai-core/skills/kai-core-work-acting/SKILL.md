@@ -13,18 +13,14 @@ authority**. Use:
 node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
 ```
 
-Never hand-edit coordination state. Markdown is Direction or accepted
-knowledge, not a lease, lifecycle, message, review, or authority surface.
+Never hand-edit coordination state. Markdown is accepted knowledge, not a
+lease, lifecycle, message, review, or authority surface.
 
-Direct single-shot work needs no workspace, Direction, database, hierarchy
-record, lease, or activity entry.
+Direct single-shot work needs no workspace, database, Task, lease, or activity
+entry.
 
 ## Route the owning contract just in time
 
-- For Epic, Feature, or Requirement meaning and relationships, Load
-  `kai-core-work-hierarchy`.
-- Before an authority, promotion, hold, reprioritization, or parent-completion
-  decision, Load `kai-core-work-stewardship`.
 - Before Task execution or lifecycle work, Load `kai-core-work-task`.
 - Before producing a durable artifact, confirm the owning pack publication
   contract has already validated its vocabulary and destination.
@@ -33,16 +29,15 @@ record, lease, or activity entry.
 
 1. Use `inspect`, then read exact `detail` and bounded `context` for the typed
    subject.
-2. Re-read the current Direction reference and ancestor holds.
-3. Confirm actor identity, named authority, expected record version, and
+2. Confirm actor identity, named authority, expected record version, and
    command kind.
-4. For Task execution, confirm current lease holder, token, expiry, recovery
+3. For Task execution, confirm current lease holder, token, expiry, recovery
    hold, dependencies, `touches`, context artifacts, open questions, review
    requirements, and latest handoff.
-5. Re-read every path or record that may have changed since the last command.
-6. Submit one idempotent command envelope with `operationId`, `recordKind`,
+4. Re-read every path or record that may have changed since the last command.
+5. Submit one idempotent command envelope with `operationId`, `recordKind`,
    `recordId`, `expectedVersion`, and `leaseToken`.
-7. Treat `VERSION_CONFLICT`, `LEASE_CONFLICT`, `AUTHORITY_REQUIRED`,
+6. Treat `VERSION_CONFLICT`, `LEASE_CONFLICT`, `AUTHORITY_REQUIRED`,
    `RECOVERY_REQUIRED`, `EVIDENCE_GAP`, and `INVALID_INPUT` as refusals. Stop,
    re-read, and reconcile; never overwrite or silently retry a changed plan.
 

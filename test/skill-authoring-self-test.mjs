@@ -74,7 +74,7 @@ test('authoring validation rejects collected Core preflight routes', () => {
     '## PREPARE',
     '',
     'Apply `kai-core-operating-rules` before work. Apply',
-    '`kai-core-workspace-paths`, `kai-core-work-hierarchy`, and',
+    '`kai-core-workspace-paths`, `kai-core-work-task`, and',
     '`kai-core-work-granting` before interpreting the request.',
   ].join('\n')), [
     'collects 4 Core skill routes in one instruction; route each skill at the '

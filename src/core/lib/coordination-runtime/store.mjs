@@ -3,20 +3,19 @@ import {dirname} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {
-  HIERARCHY_KINDS,
   RECORD_KINDS,
   RuntimeError,
   canonicalJson,
   commandDigest,
   criteriaRef,
   subjectRef,
-  validateHierarchySubject,
+  validateTaskSubject,
   validateCommand,
   validateCommandMutation,
   validateRecord,
 } from './contract.mjs';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const MESSAGE_SCHEMA_VERSION = 1;
 const STORE_MODES = new Set(['create', 'read', 'write']);
 const MESSAGE_COMMANDS = new Set([
@@ -38,9 +37,6 @@ const EVENTS_TABLE_SQL = `CREATE TABLE events (
       WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'task.handoff' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'epic.message' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'feature.message' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'requirement.message' THEN json_extract(payload, '$.payload.messageId')
     END
   ) STORED,
   approval_id TEXT GENERATED ALWAYS AS (
@@ -208,7 +204,7 @@ function validateStoreSubject(subject, label, {
   if (canonicalJson(Object.keys(subject).sort()) !== '["id","kind"]') {
     invalid(`${label} must contain only kind and id`);
   }
-  validateHierarchySubject(subject, label);
+  validateTaskSubject(subject, label);
   return subject;
 }
 
@@ -982,12 +978,10 @@ export function applyOperation(store, command, mutate) {
       ? null
       : snapshotJson(primaryBaseline);
     const primarySubject = primaryBaseline?.subject
-      ?? (HIERARCHY_KINDS.has(internalCommand.recordKind)
-          ? null
-        : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
+      ?? (['attempt.start', 'effect.intent'].includes(internalCommand.kind)
           ? {kind: 'task', id: internalCommand.payload.taskId}
           : null);
-    const eventSubject = HIERARCHY_KINDS.has(internalCommand.recordKind)
+    const eventSubject = internalCommand.recordKind === 'task'
       ? {kind: internalCommand.recordKind, id: internalCommand.recordId}
       : primarySubject;
 

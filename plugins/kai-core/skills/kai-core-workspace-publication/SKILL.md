@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-publication
-description: "Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material."
+description: "Use when a core role may retain or publish durable coordination decisions or reports."
 tools: [read, edit, search]
 ---
 
@@ -18,8 +18,6 @@ paths, formats, authority, and privacy rules.
 <!-- >>> kai publication table (generated) >>>
 | Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `core` | `direction` | `-` | `.kai/core/direction/<id>/{drafts,evidence,scratch}` | `docs/kai/DIRECTION.md` | Markdown single file | Named operator authority accepts the exact revision and SHA-256 hash | Private evidence never publishes |
-| `core` | `features` | `-` | `.kai/core/features/<id>/{drafts,evidence,scratch}` | `docs/kai/core/features/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 | `core` | `decisions` | `-` | `.kai/core/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/core/decisions/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 | `core` | `reports` | `-` | `.kai/core/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/core/reports/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 <!-- <<< kai publication table <<< -->

@@ -17,7 +17,8 @@ slice. The runner owns mechanical persistence and launching.
 
 PREPARE fixes only what must remain stable for the night:
 
-- current Goal and approved Feature/Requirement scope;
+- approved goal and bounded Core Tasks;
+- optional supplied Project Management projection references;
 - exact base revision;
 - scope and completion authorities;
 - filesystem, network, secret-reference, Git, and GitHub permissions;
@@ -115,7 +116,7 @@ never a contract another agent updates.
 
 ## Hard stops
 
-Stop affected work on Direction/base drift, lost authority or lease, collision,
+Stop affected work on goal/base drift, lost authority or lease, collision,
 scope expansion, unsafe permissions, unavailable required capability, exhausted
 limits, invalid observed output, or no safe in-scope work.
 

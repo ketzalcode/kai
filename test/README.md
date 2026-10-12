@@ -1,16 +1,17 @@
 # Kai behavioral tests
 
-`npm test` runs nine product-critical entrypoints in one Node test process:
+`npm test` runs product-critical entrypoints in one Node test process:
 
 | Suite | Guarantee |
 | --- | --- |
 | `repository-instructions-self-test.mjs` | Managed repository instructions install and detect byte drift. |
 | `release-automation-self-test.mjs` | Release readiness and note extraction enforce the current release contract. |
-| `workspace-current-self-test.mjs` | Only schema 5 and the current workspace layout are accepted. |
-| `coordination-schema-self-test.mjs` | The executable coordination registry is complete and immutable. |
-| `coordination-core-self-test.mjs` | Transactions, authority, leases, hierarchy creation, completion evidence, Direction drift, and snapshots behave correctly. |
+| `workspace-current-self-test.mjs` | Only schema 6 and the split runtime locations are accepted. |
+| `coordination-schema-self-test.mjs` | Core contains only standalone Task/A2A schema and the four-package boundary is explicit. |
+| `coordination-core-self-test.mjs` | Standalone Task authority, versions, leases, collisions, dependencies, and opaque planning refs behave correctly. |
+| `project-management-self-test.mjs` | The private planning runtime owns hierarchy/closure and emits a valid standalone Core Task handoff without cross-database writes. |
 | `publication-contract-self-test.mjs` | Package publication declarations route valid artifacts and reject unsafe paths. |
-| `package-build-self-test.mjs` | Three active packages build in supported combinations with closed imports, stable filenames, and drift detection. |
+| `package-build-self-test.mjs` | Four active packages build in supported combinations with closed imports, stable filenames, and drift detection. |
 | `consumer-install-self-test.mjs` | Every installed public executable loads outside the checkout without repository dependencies. |
 | `creative-screenplay-self-test.mjs` | Screenplay and take parsing preserve the current executable media contract. |
 

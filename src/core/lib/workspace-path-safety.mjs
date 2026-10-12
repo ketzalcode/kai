@@ -2,7 +2,12 @@ import {existsSync, lstatSync, readdirSync, realpathSync} from 'node:fs';
 import {basename, dirname, isAbsolute, join, relative, resolve, sep} from 'node:path';
 import {isNull, unquote} from './coordination.mjs';
 
-export const SHIPPED_PACK_NAMESPACES = new Set(['core', 'engineering', 'creative']);
+export const SHIPPED_PACK_NAMESPACES = new Set([
+  'core',
+  'project-management',
+  'engineering',
+  'creative',
+]);
 export const ACTIVE_ARTIFACT_LIFECYCLES = new Set(['drafts', 'evidence', 'scratch']);
 
 const RESERVED_DEVICE_SEGMENT = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i;

@@ -93,6 +93,7 @@ Return the requested insights, plan, command, render, or review sheet and any
 gaps. Check that a claimed output file exists and report actual inspection
 and review status separately. A render can exist while visual review remains
 pending. No automatic narration follows, and there is no capture step here.
-Load `kai-core-asset-closing` when recording disposition or acceptance.
+Use `kai-core-asset-producing` to record a transition only after the owning
+Creative publication contract and named authority choose it.
 Stop at the requested operation; rendering is not publication or evidence that
 the product works.

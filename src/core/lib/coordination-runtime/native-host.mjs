@@ -1,8 +1,8 @@
 import {randomUUID, createHash} from 'node:crypto';
 import {existsSync} from 'node:fs';
 import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef, subjectRef,
-  validateActor, validateCommand, validateRecord, COMMAND_KINDS, PARENT_COMMAND_KINDS,
-  CLASSIFICATIONS, HIERARCHY_KINDS} from './contract.mjs';
+  validateActor, validateCommand, validateRecord, COMMAND_KINDS,
+  CLASSIFICATIONS} from './contract.mjs';
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
@@ -23,8 +23,7 @@ const fail = (code, message) => { throw new RuntimeError(code, message); };
 const hash = value => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 const manifestHash = root => hash(JSON.parse(exactFile(root, '.kai/manifest.json')));
-const runActions = new Set([...COMMAND_KINDS].filter(k => !PARENT_COMMAND_KINDS.has(k)
-  && !k.startsWith('attempt.')
+const runActions = new Set([...COMMAND_KINDS].filter(k => !k.startsWith('attempt.')
   && !k.startsWith('effect.') && k !== 'task.create'));
 const commandActions = command => [command.kind, ...(command.kind === 'task.handoff'
   && command.payload.state !== null ? ['task.transition'] : [])];

@@ -5,7 +5,6 @@ import {
 import {requireActorAvailable, requireHostActionGrant, requireLease, sameActor} from './authority.mjs';
 import {applyOperation} from './store.mjs';
 import {GRANTABLE_STATES, SHIP_STATES} from './engine.mjs';
-import {assertAlignedAncestors, currentDirectionForStore} from './hierarchy-engine.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {planDispatch, validateRoster} from './host-plan.mjs';
@@ -84,10 +83,6 @@ function actingTask(store, tx, command, context, target) {
   const task = tx.get('task', p.taskId);
   if (!task) fail('EVIDENCE_GAP', 'host intent requires an existing Task');
   if (task.version !== p.taskVersion) fail('VERSION_CONFLICT', 'host intent Task version is stale');
-  const feature = tx.get('feature', task.body.feature_id);
-  const epic = feature && tx.get('epic', feature.body.epic_id);
-  if (!epic) fail('EVIDENCE_GAP', 'host intent requires current Task ancestors');
-  assertAlignedAncestors(tx, task, currentDirectionForStore(store, epic.body.direction_ref));
   if (!GRANTABLE_STATES.has(task.body.state)
     || task.body.recovery_hold !== null || task.body.waiting_on_questions.length > 0) {
     fail('RECOVERY_REQUIRED', 'Task is not available for host execution');

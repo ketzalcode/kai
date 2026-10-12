@@ -1,3 +1,0 @@
-# Backlog
-
-No unaffiliated proposals.

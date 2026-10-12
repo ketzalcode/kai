@@ -17,7 +17,7 @@ verdict tied to the exact revision or supplied snapshot.
 
 Direct work may return only inline or repository-native output. It must not
 register a durable Kai artifact. Any durable Kai report or publication requires
-an existing typed hierarchy subject, its current version, an authorized
+an existing standalone Task, its current version, an authorized
 artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
@@ -112,7 +112,7 @@ write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
-hierarchy record and no report tree.
+Task record and no report tree.
 Apply `kai-core-work-granting` only for
 an authorized self-grant. If an owner or route cannot be
 resolved, report the gap instead of inventing a grant or transition.

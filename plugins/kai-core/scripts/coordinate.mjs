@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  HIERARCHY_KINDS,
   RECORD_KINDS,
   RuntimeError,
   cli_exports,
-  validateHierarchySubject
+  validateTaskSubject
 } from "./runtime-core.mjs";
 
 // src/core/coordinate.mjs
@@ -28,12 +27,11 @@ var flags = {
   prepare: [],
   delegate: ["capability"],
   claim: ["task", "capability"],
-  capabilities: [],
-  plan: ["kind", "id"]
+  capabilities: []
 };
 var booleans = /* @__PURE__ */ new Set(["deep"]);
 var inputVerbs = /* @__PURE__ */ new Set(["apply", "request", "capture", "prepare", "delegate"]);
-var hierarchyVerbs = /* @__PURE__ */ new Set(["context", "messages", "export", "plan"]);
+var taskVerbs = /* @__PURE__ */ new Set(["context", "messages", "export"]);
 var invalid = (message) => {
   throw new RuntimeError("INVALID_INPUT", message);
 };
@@ -77,10 +75,10 @@ function parseArguments(argv) {
   }
   if (options["max-bytes"] !== void 0 && (options["max-bytes"] < 1 || options["max-bytes"] > 24 * 1024)) invalid("--max-bytes must be 1..24576");
   if (options["recent-limit"] !== void 0 && options["recent-limit"] > 8) invalid("--recent-limit must be 0..8");
-  if (hierarchyVerbs.has(verb)) {
+  if (taskVerbs.has(verb)) {
     if (options.kind === void 0) invalid("--kind is required");
     if (options.id === void 0) invalid("--id is required");
-    validateHierarchySubject({ kind: options.kind, id: options.id }, `${verb} subject`);
+    validateTaskSubject({ kind: options.kind, id: options.id }, `${verb} subject`);
   }
   if (verb === "detail") {
     if (options.kind === void 0) invalid("--kind is required");
@@ -88,13 +86,13 @@ function parseArguments(argv) {
     if (!RECORD_KINDS.has(options.kind) || (/* @__PURE__ */ new Set(["initiative", "item"])).has(options.kind)) {
       invalid("detail kind is unsupported");
     }
-    if (HIERARCHY_KINDS.has(options.kind)) {
-      validateHierarchySubject({ kind: options.kind, id: options.id }, "detail subject");
+    if (options.kind === "task") {
+      validateTaskSubject({ kind: options.kind, id: options.id }, "detail subject");
     }
   }
   if (verb === "claim") {
     if (options.task === void 0) invalid("--task is required");
-    validateHierarchySubject({ kind: "task", id: options.task }, "claim Task");
+    validateTaskSubject({ kind: "task", id: options.task }, "claim Task");
   }
   return { verb, options };
 }

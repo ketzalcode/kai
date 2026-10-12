@@ -30,8 +30,8 @@ update core before coordinated design resumes.
 Read scoped supplied or repository-native evidence when the sketch depends on
 current components, hierarchy, or patterns. ASCII needs no invented visual
 tokens.
-Apply `kai-core-scope-discipline` when an alternative changes the approved
-scope. Show an unadopted proposal as such; do not silently make it the choice.
+When an alternative changes approved scope, show it as an unadopted proposal;
+do not silently make it the choice.
 
 ## Draw the decision
 
@@ -70,8 +70,8 @@ ASCII is independent of HTML: no automatic HTML stage follows. Inline answers
 need no browser, files, workspace, or hierarchy record. If the caller explicitly
 owes a durable design, Load `kai-core-workspace-paths` before choosing its
 existing target. Load `creative-workspace-publication`, then Load
-`kai-core-asset-producing` before revising that asset.
-Load `kai-core-asset-closing` only when disposition or acceptance is requested.
+`kai-core-asset-producing` before revising or recording an authorized
+transition for that asset.
 
 Stop at the mock and recommendation. The operator or explicitly delegated
 designer owns the choice; an unapproved consequential choice remains pending.

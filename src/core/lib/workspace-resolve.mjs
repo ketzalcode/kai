@@ -18,14 +18,13 @@ import {
   badPath, canonicalPath, escapesRoot, exactPath, normalized, pathHasLink, resolvedProjectPath,
 } from './workspace-path-safety.mjs';
 import {
-  DIRECTION_PATH,
   PRIVATE_ROOT,
   WORKSPACE_SCHEMA_VERSION,
 } from './workspace-layout.mjs';
 
 export const MANIFEST_REL = join('.kai', 'manifest.json');
 export const REGISTRY_FILE = 'workspaces.json';
-export const SCHEMA5_MANIFEST_KEYS = Object.freeze([
+export const SCHEMA6_MANIFEST_KEYS = Object.freeze([
   'plugin',
   'version',
   'schema_version',
@@ -34,10 +33,9 @@ export const SCHEMA5_MANIFEST_KEYS = Object.freeze([
   'placement',
   'workspace_root',
   'private_root',
-  'direction',
   'projects',
 ]);
-export const SCHEMA5_PROJECT_KEYS = Object.freeze([
+export const SCHEMA6_PROJECT_KEYS = Object.freeze([
   'id',
   'path',
   'publication_root',
@@ -154,13 +152,13 @@ export function nativeAbsolutePathProblem(value, {
   return null;
 }
 
-export function validateSchema5Manifest(root, manifest, {
+export function validateSchema6Manifest(root, manifest, {
   env = process.env,
   allowUnregisteredExternal = false,
 } = {}) {
   root = resolvePath(root);
   const errors = [];
-  exactKeys(manifest, SCHEMA5_MANIFEST_KEYS, '.kai/manifest.json', errors);
+  exactKeys(manifest, SCHEMA6_MANIFEST_KEYS, '.kai/manifest.json', errors);
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
     return {errors, projects: []};
   }
@@ -188,9 +186,6 @@ export function validateSchema5Manifest(root, manifest, {
   if (manifest.private_root !== PRIVATE_ROOT) {
     errors.push(`.kai/manifest.json "private_root" must be exactly "${PRIVATE_ROOT}"`);
   }
-  if (manifest.direction !== DIRECTION_PATH) {
-    errors.push(`.kai/manifest.json "direction" must be exactly "${DIRECTION_PATH}"`);
-  }
   if (manifest.placement === 'repo-local' && manifest.workspace_root !== '.') {
     errors.push('.kai/manifest.json repo-local "workspace_root" must be "."');
   }
@@ -213,7 +208,7 @@ export function validateSchema5Manifest(root, manifest, {
     const roots = new Set();
     for (const [index, project] of manifest.projects.entries()) {
       const label = `.kai/manifest.json projects[${index}]`;
-      exactKeys(project, SCHEMA5_PROJECT_KEYS, label, errors);
+      exactKeys(project, SCHEMA6_PROJECT_KEYS, label, errors);
       if (!project || typeof project !== 'object' || Array.isArray(project)) continue;
       if (!PROJECT_ID.test(project.id || '')) errors.push(`${label}.id must be kebab-case`);
       else if (ids.has(project.id)) errors.push(`${label}.id "${project.id}" is duplicated`);

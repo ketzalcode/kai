@@ -1,0 +1,6 @@
+{
+  "name": "kai-project-management",
+  "version": "23.0.0",
+  "description": "Optional agent-free Direction, Epic, Feature, and Requirement planning over standalone kai-core Tasks.",
+  "skills": "skills"
+}

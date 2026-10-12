@@ -120,6 +120,7 @@ steps, and inspection limits. A rejected composition is not a usable plan.
 
 No automatic synthesis follows. Script changes need their author; another
 paid attempt needs its own authorization through the creation operation.
-Load `kai-core-asset-closing` when disposition or acceptance is requested.
+Use `kai-core-asset-producing` to record a transition only after the owning
+Creative publication contract and named authority choose it.
 Stop at the requested result, not publication or a claim that video proves
 the product works.

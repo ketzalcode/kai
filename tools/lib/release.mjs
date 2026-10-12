@@ -16,9 +16,11 @@ export const EXPECTED_GENERATED_VERSION_KEYS = Object.freeze([
   'plugin.json',
   'marketplace.metadata',
   'marketplace.kai-core',
+  'marketplace.kai-project-management',
   'marketplace.kai-engineering',
   'marketplace.kai-creative',
   'plugins/kai-core/plugin.json',
+  'plugins/kai-project-management/plugin.json',
   'plugins/kai-engineering/plugin.json',
   'plugins/kai-creative/plugin.json',
 ]);

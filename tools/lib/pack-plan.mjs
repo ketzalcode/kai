@@ -45,6 +45,7 @@ export const CORE_SKILL_PREFIX = 'kai-core-';
 
 export const PUBLICATION_SKILLS = Object.freeze({
   core: 'kai-core-workspace-publication',
+  'project-management': 'project-management-workspace-publication',
   engineering: 'engineering-workspace-publication',
   creative: 'creative-workspace-publication',
 });
@@ -373,9 +374,14 @@ export const SKILL_OWNER_OVERRIDES = Object.freeze({});
 
 // Retained source and validation cover every active package. Publication is a
 // separate decision, but the active partition and the default index are now the
-// same three packages: an unfinished package is incubated, not half-shipped.
+// same four packages: an unfinished package is incubated, not half-shipped.
 export const COMMITTED_PACKS = [...PACK_ORDER];
-export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']);
+export const PUBLISHED_PACKS = Object.freeze([
+  'core',
+  'project-management',
+  'engineering',
+  'creative',
+]);
 
 // No pack declares a runtime npm dependency, and none may. The host copies
 // plugin trees and never runs npm, so a declared dependency could only resolve
@@ -397,7 +403,8 @@ export { packPluginName, PACK_ORDER };
 // (marketplaceConsistencyErrors) — two texts for one plugin is a drift the index
 // cannot hold.
 const PACK_DESCRIPTIONS = {
-  core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
+  core: 'kai-core: shared operating contracts, schema-6 workspace machinery, and standalone Task/A2A execution.',
+  'project-management': 'Optional agent-free Direction, Epic, Feature, and Requirement planning over standalone kai-core Tasks.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
   engineering: 'Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.',
 };
@@ -631,7 +638,7 @@ export function planManifests({
       pack,
       name,
       dir: name,
-      kind: isCore ? 'core' : 'department',
+      kind: isCore ? 'core' : pack === 'project-management' ? 'capability' : 'department',
       agents,
       skills,
       manifest,

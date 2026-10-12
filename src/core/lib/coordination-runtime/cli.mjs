@@ -4,7 +4,7 @@ import {
   RuntimeError,
   subjectRef,
   validateCommand,
-  validateHierarchySubject,
+  validateTaskSubject,
 } from './contract.mjs';
 import {safePath} from './evidence-content.mjs';
 import {
@@ -17,7 +17,6 @@ import {
 import {
   openStore,
   closeStore,
-  listAllRecords,
   readSnapshot,
   readStoreSummary,
 } from './store.mjs';
@@ -25,12 +24,10 @@ import {readDetail, readMessages} from './context.mjs';
 import {inspectRuntime} from './inspection.mjs';
 import {buildReport} from './report.mjs';
 import {hashArtifact} from './evidence.mjs';
-import {currentDirectionForStore} from './hierarchy-engine.mjs';
 import {
-  hierarchyContext,
-  hierarchyStatus,
-} from './hierarchy-view.mjs';
-import {planHierarchy} from './host-plan.mjs';
+  taskContext,
+  taskStatus,
+} from './task-view.mjs';
 
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const reads = new Set([
@@ -41,10 +38,9 @@ const reads = new Set([
   'messages',
   'export',
   'hash',
-  'plan',
 ]);
 const required = (options, name) => options[name] ?? fail('INVALID_INPUT', `--${name} is required`);
-const hierarchySubject = options => validateHierarchySubject({
+const taskSubject = options => validateTaskSubject({
   kind: required(options, 'kind'),
   id: required(options, 'id'),
 });
@@ -73,11 +69,6 @@ async function installedRoles(host, root, env) {
     .filter(role => typeof role === 'string' && role !== ''))].sort();
 }
 
-function hierarchyDirection(store) {
-  const [epic] = listAllRecords(store, {kind: 'epic'});
-  return epic ? currentDirectionForStore(store, epic.body.direction_ref) : null;
-}
-
 export async function execute({verb, options, body, host, cwd, env}) {
   const resolved = resolveWorkspaceRoot({explicitRoot: options.root, cwd, env});
   if (!resolved.ok) fail(resolved.code ?? 'INVALID_INPUT', resolved.reason);
@@ -98,27 +89,22 @@ export async function execute({verb, options, body, host, cwd, env}) {
     if (!base.storeExists) fail('RECOVERY_REQUIRED', 'coordination store is missing; use the standalone workspace initializer');
     const store = openStore({path, mode: 'read'});
     try {
-      const roles = ['status', 'context', 'plan'].includes(verb)
+      const roles = ['status', 'context'].includes(verb)
         ? await installedRoles(host, root, env)
         : [];
       if (verb === 'status') {
         return readSnapshot(store, () => ({
           ...base,
-          status: hierarchyStatus(store, {
-            direction: hierarchyDirection(store),
-            roles,
-          }),
+          status: taskStatus(store, {roles}),
         }));
       }
       if (verb === 'context') {
         return readSnapshot(store, () => ({
           ...base,
-          context: hierarchyContext(store, {
-            subject: hierarchySubject(options),
+          context: taskContext(store, {
+            subject: taskSubject(options),
             maxBytes: options['max-bytes'],
             recentLimit: options['recent-limit'],
-            direction: hierarchyDirection(store),
-            roles,
           }),
         }));
       }
@@ -133,7 +119,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
       if (verb === 'messages') {
         return readSnapshot(store, () => {
-          const subject = hierarchySubject(options);
+          const subject = taskSubject(options);
           const record = readDetail(store, subject);
           return {
             ...base,
@@ -149,21 +135,10 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
       if (verb === 'hash') return {...base, subject: hashArtifact({root, relativePath: required(options, 'path')})};
       if (verb === 'export') {
-        const subject = hierarchySubject(options);
+        const subject = taskSubject(options);
         return readSnapshot(store, () => ({
           ...base,
           report: buildReport(store, {subject}),
-        }));
-      }
-      if (verb === 'plan') {
-        return readSnapshot(store, () => ({
-          ...base,
-          ...planHierarchy({
-            store,
-            subject: hierarchySubject(options),
-            direction: hierarchyDirection(store),
-            roles,
-          }),
         }));
       }
     } finally { closeStore(store); }

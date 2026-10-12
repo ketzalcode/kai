@@ -61,7 +61,7 @@ does not restore work automatically; the lifecycle-authorized actor re-reads
 all blocking questions and performs the valid transition.
 
 Older retained Markdown threads and status-less ANSWER packets are historical
-read inputs only. New schema-5 communication is a typed message record.
+read inputs only. New schema-6 communication is a typed message record.
 
 ## Bias guard
 

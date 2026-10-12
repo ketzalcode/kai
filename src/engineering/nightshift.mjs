@@ -22,8 +22,9 @@ const PLAN_KEYS = new Set([
   'approvedAt',
   'deadline',
   'projectId',
-  'subject',
-  'direction',
+  'goal',
+  'tasks',
+  'planningProjection',
   'base',
   'limits',
   'permissions',
@@ -98,10 +99,8 @@ const BLOCKER_KINDS = new Set([
 const NIGHTSHIFT_STATUSES = new Set(['slice', 'complete', 'blocked']);
 const SAFE_ID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 const PROJECT_ID = /^[a-z][a-z0-9-]*$/;
-const TYPED_FEATURE_ID = /^engineering:feature:[a-z0-9][a-z0-9-]*$/;
 const TYPED_TASK_ID = /^engineering:task:[a-z0-9][a-z0-9-]*$/;
 const FULL_SHA = /^[0-9a-f]{40}$/;
-const SHA256 = /^[0-9a-f]{64}$/;
 const BRANCH = /^kai\/(?:feat|fix|docs|refactor|chore)\/[a-z0-9][a-z0-9-]*$/;
 const SECRET_REF = /^[A-Z][A-Z0-9_]*$/;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
@@ -280,20 +279,39 @@ export function validatePlan(raw) {
   const projectId = string(raw.projectId, 'plan.projectId');
   if (!PROJECT_ID.test(projectId)) fail('plan.projectId must be kebab-case');
 
-  exactKeys(raw.subject, new Set(['kind', 'id', 'version']), 'plan.subject');
-  if (raw.subject.kind !== 'feature') fail('plan.subject.kind must be "feature"');
-  const subjectId = string(raw.subject.id, 'plan.subject.id');
-  if (!TYPED_FEATURE_ID.test(subjectId)) {
-    fail('plan.subject.id must be an engineering Feature ID');
+  exactKeys(raw.goal, new Set(['outcome', 'acceptance']), 'plan.goal');
+  const goal = {
+    outcome: string(raw.goal.outcome, 'plan.goal.outcome'),
+    acceptance: strings(raw.goal.acceptance, 'plan.goal.acceptance', {nonEmpty: true}),
+  };
+  if (!Array.isArray(raw.tasks) || raw.tasks.length === 0) {
+    fail('plan.tasks must be a non-empty array');
   }
-
-  exactKeys(raw.direction, new Set(['path', 'sha256', 'goal']), 'plan.direction');
-  const directionPath = safeRelative(raw.direction.path, 'plan.direction.path');
-  if (directionPath !== 'docs/kai/DIRECTION.md') {
-    fail('plan.direction.path must be docs/kai/DIRECTION.md');
+  const tasks = raw.tasks.map((task, index) => {
+    exactKeys(task, new Set(['id', 'version']), `plan.tasks[${index}]`);
+    const id = string(task.id, `plan.tasks[${index}].id`);
+    if (!TYPED_TASK_ID.test(id)) fail(`plan.tasks[${index}].id must be an engineering Task ID`);
+    return {id, version: positiveVersion(task.version, `plan.tasks[${index}].version`)};
+  });
+  if (new Set(tasks.map(task => task.id)).size !== tasks.length) {
+    fail('plan.tasks contains duplicate Task IDs');
   }
-  const directionSha = string(raw.direction.sha256, 'plan.direction.sha256');
-  if (!SHA256.test(directionSha)) fail('plan.direction.sha256 must be lowercase SHA-256');
+  let planningProjection = null;
+  if (raw.planningProjection !== null) {
+    exactKeys(
+      raw.planningProjection,
+      new Set(['summary', 'references']),
+      'plan.planningProjection',
+    );
+    planningProjection = {
+      summary: string(raw.planningProjection.summary, 'plan.planningProjection.summary'),
+      references: strings(
+        raw.planningProjection.references,
+        'plan.planningProjection.references',
+        {nonEmpty: true},
+      ),
+    };
+  }
 
   exactKeys(raw.base, new Set(['remote', 'branch', 'sha']), 'plan.base');
   const remote = string(raw.base.remote, 'plan.base.remote');
@@ -328,16 +346,9 @@ export function validatePlan(raw) {
     approvedAt,
     deadline,
     projectId,
-    subject: {
-      kind: 'feature',
-      id: subjectId,
-      version: positiveVersion(raw.subject.version, 'plan.subject.version'),
-    },
-    direction: {
-      path: directionPath,
-      sha256: directionSha,
-      goal: string(raw.direction.goal, 'plan.direction.goal'),
-    },
+    goal,
+    tasks,
+    planningProjection,
     base: {
       remote,
       branch: baseBranch,
@@ -403,6 +414,10 @@ export function validateNightshiftDecision(raw, {plan, events}) {
   if (status === 'slice') {
     if (!normalized.slice) fail('slice Nightshift decision requires one slice');
     if (normalized.blocker !== null) fail('slice Nightshift decision blocker must be null');
+    if (!plan.tasks.some(task =>
+      task.id === normalized.slice.task.id && task.version === normalized.slice.task.version)) {
+      fail('Nightshift decision slice Task is outside the approved bounded Task set');
+    }
     const prior = terminalSliceEvents(events);
     if (prior.some(entry => entry.payload.slice.id === normalized.slice.id)) {
       fail(`Nightshift decision repeats slice ID ${normalized.slice.id}`);
@@ -758,10 +773,10 @@ function workspace(root, plan, {verifyCurrentBase = false} = {}) {
   if (!samePath(realpathSync(root), root)) fail('workspace root must use its exact physical path');
   const manifestPath = join(root, '.kai', 'manifest.json');
   if (!existsSync(manifestPath) || lstatSync(manifestPath).isSymbolicLink()) {
-    fail('Nightshift requires an exact schema-5 .kai/manifest.json');
+    fail('Nightshift requires an exact schema-6 .kai/manifest.json');
   }
   const manifest = readJson(manifestPath, '.kai/manifest.json');
-  if (manifest.schema_version !== 5) fail('Nightshift requires workspace schema 5');
+  if (manifest.schema_version !== 6) fail('Nightshift requires workspace schema 6');
   const project = manifest.projects?.find(entry => entry.id === plan.projectId);
   if (!project) fail(`workspace has no project binding "${plan.projectId}"`);
   const projectRoot = manifest.placement === 'repo-local'
@@ -803,20 +818,8 @@ function verifyBase(projectRoot, plan) {
   }
 }
 
-function verifyDirection(projectRoot, plan) {
-  const path = resolve(projectRoot, ...plan.direction.path.split('/'));
-  if (!isWithin(projectRoot, path) || !existsSync(path) || lstatSync(path).isSymbolicLink()) {
-    fail('approved Direction path is unavailable or unsafe');
-  }
-  const digest = createHash('sha256').update(readFileSync(path)).digest('hex');
-  if (digest !== plan.direction.sha256) {
-    fail('approved Direction changed after Nightshift preparation');
-  }
-}
-
 function verifyBasis(projectRoot, plan) {
   verifyBase(projectRoot, plan);
-  verifyDirection(projectRoot, plan);
 }
 
 export function prepareRun({root, plan: rawPlan}) {
@@ -985,7 +988,7 @@ function nightshiftDecisionPrompt(plan, events) {
     `Act as eng-nightshift and own the next incremental decision for run ${plan.runId}.`,
     `Approved admission: ${JSON.stringify(plan)}`,
     `Accumulated terminal checkpoints: ${JSON.stringify(nightshiftHistory(events))}`,
-    'Read current Core Direction, Feature/Requirement acceptance, Tasks, dependencies, questions, grants, and prior PR evidence.',
+    'Read the approved goal, bounded Core Tasks, dependencies, questions, grants, prior PR evidence, and any supplied planning projection.',
     'Choose exactly one next frontend or backend PR-sized slice, return a blocker, or declare the approved outcome complete.',
     'Do not pre-plan the rest of the night. Do not implement product code. Do not turn suggestions into scope.',
     'A non-base baseHead is allowed only for a delivered prior slice and only when stacking was approved.',
@@ -998,7 +1001,7 @@ function nightshiftDecisionPrompt(plan, events) {
 function sharedPrompt(plan, slice, {baseHead, pullRequestBase}) {
   return [
     `Nightshift run ${plan.runId}, slice ${slice.id}, and no other scope.`,
-    `Coordination workspace: ${plan.projectId}; Feature: ${plan.subject.id} version ${plan.subject.version}.`,
+    `Coordination workspace: ${plan.projectId}; approved goal: ${plan.goal.outcome}.`,
     `Task: ${slice.task.id} version ${slice.task.version}.`,
     `Required outcome: ${slice.outcome}`,
     `Acceptance: ${slice.acceptance.join(' | ')}`,
@@ -1009,7 +1012,7 @@ function sharedPrompt(plan, slice, {baseHead, pullRequestBase}) {
     `Pull request base: ${pullRequestBase}`,
     `Git push authorized: ${plan.permissions.push}; pull request authorized: ${plan.permissions.pullRequests}.`,
     'Implement required work only. Preserve blockers in Core. Put broader or lower-confidence ideas in suggestions.',
-    'Never merge, deploy, release, self-approve, or change Feature/Requirement scope.',
+    'Never merge, deploy, release, self-approve, or expand the approved goal or bounded Task set.',
   ];
 }
 
@@ -1504,9 +1507,13 @@ export function renderMorningReport(plan, events) {
 
 ## Goal and approved scope
 
-${plan.direction.goal}
+${plan.goal.outcome}
 
-- Subject: ${plan.subject.id} version ${plan.subject.version}
+- Acceptance: ${plan.goal.acceptance.join(' | ')}
+- Bounded Tasks: ${plan.tasks.map(task => `${task.id}@${task.version}`).join(', ')}
+- Planning projection: ${plan.planningProjection
+  ? `${plan.planningProjection.summary} (${plan.planningProjection.references.join(', ')})`
+  : 'not supplied'}
 - Base: ${plan.base.remote}/${plan.base.branch} at ${plan.base.sha}
 - Deadline: ${plan.deadline}
 - Attempted slices: ${rows.length}

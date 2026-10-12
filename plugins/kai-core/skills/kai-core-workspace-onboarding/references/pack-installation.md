@@ -7,12 +7,14 @@ Read this reference only for install, selection, or update requests.
 The active catalog is closed:
 
 1. `kai-core`
-2. `kai-engineering`, when selected
-3. `kai-creative`, when selected
+2. `kai-project-management`, when selected
+3. `kai-engineering`, when selected
+4. `kai-creative`, when selected
 
-Core is required. Never silently add a department. Product, marketing, revenue,
-assistant, and learning are incubated and are not install options. Retired
-`kai`, `kai-gtm`, and `kai-personal` names are not aliases.
+Core is required. Project Management is optional and agent-free. Never silently
+add a capability or department. Product, marketing, revenue, assistant, and
+learning are incubated and are not install options. Retired `kai`, `kai-gtm`,
+and `kai-personal` names are not aliases.
 
 ## Inspect
 
@@ -37,6 +39,7 @@ copilot plugin marketplace update kai-plugins
 copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
 copilot plugin update kai-core@kai-plugins
+copilot plugin install kai-project-management@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
@@ -47,7 +50,7 @@ plan before changing marketplace or plugin state.
 ## Execute
 
 Run one command at a time and verify its result. Stop on the first failure.
-Install/update Core before departments. If a pack is disabled, tell the
+Install/update Core before Project Management or departments. If a pack is disabled, tell the
 operator to enable it through `/plugin` and start a fresh session; do not invent
 an enable command.
 

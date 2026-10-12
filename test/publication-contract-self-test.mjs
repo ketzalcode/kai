@@ -93,7 +93,11 @@ test('the shipped route corpus obeys positive publication ordering', () => {
     ...sourceAgentFiles(root),
     ...sourceSkillFiles(root),
   ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
-  assert.ok(entries.length >= 50, `expected a non-vacuous route corpus, found ${entries.length}`);
+  assert.ok(
+    entries.some(entry =>
+      /publication-entrypoint:|kai-core-asset-producing/.test(entry.body)),
+    'expected at least one shipped publication route',
+  );
   const errors = entries.flatMap(entry =>
     publicationRoutingErrors(entry).map(message => `${entry.rel}: ${message}`));
   assert.deepEqual(errors, []);

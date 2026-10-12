@@ -29,8 +29,8 @@ core, bounded visual advice from supplied evidence may continue, but do not
 coordinate work or write `.kai` state. Tell the operator to install or update
 core before coordinated design resumes.
 Use supplied or repository-native evidence when choosing actual tokens or components.
-Apply `kai-core-scope-discipline` when an option changes the approved scope.
-An unadopted proposal stays separate from the in-scope recommendation.
+An option that changes approved scope remains an unadopted proposal, separate
+from the in-scope recommendation.
 
 ## Build only the visual needed
 
@@ -82,9 +82,9 @@ requested artifact remains a named gap.
 
 Load `kai-core-workspace-paths` before choosing a persistent target.
 Load `creative-workspace-publication`, then Load `kai-core-asset-producing`
-when retaining or revising a durable design, and Load `kai-core-asset-closing`
-when recording disposition or acceptance. Use the caller's validated typed
-target; do not create hierarchy scope for a mock.
+when retaining, revising, or recording an authorized transition for a durable
+design. Use the caller's validated typed target; do not create planning scope
+for a mock.
 
 Stop at the mock and recommendation. Do not lock or adopt a consequential
 choice without its owner/authority. Do not implement production frontend

@@ -38,7 +38,7 @@ export function captureInputBasis(context, tx, references, seen = new Set(), obs
     const owner = record.subject
       ? tx.get(record.subject.kind, record.subject.id)
       : null;
-    if (!owner) fail('EVIDENCE_GAP', `applicable input ${reference} has no owning hierarchy subject`);
+    if (!owner) fail('EVIDENCE_GAP', `applicable input ${reference} has no owning Task`);
     return {
       reference,
       digest: digest({

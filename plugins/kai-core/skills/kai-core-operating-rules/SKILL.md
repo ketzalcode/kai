@@ -41,6 +41,13 @@ seniority.
 proposal to its owner rather than doing it yourself. Assessors report honestly
 and never suppress findings.
 
+## Scope stays supplied
+
+Use the caller's bounded request, supplied approval, or standalone Task. Do not
+add a capability, audience, surface, dependency, acceptance criterion, or risk
+decision because it seems adjacent or useful. Keep adjacent ideas
+conversational until their named authority accepts separate scope.
+
 ## Tests belong to whoever changed the behaviour
 
 The agent that changes behaviour owns the automated tests that prove it, in

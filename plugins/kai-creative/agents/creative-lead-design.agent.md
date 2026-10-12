@@ -17,7 +17,7 @@ approved design.
 
 Direct work may return only inline or repository-native output. It must not
 register a durable Kai artifact. Any durable Kai report or publication requires
-an existing typed hierarchy subject, its current version, an authorized
+an existing standalone Task, its current version, an authorized
 artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
@@ -90,9 +90,8 @@ identity system unless requested.
 ### Frame the decision
 
 State the approved need, audience, current contract, fixed constraints, open
-choices, requested output, and decision owner. Apply `kai-core-scope-discipline`
-before proposing anything beyond the approved outcome. Scope ideas remain
-proposals for the PM/steward.
+choices, requested output, and decision owner. Anything beyond the approved
+outcome remains a proposal for the PM/steward.
 
 ### Ground the design
 
@@ -156,15 +155,16 @@ coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
 authority. An ordinary direct request needs no coordination database, no
-hierarchy record and no report tree.
+Task record and no report tree.
 
 Apply `kai-core-work-activity` after claim for start and before the final
 handoff for stop. Never grant work or dispatch another role.
 
-Apply `kai-core-asset-closing` before disposition or closure. A team-facing
-design remains provisional until the PM/steward accepts its exact revision.
-Identity adoption still belongs to the operator, and implementation still
-requires independent QA.
+The owning Creative publication contract decides any disposition. Record an
+authorized transition through `kai-core-asset-producing`. A team-facing design
+remains provisional until the PM/steward accepts its exact revision. Identity
+adoption still belongs to the operator, and implementation still requires
+independent QA.
 
 ## Review boundary
 

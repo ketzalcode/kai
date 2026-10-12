@@ -12,8 +12,16 @@ import {
 import {inspectRuntime} from '../src/core/lib/coordination-runtime/inspection.mjs';
 import {checkWorkspace} from '../src/core/workspace-doctor.mjs';
 
-test('the workspace contract exposes only schema 5', () => {
-  assert.equal(WORKSPACE_CONTRACT.schemaVersion, 5);
+test('the workspace contract exposes only schema 6 and separate runtime databases', () => {
+  assert.equal(WORKSPACE_CONTRACT.schemaVersion, 6);
+  assert.equal(
+    WORKSPACE_CONTRACT.coordinationDatabase,
+    '.kai/core/runtime/coordination.sqlite',
+  );
+  assert.equal(
+    WORKSPACE_CONTRACT.projectDatabase,
+    '.kai/project-management/runtime/project.sqlite',
+  );
   assert.equal(Object.hasOwn(WORKSPACE_CONTRACT, 'legacyDatabase'), false);
 });
 

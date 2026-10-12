@@ -2,39 +2,28 @@
 
 # Workspaces
 
-Kai supports only the current workspace contract: schema 5. It may read an old
-manifest's schema number to reject it, but it does not decode, migrate, repair,
-or write historical records.
+Kai supports one workspace contract: schema 6. It reads an old schema number
+only to refuse it. There is no migration or historical-record import.
 
 ```text
 .kai/       private, ignored, untracked
 docs/kai/   accepted, Git-suitable project knowledge
 ```
 
-Installing a package creates no workspace. Direct answers and ordinary code
-changes create no Kai state.
+Installing a package creates no workspace. Direct work creates no Kai state.
 
-## Placement and manifest
-
-| Placement | Private workspace | Project behavior |
-| --- | --- | --- |
-| `repo-local` | `<project>\.kai\` | all of `\.kai\` is ignored and untracked |
-| `external` | registered durable directory outside the project | the project contains no `.kai/` |
-
-Both modes publish accepted knowledge into the bound project's configured
-`publication_root`.
+## Manifest
 
 ```json
 {
   "plugin": "kai-core",
   "version": "<plugin-version>",
-  "schema_version": 5,
+  "schema_version": 6,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_id": "<stable-id>",
   "placement": "repo-local",
   "workspace_root": ".",
   "private_root": ".kai",
-  "direction": "docs/kai/DIRECTION.md",
   "projects": [
     {
       "id": "<project-id>",
@@ -45,48 +34,40 @@ Both modes publish accepted knowledge into the bound project's configured
 }
 ```
 
-The manifest does not list installed packages or pre-create their folders.
-Directory presence records actual use.
+Placement is `repo-local` or registered `external`. Repo-local state is fully
+ignored and untracked. External state lives outside the project, which contains
+no `.kai/`.
 
 ## Onboarding
 
-`kai-core-workspace-onboarding` creates only:
+Core onboarding creates only:
 
 ```text
 .kai/manifest.json
 .kai/core/runtime/coordination.sqlite
 docs/kai/README.md
-docs/kai/DIRECTION.md
 the managed /.kai/ ignore block for repo-local placement
 ```
 
-Initialization is explicit, failure-clean, and manifest-last. It asks before
-installing the canonical repository-instruction block. If the project has no
-`AGENTS.md`, onboarding creates it. If it exists, onboarding replaces only the
-marked Kai region and preserves every other byte. It never stages or commits
-the file without separate operator authorization.
+It does not initialize Project Management or any department tree. After
+installing the optional package, initialize its runtime explicitly:
 
-Direction is operator-owned and contains Vision, Mission, one observable and
-time-bounded Current Goal, and Out of Scope. Onboarding never invents it.
+```text
+node "<kai-project-management-plugin>/scripts/project.mjs" init --root "<workspace-root>"
+```
 
-## Re-onboarding unsupported workspaces
+That creates only `.kai/project-management/runtime/project.sqlite`.
 
-An unsupported manifest or database stops current runtime operations with
-guidance to invoke `kai-core-workspace-reonboard`. Re-onboarding is an
-operator-controlled reset, not a converter:
+## Runtime split
 
-1. confirm the project root and explicit reset intent;
-2. preserve `docs/kai/`, including Direction and accepted publications;
-3. ensure retired private backups are ignored;
-4. rename `.kai/` to an ignored timestamped `.kai-retired-*` backup;
-5. verify the backup is outside the new workspace and contains no tracked
-   files;
-6. reconcile installed packages when package state is uncertain;
-7. run current onboarding; and
-8. create current private paths lazily as coordinated work needs them.
+| Database | Owns |
+| --- | --- |
+| `.kai/core/runtime/coordination.sqlite` | Standalone Tasks and A2A execution records |
+| `.kai/project-management/runtime/project.sqlite` | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and planning views |
 
-No record is imported from a retired database. The operator decides when to
-delete the retained backup.
+The databases never edit each other. Project Management can emit a Core Task
+body through `handoff`; the caller submits it separately. Core treats supplied
+`planning_refs` as opaque strings.
 
 ## Typed private work
 
@@ -94,67 +75,33 @@ delete the retained backup.
 .kai/<pack>/<type>/<id>/{drafts,evidence,scratch}/
 .kai/<pack>/<type>/<subtype>/<id>/{drafts,evidence,scratch}/
 .kai/<pack>/archive/<type>/<id>/...
-.kai/<pack>/archive/<type>/<subtype>/<id>/...
 ```
 
-The package's `publication.json` owns allowed types, subtypes, formats,
-authority, and privacy. Directories appear only on the first valid write.
-Unknown packages, types, subtypes, IDs, lifecycle names, arbitrary roots,
-links, junctions, nested Git roots, aliases, collisions, and path escapes are
+Each package's `publication.json` owns allowed vocabulary. Unknown paths,
+links, junctions, nested Git roots, aliases, collisions, and escapes are
 refused.
 
-## Publication and asset lifecycle
+## Re-onboarding unsupported workspaces
 
-Accepted knowledge mirrors the validated private route without the lifecycle
-segment:
+`kai-core-workspace-reonboard` performs an operator-controlled reset:
 
-```text
-.kai/engineering/documentation/architecture/auth-boundary/drafts/adr.md
-  -> docs/kai/engineering/documentation/architecture/auth-boundary/adr.md
-```
+1. preserve accepted `docs/kai/`;
+2. rename `.kai/` to an ignored timestamped `.kai-retired-*` backup;
+3. initialize a clean schema-6 workspace; and
+4. initialize optional runtimes again only when requested.
 
-Publication copies one exact accepted revision and records its hash, authority,
-subject version, provenance, and inputs. Scratch, unaccepted drafts, private
-evidence, arbitrary roots, and unsafe media destinations cannot publish.
-
-Execution, disposition, validity, and closure are independent. Finishing a Task
-does not freeze an asset's later validity. Current maintained assets name an
-owner and revalidation trigger; a stale or superseded asset is replaced through
-new authorized work. Parent closure checks required child states and required
-asset disposition and validity, never a Markdown board or backlog.
-
-## Coordination
-
-`.kai/core/runtime/coordination.sqlite` is the only coordination authority:
-
-```text
-Direction Current Goal
-`-- Epic
-    `-- <pack> Feature
-        `-- Requirement
-            `-- Task
-```
-
-Use the generated runtime:
-
-```text
-node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
-```
-
-Read surfaces such as `status`, `detail`, `context`, `messages`, `plan`, and
-`export` do not create authority. `plan` returns executable Tasks only and
-reports `automatic: false`.
+No Core or Project Management record is imported.
 
 ## Validate
 
 ```text
-node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
-node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
+node "<kai-core-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
+node "<kai-core-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
+node "<kai-project-management-plugin>/scripts/project.mjs" inspect --root "<workspace-root>"
 ```
 
-External placement requires exact registry pairing. Every write re-resolves
-real paths and refuses changed aliases, links, junctions, nested Git roots,
-collisions, or escapes.
+The final command is optional and succeeds with `storeExists: false` when
+Project Management has not been initialized.
 
 ---
 

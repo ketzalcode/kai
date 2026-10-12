@@ -14,9 +14,12 @@ kai/
 |-- CHANGELOG.md                      manually authored release notes
 |-- plugins/
 |   |-- kai-core/
+|   |-- kai-project-management/
 |   |-- kai-engineering/
 |   `-- kai-creative/
 |-- src/core/                         Core runtime source
+|-- src/project-management/           Optional planning runtime source
+|-- src/engineering/                  Engineering runtime source
 |-- src/creative/                     Creative runtime source
 |-- tools/                            build and release tooling
 |-- test/                             lean behavioral suite
@@ -27,9 +30,10 @@ kai/
 ```
 
 Agents and skills are declarative Markdown with YAML frontmatter. Their owning
-package directory is authoritative. Core may not depend on a department;
-Engineering and Creative may depend on Core but not on each other. Incubated
-source is excluded from discovery, validation, generation, and installation.
+package directory is authoritative. Core depends on no capability or
+department. Project Management may depend on Core. Engineering and Creative
+depend on Core but not on Project Management or each other. Incubated source is
+excluded from discovery, validation, generation, and installation.
 
 ## Authoring agents and skills
 
@@ -69,9 +73,9 @@ The active durable-role provider families are:
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation |
 | `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production |
 
-`kai-core` is deliberately agent-free. It supplies shared skills, workspace
-machinery, and coordination runtime to department agents and direct skill
-invocations.
+`kai-core` and `kai-project-management` are deliberately agent-free. Core
+supplies workspace and standalone Task/A2A execution. Project Management is an
+optional planning capability with its own private runtime.
 
 Use full responsibility words in scope: `frontend`, `backend`, and `software`,
 not `fe`, `be`, or `swe`. Choose the posture with this first-match rule:

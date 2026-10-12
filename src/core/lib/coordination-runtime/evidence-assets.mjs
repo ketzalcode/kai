@@ -6,7 +6,6 @@ import {parseTypedArtifactRoute} from '../workspace-layout.mjs';
 import {
   hasPublicationHistory,
   verifyAssetContent,
-  verifyParentCompletionApproval,
   verifyVerdict,
 } from './evidence-integrity.mjs';
 
@@ -47,7 +46,7 @@ function typedRoute(path, visibility) {
 }
 
 function subjectPack(item) {
-  return item.kind === 'epic' ? 'core' : item.body.pack;
+  return item.body.pack;
 }
 
 function artifactFor(context, tx, asset, verify = true) {
@@ -60,7 +59,7 @@ function artifactFor(context, tx, asset, verify = true) {
 }
 
 function accepted(context, tx, item, asset, artifact, approvalId) {
-  if (item.kind === 'task') requireReviews(tx, item);
+  requireReviews(tx, item);
   const approvals = effectiveApprovals(
     tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
     item,
@@ -69,28 +68,14 @@ function accepted(context, tx, item, asset, artifact, approvalId) {
     .filter(a => a.kind === 'completion' && a.authority.role === item.body.completion_authority);
   const decision = approvals.find(a => a.approval_id === approvalId);
   if (!decision || approvals.some(a => a.decision !== 'approved')
-    || (item.kind === 'task' && isProducingRun(item.body, decision.authority))
+    || isProducingRun(item.body, decision.authority)
     || decision.authority.runId === asset.producer.runId
     || artifact.criteria_ref !== criteriaRef(item, lookup(tx))
-    || (item.kind === 'task'
-      && (!contentEquals(decision.content_ref, artifact.content_ref)
-        || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)))) {
+    || !contentEquals(decision.content_ref, artifact.content_ref)
+    || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)) {
     fail('EVIDENCE_GAP', 'asset acceptance requires an effective independent decision for these exact bytes and criteria');
   }
-  if (item.kind === 'task') {
-    verifyVerdict(tx, item, decision, decision.authority);
-  } else {
-    const acceptedArtifacts = verifyParentCompletionApproval(
-      context,
-      tx,
-      item,
-      decision.evidence_refs,
-    );
-    if (!acceptedArtifacts.includes(artifact.artifact_id)) {
-      fail('EVIDENCE_GAP',
-        'parent asset acceptance requires this exact report artifact in the completion proof');
-    }
-  }
+  verifyVerdict(tx, item, decision, decision.authority);
   return decision;
 }
 
@@ -121,7 +106,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   const p = command.payload;
   const record = tx.get('asset', p.assetId);
   if (record?.subject?.kind !== item.kind || record.subject.id !== item.id) {
-    fail('EVIDENCE_GAP', 'asset transition must bind the owning hierarchy subject');
+    fail('EVIDENCE_GAP', 'asset transition must bind the owning Task');
   }
   const asset = record.body;
   if ((p.disposition !== asset.disposition && !DISPOSITION.get(asset.disposition).includes(p.disposition))
@@ -191,7 +176,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     if (asset.disposition !== 'working' || asset.validity !== 'current'
       || asset.completion_approval_id === null || !privateSource) {
       fail('INVALID_INPUT',
-        'publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject');
+        'publication requires an accepted retained draft on the mirrored typed route for this Task');
     }
   }
   if (p.supersedes !== null && (validity !== 'current'
@@ -233,7 +218,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (p.disposition === 'working') {
     const route = typedRoute(target, 'private').routes[0];
     if (route.pack !== subjectPack(item)) {
-      fail('INVALID_INPUT', 'working assets require a typed private route owned by the hierarchy subject pack');
+      fail('INVALID_INPUT', 'working assets require a typed private route owned by the Task pack');
     }
   } else if (p.disposition === 'personal' && !/\/personal(?:\/|$)/.test(target)) {
     fail('INVALID_INPUT', 'personal assets must remain in an explicitly personal typed path');

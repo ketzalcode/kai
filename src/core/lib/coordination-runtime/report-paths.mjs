@@ -5,7 +5,7 @@ import {
 import {randomUUID} from 'node:crypto';
 import {basename} from 'node:path';
 import {
-  RuntimeError, canonicalJson, subjectEquals, validateHierarchySubject,
+  RuntimeError, canonicalJson, subjectEquals, validateTaskSubject,
 } from './contract.mjs';
 import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {hash} from './report-safety.mjs';
@@ -14,7 +14,7 @@ import {normalized} from '../workspace-path-safety.mjs';
 import {parseTypedArtifactRoute, privateArtifactDirectory} from '../workspace-layout.mjs';
 
 function reportRoute(subject) {
-  validateHierarchySubject(subject, 'report subject');
+  validateTaskSubject(subject, 'report subject');
   const slug = subject.id.split(':').at(-1);
   return {
     pack: 'core',
@@ -47,7 +47,7 @@ function sameSubject(left, right) {
 
 export function reportPaths({root, subject, throughSeq, digest}) {
   workspaceManifest(root);
-  validateHierarchySubject(subject, 'report subject');
+  validateTaskSubject(subject, 'report subject');
   const relative = relativeDirectory(subject);
   const directory = assertWorkspacePath(root, relative);
   const indexPath = assertWorkspacePath(root, `${relative}/index.html`);

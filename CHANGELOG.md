@@ -4,6 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [23.0.0] - 2026-10-11
+
+### Added
+
+- Added the optional, agent-free `kai-project-management` package with four
+  focused planning skills and a bundled `project.mjs` runtime.
+- Added the private planning authority at
+  `.kai/project-management/runtime/project.sqlite` for Direction, Epic,
+  Feature, Requirement, priority, holds, planning dependencies, and closure.
+- Added deterministic Project Management handoff projection that emits a
+  standalone Core Task body with opaque `planning_refs` and never writes the
+  Core database.
+
+### Changed
+
+- Made Core Tasks standalone A2A execution units. They retain scope and
+  completion authorities, actors, dependencies, touched areas, evidence,
+  reviews, leases, recovery, and lifecycle without `feature_id`, `satisfies`,
+  planning priority, Direction alignment, or ancestor holds.
+- Split workspace/runtime authority as a clean schema-6 contract. Unsupported
+  workspaces re-onboard; no records are migrated or mirrored.
+- Made Engineering, Creative, and Nightshift operate from supplied approved
+  scope without Project Management. Nightshift now admits an approved goal and
+  bounded Tasks, with an optional supplied planning projection.
+- Expanded generation, marketplace metadata, publication vocabulary, catalog,
+  consumer packaging, and install order to four published plugins.
+- Folded the universal no-scope-expansion invariant into Core operating rules.
+  Durable scope and planning closure now belong to Project Management.
+- Made pack publication contracts choose asset disposition while Core only
+  records authorized asset transitions and provenance.
+
+### Removed
+
+- Removed Direction, Epic, Feature, and Requirement commands, records, views,
+  lifecycle rules, runtime modules, and active planning skills from Core.
+- Removed Core-owned planning publication lanes and the schema-5 workspace
+  shape. No compatibility alias or dual Task schema remains.
+- Removed the Core `definition-of-done`, `scope-discipline`, and
+  `asset-closing` skills. Domain evidence, Project Management closure, and
+  pack-owned publication contracts now own those decisions.
+
 ## [22.3.0] - 2026-10-11
 
 ### Changed
@@ -4641,6 +4682,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[23.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v23.0.0
 [22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0

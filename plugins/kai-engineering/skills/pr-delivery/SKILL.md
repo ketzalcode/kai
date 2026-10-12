@@ -29,7 +29,7 @@ work               and executes an authorized
 |---|---|
 | Was the work split into the right increments? | `pr-sizing` |
 | Is the code correct and well-designed? | `eng-reviewer-code` |
-| Is it ready to release? | `kai-core-definition-of-done` |
+| Is it ready to release? | The repository's explicit release process and current evidence |
 | How does it reach production? | The repository's explicit release process |
 | **How does this change physically reach `main`?** | **this skill** |
 
@@ -54,15 +54,14 @@ change twice.
 
 ### A `feat` on rung 3 is a smell - say so, do not block
 
-`kai-core-scope-discipline` keeps unapproved scope expansion conversational and
-routes durable proposals to named authority. So a **feature** with no issue and
-no coordination Task means the work was never scoped, and the PR is the first
-time anyone sees it.
+Unapproved scope expansion stays conversational until a named authority accepts
+it. So a **feature** with no issue and no coordination Task means the PR may be
+the first durable place anyone sees it.
 
 Report it and offer to file the issue. **Do not block** - a spike or an explicit
-operator "just do it" is legitimate. Consistent with how `kai-core-definition-of-done`
-treats a waiver: allowed, but *visible* rather than silent. A `fix`, `docs`, or
-`chore` on rung 3 is entirely normal and needs no remark.
+operator "just do it" is legitimate. Keep the missing anchor visible rather
+than silent. A `fix`, `docs`, or `chore` on rung 3 is entirely normal and needs
+no remark.
 
 ## 2 - Branch name
 
