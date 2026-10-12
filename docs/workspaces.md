@@ -115,6 +115,18 @@ Each package's `publication.json` owns allowed vocabulary. Unknown paths,
 links, junctions, nested Git roots, aliases, collisions, and escapes are
 refused.
 
+## Package navigation views
+
+Lifecycle and grouping never change durable artifact paths. When requested,
+Kai renders a read-only package view from the owning package's artifact
+inventory plus an optional supplied authority projection. Project Management
+status can provide versioned parent and lifecycle evidence without becoming a
+dependency of Engineering or Creative.
+
+Without a supplied lifecycle authority, the view reports `UNGROUPED` and
+`LIFECYCLE UNKNOWN`. Views are not persisted, and planning completion remains
+separate from artifact acceptance and publication.
+
 ## Re-onboarding unsupported workspaces
 
 `kai-core-workspace-reonboard` performs an operator-controlled reshape:

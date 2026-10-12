@@ -47,3 +47,9 @@ Direction, Epic, Feature, and Requirement share
 `proposed -> active -> completed`. Successful dispositions are `achieved`,
 `delivered`, and `satisfied`; `cancelled` and `superseded` remain truthful
 closure outcomes.
+
+`status` is a read-only projection. Its rows include each record version and a
+typed, versioned parent reference; the projection includes `through_seq`.
+Callers may supply that output to Core's package navigation convention without
+making another package depend on Project Management. The projection never
+claims artifact presence, acceptance, or publication.

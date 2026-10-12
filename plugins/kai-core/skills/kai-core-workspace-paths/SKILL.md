@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-paths
-description: "Use when resolving a Kai workspace, project binding, coordination database, or typed private/public artifact path."
+description: "Use when resolving a Kai workspace, project binding, coordination database, typed private/public artifact path, or caller-composed package navigation view."
 tools: [read, execute, search]
 ---
 
@@ -110,6 +110,15 @@ Creative vocabularies.
 Refuse an unknown pack, type, subtype, ID, lifecycle, arbitrary root, path
 escape, link, junction, case alias, nested Git root, collision, or destination
 outside the configured project. Path derivation never creates directories.
+
+## On-demand package navigation
+
+When the operator asks to navigate package artifacts by lifecycle or group,
+read [package workspace navigation](references/package-workspace-navigation.md).
+It defines one caller-composed, read-only view shape. The owning package
+supplies artifact inventory; an optional planning or other authority projection
+may supply lifecycle and grouping. Core does not call an optional package,
+persist an index, or infer missing state.
 
 ## Privacy
 

@@ -15,6 +15,8 @@ standalone Task execution and A2A coordination.
 
 The bundled `project.mjs` runtime also produces a deterministic handoff that
 proposes a standalone Core Task body without writing the Core database.
+Its read-only `status` projection exposes record versions, typed parent
+references, and a sequence basis for caller-composed package navigation.
 
 ## Install
 

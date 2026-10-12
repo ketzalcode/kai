@@ -167,6 +167,69 @@ test('Project Management owns an independent planning database and emits standal
   });
 });
 
+test('Project Management status exposes versioned parent projections for caller-composed views', async () => {
+  await withWorkspace(async workspace => {
+    const ids = await seedActiveHierarchy(workspace);
+    const result = await runCLI(['status', '--root', workspace]);
+    assert.equal(result.exitCode, 0, JSON.stringify(result.result));
+    assert.equal(result.result.status.schema_version, 2);
+
+    const rows = new Map(result.result.status.records.map(entry => [
+      `${entry.kind}/${entry.id}`,
+      entry,
+    ]));
+    assert.equal(result.result.status.through_seq > 0, true);
+    assert.equal(rows.get(`direction/${ids.direction}`).parent, null);
+    assert.deepEqual(rows.get(`epic/${ids.epic}`).parent, {
+      kind: 'direction',
+      id: ids.direction,
+      version: 2,
+    });
+    assert.deepEqual(rows.get(`feature/${ids.feature}`).parent, {
+      kind: 'epic',
+      id: ids.epic,
+      version: 2,
+    });
+    assert.deepEqual(rows.get(`requirement/${ids.requirement}`).parent, {
+      kind: 'feature',
+      id: ids.feature,
+      version: 2,
+    });
+  });
+});
+
+test('Core navigation convention keeps package paths stable and optional projections non-authoritative', () => {
+  const reference = readFileSync(join(
+    root,
+    'plugins',
+    'kai-core',
+    'skills',
+    'kai-core-workspace-paths',
+    'references',
+    'package-workspace-navigation.md',
+  ), 'utf8');
+  assert.match(reference, /Artifact paths never move because lifecycle or grouping changes/);
+  assert.match(reference, /supplied authoritative projection/i);
+  assert.match(reference, /LIFECYCLE UNKNOWN/);
+  assert.match(reference, /Do not persist the view/);
+  assert.match(reference, /planning completion does not accept or publish an artifact/i);
+  assert.match(reference, /A package never invokes or requires a sibling package/i);
+
+  const engineering = JSON.parse(readFileSync(
+    join(root, 'plugins', 'kai-engineering', 'publication.json'),
+    'utf8',
+  ));
+  const feature = engineering.entries.find(entry => entry.type === 'features');
+  assert.equal(
+    feature.privateForm,
+    '.kai/engineering/features/<id>/{drafts,evidence,scratch}',
+  );
+  assert.equal(
+    feature.publicForm,
+    'docs/kai/engineering/features/<id>/',
+  );
+});
+
 test('Project Management closure checks owned children and opaque required Task references', async () => {
   await withWorkspace(async workspace => {
     const ids = await seedActiveHierarchy(workspace);
