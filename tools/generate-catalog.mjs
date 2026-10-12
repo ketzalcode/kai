@@ -129,6 +129,12 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
+    title: 'Engineering automation',
+    blurb: 'Investigate platform feasibility and install approved repository automation without assuming one host or agent runtime.',
+    members: ['setup-agentic-repository-maintenance'],
+  },
+  {
+    kind: 'skill',
     title: 'Creative methods',
     blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
     members: [
