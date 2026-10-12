@@ -27,7 +27,7 @@ __pycache__/
 # >>> kai workspace (managed by kai-core-workspace-onboarding) >>>
 # This source repository does not commit operational Kai workspace state.
 /.kai/
-/.kai-retired-*/
+/.kai-migration-*/
 **/storageState*.json
 # <<< kai workspace <<<
 

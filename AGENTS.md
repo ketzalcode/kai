@@ -42,8 +42,9 @@ compatibility come from the relevant executable's `inspect`, not a model probe.
 Every shipped package uses task-local routes. The retired
 go-to-market and personal plugins are not compatibility aliases; do not
 reintroduce their eager declarations or dependency guards. Schema 6 has no
-generic personal lane. Unsupported workspaces are re-onboarded without
-importing historical private records.
+generic personal lane. Unsupported workspaces are reshaped into current
+package-owned paths: durable knowledge and artifacts migrate, current runtime
+state is rebuilt, and historical coordination records are not imported.
 
 The install owners are `kai-core`, `kai-contributor`,
 `kai-project-management`, `kai-engineering`, and `kai-creative`.

@@ -70,7 +70,7 @@ Resolve private schema-6 workspaces and validate Core publication vocabulary.
 | ---- | ------- | ------------ |
 | [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, coordination database, or typed private/public artifact path. |
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-6 workspace, or repairing its current private binding. |
-| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-6 workspace without importing historical records. |
+| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when reshaping an unsupported Kai workspace into the current schema-6 structure while preserving durable knowledge and artifacts. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable coordination decisions or reports. |
 
 ### Task execution
