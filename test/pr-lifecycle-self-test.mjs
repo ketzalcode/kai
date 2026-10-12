@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {existsSync, readFileSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
@@ -26,18 +26,7 @@ const readSkill = id => {
 
 test('software lead is the single active PR integration owner', () => {
   assert.equal(agents.has('eng-lead-software'), true);
-  assert.equal(agents.has('workflow-pull-request'), false);
-  assert.equal(agents.has('eng-lead-architecture'), false);
-  assert.equal(
-    existsSync(join(
-      root,
-      'incubator',
-      'kai-engineering',
-      'agents',
-      'eng-lead-architecture.agent.md',
-    )),
-    true,
-  );
+  assert.equal([...agents].some(([id]) => id.startsWith('workflow-')), false);
 
   const lead = readAgent('eng-lead-software');
   assert.match(lead, /Apply `kai-core-work-granting`/);
@@ -58,18 +47,6 @@ test('software lead is the single active PR integration owner', () => {
 test('builders stop at implementation evidence handoff', () => {
   assert.equal(agents.has('eng-builder-frontend'), true);
   assert.equal(agents.has('eng-builder-backend'), true);
-  assert.equal(agents.has('eng-builder-software'), false);
-  assert.equal(agents.has('eng-builder-platform'), false);
-  assert.equal(
-    existsSync(join(
-      root,
-      'incubator',
-      'kai-engineering',
-      'agents',
-      'eng-builder-platform.agent.md',
-    )),
-    true,
-  );
 
   for (const id of ['eng-builder-frontend', 'eng-builder-backend']) {
     const body = readAgent(id);
@@ -255,7 +232,6 @@ test('operating rules keep the assessor write boundary without another skill', (
   assert.match(operating, /An independent assessor reports findings and the smallest remediation/);
   assert.match(operating, /does\s+not create, edit, delete, format, regenerate/);
   assert.match(operating, /cannot independently accept or verify that\s+revision/);
-  assert.equal(skills.has('kai-core-no-self-remediation'), false);
 });
 
 test('pr-review skips docs and metadata-only changes', () => {
@@ -301,30 +277,6 @@ test('review comments use tone rules for questions and required outcomes', () =>
   assert.match(comments, /State a required outcome directly when evidence settles it/);
 });
 
-test('specialist and incident agents are removed from the active surface', () => {
-  for (const id of [
-    'eng-advisor-investigation',
-    'eng-reviewer-security',
-    'eng-reviewer-privacy-compliance',
-    'eng-reviewer-reliability',
-    'eng-reviewer-quality',
-    'workflow-incident-response',
-    'workflow-ship',
-  ]) {
-    assert.equal(agents.has(id), false);
-  }
-  assert.equal(
-    existsSync(join(
-      root,
-      'incubator',
-      'kai-engineering',
-      'agents',
-      'workflow-ship.agent.md',
-    )),
-    true,
-  );
-});
-
 test('README overview reflects the current engineering surface without copied counts', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
     .replace(/\r\n/g, '\n');
@@ -339,5 +291,4 @@ test('README overview reflects the current engineering surface without copied co
   );
   assert.match(overview, /generated \*\*\[agents (?:and|&) skills catalog\]/);
   assert.doesNotMatch(overview, /\|\s*\d+\s+(?:agents|skills)\s*\|/);
-  assert.doesNotMatch(overview, /eng-builder-software|workflow-ship|eng-reviewer-quality/);
 });

@@ -213,7 +213,6 @@ export function validateTaskBody(body, label = 'task') {
   }
 
   return body;
-  return body;
 }
 
 function validateCreate(command, expectedKind, bodyValidator) {

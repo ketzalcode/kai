@@ -681,7 +681,7 @@ function taskHandoff(database, input) {
     if (!TASK_ID.test(dependency.task)) {
       fail("INVALID_INPUT", `handoff.dependsOn[${index}].task is invalid`);
     }
-    if (!(/* @__PURE__ */ new Set(["in-review", "completed", "release-ready", "shipped"])).has(dependency.requires)) {
+    if (!(/* @__PURE__ */ new Set(["in-review", "completed"])).has(dependency.requires)) {
       fail("INVALID_INPUT", `handoff.dependsOn[${index}].requires is unsupported`);
     }
     if (dependencyIds.has(dependency.task)) {

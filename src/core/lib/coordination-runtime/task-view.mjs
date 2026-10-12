@@ -1,7 +1,7 @@
 import {projectContext} from './context.mjs';
 import {listAllRecords} from './store.mjs';
 
-const terminal = new Set(['completed', 'shipped', 'dropped']);
+const terminal = new Set(['completed', 'dropped']);
 
 function dependencyAttention(tasks, task) {
   const byId = new Map(tasks.map(record => [record.id, record]));

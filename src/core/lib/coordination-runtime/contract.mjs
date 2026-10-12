@@ -99,23 +99,11 @@ export const REVIEW_VERDICTS = new Set(['approved', 'changes-requested', 'blocke
 export const APPROVAL_KINDS = new Set([
   'scope',
   'completion',
-  'operator-deploy-start',
-  'operator-deploy-complete',
   'operator-recovery-resolution',
 ]);
 export const EVIDENCE_KINDS = new Set([
-  'dod-dimension',
-  'deployment',
-  'production-verification',
+  'verification',
   'recovery-reconciliation',
-]);
-export const DOD_DIMENSIONS = new Set([
-  'scope-true',
-  'verified',
-  'reviewed',
-  'shippable-safely',
-  'documented',
-  'coordination-closed',
 ]);
 
 const QUESTION_KINDS = new Set(['fact', 'decision', 'reply', 'action']);
@@ -372,13 +360,6 @@ function validateSupersedes(ids, ownId, label) {
   }
 }
 
-function validateDeploymentContext(value, label) {
-  assertExactKeys(value, new Set(['environment', 'environment_class', 'deployment_id']), label);
-  assertNonEmptyString(value.environment, `${label}.environment`);
-  if (value.environment_class !== 'production') invalid(`${label} must confirm a production environment`);
-  assertNonEmptyString(value.deployment_id, `${label}.deployment_id`);
-}
-
 function validateApprovalBody(body, label) {
   const required = new Set([
     'schema_version',
@@ -389,7 +370,6 @@ function validateApprovalBody(body, label) {
     'content_ref',
     'criteria_ref',
     'supersedes',
-    'deployment',
     'recovery',
     'decision',
     'evidence_refs',
@@ -427,12 +407,6 @@ function validateApprovalBody(body, label) {
   } else {
     validateSubjectRef(body.content_ref, `${label}.content_ref`);
     if (body.recovery !== null) invalid(`${label}.recovery is only for recovery resolution`);
-  }
-  if (body.kind === 'operator-deploy-start' || body.kind === 'operator-deploy-complete') {
-    if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task for deployment confirmation`);
-    validateDeploymentContext(body.deployment, `${label}.deployment`);
-  } else if (body.deployment !== null) {
-    invalid(`${label}.deployment is only for deployment confirmation`);
   }
   if (!new Set(['approved', 'rejected']).has(body.decision)) {
     invalid(`${label}.decision is unsupported`);
@@ -483,33 +457,13 @@ function validateEvidenceBody(body, label) {
   if (body.kind !== 'recovery-reconciliation' && body.content_ref === null) {
     invalid(`${label}.content_ref is required`);
   }
-  if (body.kind === 'dod-dimension') {
-    if (!DOD_DIMENSIONS.has(body.dimension)) invalid(`${label}.dimension is unsupported`);
-    if (!new Set(['clear', 'waived', 'gap']).has(body.outcome)) {
-      invalid(`${label}.outcome is unsupported for a DoD dimension`);
-    }
-    if (body.outcome === 'waived') assertNonEmptyString(body.reason, `${label}.reason`);
-  } else {
-    if (body.dimension !== null) invalid(`${label}.dimension must be null`);
-    if (!new Set(['passed', 'failed']).has(body.outcome)) {
-      invalid(`${label}.outcome is unsupported`);
-    }
+  if (body.dimension !== null) invalid(`${label}.dimension must be null`);
+  if (!new Set(['passed', 'failed']).has(body.outcome)) {
+    invalid(`${label}.outcome is unsupported`);
   }
   assertStringArray(body.evidence_refs, `${label}.evidence_refs`, {nonEmpty: true});
   assertNullableString(body.reason, `${label}.reason`);
-  if (body.kind === 'dod-dimension') {
-    assertExactKeys(body.data, new Set(), `${label}.data`);
-  } else if (body.kind === 'deployment') {
-    assertExactKeys(body.data, new Set(['environment', 'deployment_id']),
-      `${label}.data`);
-    assertNonEmptyString(body.data.environment, `${label}.data.environment`);
-    assertNonEmptyString(body.data.deployment_id, `${label}.data.deployment_id`);
-  } else if (body.kind === 'production-verification') {
-    assertExactKeys(body.data, new Set(['environment', 'deployment_id', 'checks']), `${label}.data`);
-    assertNonEmptyString(body.data.environment, `${label}.data.environment`);
-    assertNonEmptyString(body.data.deployment_id, `${label}.data.deployment_id`);
-    assertStringArray(body.data.checks, `${label}.data.checks`, {nonEmpty: true});
-  } else if (body.kind === 'recovery-reconciliation') {
+  if (body.kind === 'recovery-reconciliation') {
     assertExactKeys(body.data, new Set([
       'stale_lease_token', 'disposition', 'observed',
     ]), `${label}.data`);
@@ -631,7 +585,7 @@ function validateDecisionProvenance(value, label) {
 
 export function validateOperatorDecision(value) {
   const keys = ['source', 'reference', 'attributed_to', 'captured_at', 'subject', 'content_ref',
-    'criteria_ref', 'kind', 'decision', 'deployment', 'recovery'];
+    'criteria_ref', 'kind', 'decision', 'recovery'];
   assertExactKeys(value, new Set(keys), 'operator decision');
   validateDecisionProvenance(Object.fromEntries(keys.slice(0, 4).map(key => [key, value[key]])), 'operator decision provenance');
   validateTaskSubject(value.subject, 'operator decision subject');

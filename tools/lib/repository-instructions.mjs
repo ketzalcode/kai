@@ -1,5 +1,5 @@
 export const OPEN_REPOSITORY_INSTRUCTIONS =
-  '<!-- >>> kai repository instructions (managed by workflow-workspace-init) >>> -->';
+  '<!-- >>> kai repository instructions (managed by kai-core-workspace-onboarding) >>> -->';
 export const CLOSE_REPOSITORY_INSTRUCTIONS =
   '<!-- <<< kai repository instructions <<< -->';
 

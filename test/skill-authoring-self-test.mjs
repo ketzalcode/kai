@@ -134,6 +134,15 @@ test('Core remains an agent-free skills and runtime package', () => {
     agentTaxonomyErrors({id: 'core-coordinator-delivery', pack: 'core'}),
     ['kai-core is an agent-free skills and runtime package'],
   );
+  assert.match(
+    agentTaxonomyErrors({id: 'workflow-release', pack: 'engineering'}).join('\n'),
+    /not supported/,
+  );
+  assert.match(
+    agentTaxonomyErrors({id: 'principal-engineer-career-mentor', pack: 'engineering'})
+      .join('\n'),
+    /not supported/,
+  );
 });
 
 test('authoring validation rejects collected Core preflight routes', () => {

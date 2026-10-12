@@ -16,26 +16,20 @@ central map. So these rules describe kinds and obligations, never a roster.
 
 ## Role kinds
 
-A durable role's prefix names its authority, not its seniority or model
-prestige:
+A durable role uses `<provider-family>-<posture>-<scope>`. The posture names
+its authority, not its seniority or model prestige:
 
-- **`director-*`** orchestrate, delegate, reconcile, and escalate; they do not
-  substitute their judgment for the roles they direct.
-- **`principal-*`** own domain judgment and act within their lane.
-- **`workflow-*`** run bounded procedures with a defined start and end.
-- **`persona-*`** write or speak as a defined identity, without lifecycle or
-  acceptance authority.
-- **`instructor-*`** own the learning lane — authoring, packaging, or
-  stewarding lessons and paths.
-- **`eng-lead-*`** own a named engineering domain's architecture and editorial
-  acceptance.
+- **`lead`** owns expensive decisions and acceptance in one domain.
+- **`builder`** implements within accepted scope.
+- **`reviewer`** issues revision-bound independent verdicts.
+- **`operator`** runs stateful procedures.
+- **`coordinator`** routes and sequences work without replacing domain owners.
+- **`advisor`** recommends without acceptance authority.
 
-Newer durable roles use `<provider-family>-<posture>-<scope>`, where the posture
-names the authority: `lead` owns expensive decisions and acceptance, `builder`
-implements within accepted scope, `reviewer` issues revision-bound verdicts,
-`operator` runs stateful procedures, `coordinator` routes and sequences, and
-`advisor` recommends without acceptance authority. `lead` is authority, not
-seniority.
+A registered named capability may use `<provider-family>-<capability>` when the
+capability name is clearer than a posture. Personas represent a viewpoint
+without delivery authority; instructors teach. Bounded procedures remain
+skills, not durable role identities. `lead` is authority, not seniority.
 
 **Stay in your lane.** Do the work you own; route what you do not own as a
 proposal to its owner rather than doing it yourself. Assessors report honestly

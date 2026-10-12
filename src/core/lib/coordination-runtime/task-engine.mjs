@@ -8,9 +8,6 @@ import {
 import {
   completionApproval,
   recoveryResolution,
-  requireDeploymentEvidence,
-  requireOperatorApproval,
-  requireReleaseEvidence,
   requireReviews,
 } from './acceptance.mjs';
 import {
@@ -26,26 +23,14 @@ export const GRANTABLE_STATES = new Set([
   'ready',
   'in-progress',
   'in-review',
-  'release-ready',
-  'deploying',
-  'production-verification',
-]);
-export const SHIP_STATES = new Set([
-  'release-ready',
-  'deploying',
-  'production-verification',
 ]);
 const ALLOWED_TRANSITIONS = new Map([
   ['proposed', new Set(['dropped'])],
   ['ready', new Set(['blocked', 'dropped'])],
   ['in-progress', new Set(['in-review', 'blocked', 'dropped'])],
-  ['in-review', new Set(['in-progress', 'completed', 'release-ready', 'blocked', 'dropped'])],
-  ['release-ready', new Set(['deploying', 'blocked', 'dropped'])],
-  ['deploying', new Set(['production-verification', 'blocked', 'dropped'])],
-  ['production-verification', new Set(['shipped', 'blocked', 'dropped'])],
+  ['in-review', new Set(['in-progress', 'completed', 'blocked', 'dropped'])],
   ['blocked', new Set(['dropped'])],
   ['completed', new Set()],
-  ['shipped', new Set()],
   ['dropped', new Set()],
 ]);
 
@@ -70,21 +55,10 @@ function requireKnownTaskRoles(body, authority) {
 
 export function taskStateSatisfies(task, requirement) {
   if (requirement === 'in-review') {
-    return new Set([
-      'in-review', 'completed', 'release-ready', 'deploying',
-      'production-verification', 'shipped',
-    ]).has(task.body.state);
+    return new Set(['in-review', 'completed']).has(task.body.state);
   }
-  if (requirement === 'completed') {
-    return task.body.delivery_class === 'knowledge' && task.body.state === 'completed';
-  }
-  if (requirement === 'release-ready') {
-    return task.body.delivery_class !== 'knowledge'
-      && new Set([
-        'release-ready', 'deploying', 'production-verification', 'shipped',
-      ]).has(task.body.state);
-  }
-  return task.body.delivery_class !== 'knowledge' && task.body.state === 'shipped';
+  if (requirement === 'completed') return task.body.state === 'completed';
+  return false;
 }
 
 function dependencyStatus(tx, task) {
@@ -214,45 +188,9 @@ function requireTransition(tx, task, command, authority, to) {
     requireImmutableSubject(task);
   }
   if (to === 'completed') {
-    if (task.body.delivery_class !== 'knowledge') {
-      fail('INVALID_INPUT', 'completed is reserved for knowledge Tasks');
-    }
     requireImmutableSubject(task);
     requireReviews(tx, task);
     return completionApproval(tx, task);
-  }
-  if (to === 'release-ready') {
-    if (task.body.delivery_class === 'knowledge') {
-      fail('INVALID_INPUT', 'knowledge Tasks do not enter release-ready');
-    }
-    if (command.actor.role !== 'workflow-ship') {
-      fail('AUTHORITY_REQUIRED', 'workflow-ship owns release readiness');
-    }
-    requireImmutableSubject(task);
-    requireReviews(tx, task);
-    const approval = completionApproval(tx, task);
-    requireReleaseEvidence(tx, task);
-    return approval;
-  }
-  if (to === 'deploying') {
-    if (command.actor.role !== 'workflow-ship') {
-      fail('AUTHORITY_REQUIRED', 'workflow-ship owns deployment recording');
-    }
-    requireOperatorApproval(tx, task, 'operator-deploy-start');
-  }
-  if (to === 'production-verification') {
-    if (command.actor.role !== 'workflow-ship') {
-      fail('AUTHORITY_REQUIRED', 'workflow-ship owns deployment recording');
-    }
-    requireOperatorApproval(tx, task, 'operator-deploy-complete');
-    requireDeploymentEvidence(tx, task, 'deployment');
-  }
-  if (to === 'shipped') {
-    if (command.actor.role !== 'workflow-ship') {
-      fail('AUTHORITY_REQUIRED', 'workflow-ship owns shipment recording');
-    }
-    requireDeploymentEvidence(tx, task, 'deployment');
-    requireDeploymentEvidence(tx, task, 'production-verification');
   }
   return null;
 }
@@ -274,10 +212,6 @@ function transitionBody(tx, task, command, authority, to, at) {
   } else if (to === 'in-review') {
     nextRole = task.body.review_requirements[0]?.role
       ?? task.body.completion_authority;
-  } else if (to === 'release-ready') {
-    nextRole = 'operator';
-  } else if (to === 'deploying' || to === 'production-verification') {
-    nextRole = 'workflow-ship';
   } else if (TASK_TERMINAL_STATES.has(to)) {
     nextRole = null;
   }
@@ -367,7 +301,7 @@ function handleTaskUpdate(current, tx, command, authority) {
   const next = {...current.body, ...changes};
   const acceptedState = current.body.state === 'blocked'
     ? current.body.resume_state : current.body.state;
-  if ((TASK_TERMINAL_STATES.has(acceptedState) || SHIP_STATES.has(acceptedState))
+  if (TASK_TERMINAL_STATES.has(acceptedState)
     && criteriaRef({...current, body: next}, (kind, id) => tx.get(kind, id))
       !== criteriaRef(current, (kind, id) => tx.get(kind, id))) {
     fail('INVALID_INPUT', 'accepted criteria are frozen; record changed requirements as new work');
@@ -564,9 +498,6 @@ function handleTaskHandoff(current, tx, command, authority) {
 
 function requireRestorationAuthority(task, command, authority) {
   requireHostActionGrant(command, authority, 'task.restore');
-  if (SHIP_STATES.has(task.body.resume_state) && command.actor.role !== 'workflow-ship') {
-    fail('AUTHORITY_REQUIRED', `workflow-ship must restore ${task.body.resume_state}`);
-  }
 }
 
 function handleTaskRestore(current, tx, command, authority) {

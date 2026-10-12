@@ -1,4 +1,4 @@
-<!-- >>> kai repository instructions (managed by workflow-workspace-init) >>> -->
+<!-- >>> kai repository instructions (managed by kai-core-workspace-onboarding) >>> -->
 ## Communication style
 
 Think broadly and communicate narrowly. Report decisions, blockers, failures,

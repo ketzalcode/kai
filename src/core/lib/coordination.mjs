@@ -10,32 +10,21 @@
 
 // Canonical lifecycle states.
 export const TASK_LIFECYCLE = new Set([
-  'proposed', 'ready', 'in-progress', 'in-review', 'blocked', 'completed',
-  'release-ready', 'deploying', 'production-verification', 'shipped', 'dropped',
+  'proposed', 'ready', 'in-progress', 'in-review', 'blocked', 'completed', 'dropped',
 ]);
 
 // States at or past in-review require a change_ref bound to the implementation.
 export const TASK_NEEDS_CHANGE_REF = new Set([
-  'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
+  'in-review', 'completed',
 ]);
 
 export const TASK_DEPENDENCY_STATES = new Set([
   'in-review',
   'completed',
-  'release-ready',
-  'shipped',
 ]);
 
 // States that are finished: no further role action is expected.
-export const TASK_TERMINAL_STATES = new Set(['shipped', 'completed', 'dropped']);
-
-// Deployment is a human act (see kai-core-operating-rules), so these states are
-// waiting on the operator by definition, not on any kai role.
-export const TASK_OPERATOR_GATED_STATES = new Set([
-  'release-ready',
-  'deploying',
-  'production-verification',
-]);
+export const TASK_TERMINAL_STATES = new Set(['completed', 'dropped']);
 
 export const isNull = (v) => v === undefined || v === '' || v === 'null' || v === '~' || v === '—';
 

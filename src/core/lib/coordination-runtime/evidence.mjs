@@ -4,7 +4,7 @@ import {
 } from './contract.mjs';
 import {
   effectiveApprovals, effectiveEvidence, effectiveReviews,
-  recoveryResolution, requireOperatorApproval,
+  recoveryResolution,
 } from './acceptance.mjs';
 import {
   leaseIsLive, requireActingAuthority, requireActorAvailable, requireHostActionGrant,
@@ -96,7 +96,7 @@ function operatorDecision(context, command) {
     fail('AUTHORITY_REQUIRED', 'an actual host interaction or attributed supplied operator decision is required');
   }
   const body = command.payload.body;
-  for (const key of ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery']) {
+  for (const key of ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'recovery']) {
     if (canonicalJson(proof[key]) !== canonicalJson(body[key])) {
       fail('AUTHORITY_REQUIRED', 'operator decision does not bind the exact approval claim');
     }
@@ -290,14 +290,10 @@ export function recordApproval(store, command, authority) {
       recorded_at_subject_version: command.expectedVersion,
       ...(provenance ? {provenance} : {}),
     };
-    const effective = effectiveApprovals([
+    effectiveApprovals([
       ...tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
       body,
     ], item, lookup(tx));
-    const deployments = effective.filter(a => a.deployment !== null && a.decision === 'approved');
-    if (new Set(deployments.map(a => canonicalJson(a.deployment))).size > 1) {
-      fail('AUTHORITY_REQUIRED', 'operator confirmations disagree about the production deployment');
-    }
     putNew(tx, 'approval', b.approval_id, item, body);
     if (recovery && b.decision === 'approved') recoveryResolution(tx, item, b.approval_id);
   });
@@ -318,7 +314,7 @@ export function registerEvidence(store, command, capture) {
     }
     currentBinding(b, item, tx, {recovery});
     if (!recovery) {
-      subjectArtifact(context, tx, item, b.content_ref, b.outcome === 'waived' ? command.actor : null);
+      subjectArtifact(context, tx, item, b.content_ref);
     }
     const artifacts = verifyReferences(context, tx, item, b.evidence_refs, {recovery});
     let observation = null;
@@ -326,12 +322,11 @@ export function registerEvidence(store, command, capture) {
       if (!context.verifyCapture) fail('INVALID_INPUT', 'agent paste or a source label is not observed capture');
       observation = clone(context.verifyCapture(clone(command), capture));
       validateCapture(observation);
-      const positive = new Set(['passed', 'clear', 'waived']).has(b.outcome);
+      const positive = b.outcome === 'passed';
       if (observation.command_digest !== commandDigest(command)
         || !sameActor(observation.actor, command.actor)
         || (positive && (observation.exit_code !== 0 || observation.checks.length === 0))
-        || observation.captured_at !== b.created_at || Date.parse(observation.captured_at) > Date.now()
-        || (b.kind === 'production-verification' && b.data.checks.some(check => !observation.checks.includes(check)))) {
+        || observation.captured_at !== b.created_at || Date.parse(observation.captured_at) > Date.now()) {
         fail('EVIDENCE_GAP', 'capture does not cover this actor, result, time, and complete claimed checks');
       }
       const privacy = {public: 0, internal: 1, confidential: 2, personal: 3};
@@ -341,24 +336,8 @@ export function registerEvidence(store, command, capture) {
       if (recovery && Date.parse(observation.captured_at) < Date.parse(item.body.lease.expires_at)) {
         fail('EVIDENCE_GAP', 'recovery capture predates lease expiry');
       }
-    } else if (!new Set(['gap', 'failed']).has(b.outcome) || recovery) {
-      fail('EVIDENCE_GAP', 'a declaration cannot establish observed success, waiver, or recovery');
-    }
-    if (b.outcome === 'waived') {
-      requireNamedAuthority(tx, command, authority, command.kind, item.body.completion_authority);
-      independent(item, command.actor);
-      if (artifacts.some(a => a.producer.runId === command.actor.runId)) {
-        fail('AUTHORITY_REQUIRED', 'a producing run cannot waive verification of its own supporting artifacts');
-      }
-    }
-    if (b.kind === 'deployment' || b.kind === 'production-verification') {
-      const start = requireOperatorApproval(tx, item, 'operator-deploy-start');
-      const complete = requireOperatorApproval(tx, item, 'operator-deploy-complete');
-      if (canonicalJson(start.deployment) !== canonicalJson(complete.deployment)
-        || b.data.environment !== start.deployment.environment
-        || b.data.deployment_id !== start.deployment.deployment_id) {
-        fail('AUTHORITY_REQUIRED', 'capture must match the operator-confirmed production deployment');
-      }
+    } else if (b.outcome !== 'failed' || recovery) {
+      fail('EVIDENCE_GAP', 'a declaration cannot establish observed success or recovery');
     }
     const body = {...b, provenance: {tier: command.payload.tier, capture: observation}};
     if (!recovery) {

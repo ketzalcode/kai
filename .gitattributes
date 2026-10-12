@@ -1,7 +1,6 @@
-# kai keeps its dependency-free tooling scripts and the generated golden fixtures
-# at LF line endings so the workspace-doctor and host-contract snapshots compare
-# deterministically across platforms (and `--update` output matches what's
-# committed regardless of the contributor's OS).
+# Kai keeps JavaScript source, tests, fixtures, and generated metadata at LF so
+# deterministic builds and behavioral checks compare the same bytes on every
+# contributor platform.
 src/**/*.mjs text eol=lf
 src/**/*.js text eol=lf
 tools/**/*.mjs text eol=lf

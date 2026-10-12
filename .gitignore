@@ -24,10 +24,10 @@ __pycache__/
 .env.local
 *.local
 
-# >>> kai workspace (managed by workflow-workspace-init) >>>
+# >>> kai workspace (managed by kai-core-workspace-onboarding) >>>
 # This source repository does not commit operational Kai workspace state.
 /.kai/
-/kai/
+/.kai-retired-*/
 **/storageState*.json
 # <<< kai workspace <<<
 

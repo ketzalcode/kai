@@ -10,7 +10,7 @@ Use this skill only for a deliberate clean reset to the current workspace
 contract. It is not a migration. Require explicit operator confirmation after
 showing the exact paths and commands that will change.
 
-Before resolving workspace paths, Load `kai-core-workspace-paths` and use its
+Before resolving workspace paths, apply `kai-core-workspace-paths` and use its
 current resolution and refusal contract. If that Core skill is unavailable,
 ordinary single-shot domain assistance may
 continue, but do not coordinate work, alter `.kai` state, or re-onboard. Tell
@@ -95,7 +95,24 @@ Use a UTC basic timestamp in `YYYYMMDDTHHMMSSZ` form. Refuse a collision.
 5. Do not open any file beneath the retired directory after the rename.
 6. Run `kai-core-workspace-onboarding` with the same resolved placement and
    target projects to create a new schema-6 workspace.
-7. Run the current workspace doctor and coordination inspect commands.
+7. Verify the clean Core workspace:
+
+   ```text
+   node "<kai-core-plugin>/scripts/workspace-doctor.mjs" \
+     --root "<workspace-root>"
+   node "<kai-core-plugin>/scripts/coordinate.mjs" inspect \
+     --root "<workspace-root>"
+   ```
+
+8. Core onboarding creates no optional runtime. Initialize Project Management
+   afterward only when the operator explicitly requested it:
+
+   ```text
+   node "<kai-project-management-plugin>/scripts/project.mjs" init \
+     --root "<workspace-root>"
+   ```
+
+   Never infer optional package state from the retired workspace.
 
 If onboarding fails, preserve both `docs/kai/` and the retired backup. Report
 the failure; do not restore or import historical private state automatically.

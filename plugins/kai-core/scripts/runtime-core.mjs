@@ -32,26 +32,17 @@ var TASK_LIFECYCLE = /* @__PURE__ */ new Set([
   "in-review",
   "blocked",
   "completed",
-  "release-ready",
-  "deploying",
-  "production-verification",
-  "shipped",
   "dropped"
 ]);
 var TASK_NEEDS_CHANGE_REF = /* @__PURE__ */ new Set([
   "in-review",
-  "release-ready",
-  "deploying",
-  "production-verification",
-  "shipped"
+  "completed"
 ]);
 var TASK_DEPENDENCY_STATES = /* @__PURE__ */ new Set([
   "in-review",
-  "completed",
-  "release-ready",
-  "shipped"
+  "completed"
 ]);
-var TASK_TERMINAL_STATES = /* @__PURE__ */ new Set(["shipped", "completed", "dropped"]);
+var TASK_TERMINAL_STATES = /* @__PURE__ */ new Set(["completed", "dropped"]);
 var isNull = (v) => v === void 0 || v === "" || v === "null" || v === "~" || v === "\u2014";
 var unquote = (s) => {
   const t = (s ?? "").trim();
@@ -145,7 +136,7 @@ function escapesRoot(root, candidate) {
   const rel = relative(canonicalPath(root), canonicalPath(candidate));
   return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
 }
-function inspectPrivateLanes(root, lanes = [".kai/runs", ".kai/review", ".kai/archive", ".kai/personal"]) {
+function inspectPrivateLanes(root, lanes) {
   const gitRoots = [];
   const symbolicLinks = [];
   const unreadable = [];
@@ -1629,7 +1620,6 @@ function validateTaskBody(body, label = "task") {
     invalid2(`${label}.lease.version_at_grant is invalid`);
   }
   return body;
-  return body;
 }
 function validateCreate(command2, expectedKind, bodyValidator) {
   if (command2.recordKind !== expectedKind) {
@@ -1882,23 +1872,11 @@ var REVIEW_VERDICTS = /* @__PURE__ */ new Set(["approved", "changes-requested", 
 var APPROVAL_KINDS = /* @__PURE__ */ new Set([
   "scope",
   "completion",
-  "operator-deploy-start",
-  "operator-deploy-complete",
   "operator-recovery-resolution"
 ]);
 var EVIDENCE_KINDS = /* @__PURE__ */ new Set([
-  "dod-dimension",
-  "deployment",
-  "production-verification",
+  "verification",
   "recovery-reconciliation"
-]);
-var DOD_DIMENSIONS = /* @__PURE__ */ new Set([
-  "scope-true",
-  "verified",
-  "reviewed",
-  "shippable-safely",
-  "documented",
-  "coordination-closed"
 ]);
 var QUESTION_KINDS = /* @__PURE__ */ new Set(["fact", "decision", "reply", "action"]);
 var MESSAGE_KINDS = /* @__PURE__ */ new Set(["question", "answer", "handoff", "recovery"]);
@@ -2157,12 +2135,6 @@ function validateSupersedes(ids, ownId, label) {
     if (id === ownId) invalid2(`${label} cannot supersede itself`);
   }
 }
-function validateDeploymentContext(value, label) {
-  assertExactKeys(value, /* @__PURE__ */ new Set(["environment", "environment_class", "deployment_id"]), label);
-  assertNonEmptyString(value.environment, `${label}.environment`);
-  if (value.environment_class !== "production") invalid2(`${label} must confirm a production environment`);
-  assertNonEmptyString(value.deployment_id, `${label}.deployment_id`);
-}
 function validateApprovalBody(body, label) {
   const required2 = /* @__PURE__ */ new Set([
     "schema_version",
@@ -2173,7 +2145,6 @@ function validateApprovalBody(body, label) {
     "content_ref",
     "criteria_ref",
     "supersedes",
-    "deployment",
     "recovery",
     "decision",
     "evidence_refs",
@@ -2213,12 +2184,6 @@ function validateApprovalBody(body, label) {
   } else {
     validateSubjectRef(body.content_ref, `${label}.content_ref`);
     if (body.recovery !== null) invalid2(`${label}.recovery is only for recovery resolution`);
-  }
-  if (body.kind === "operator-deploy-start" || body.kind === "operator-deploy-complete") {
-    if (body.subject.kind !== "task") invalid2(`${label}.subject must be a Task for deployment confirmation`);
-    validateDeploymentContext(body.deployment, `${label}.deployment`);
-  } else if (body.deployment !== null) {
-    invalid2(`${label}.deployment is only for deployment confirmation`);
   }
   if (!(/* @__PURE__ */ new Set(["approved", "rejected"])).has(body.decision)) {
     invalid2(`${label}.decision is unsupported`);
@@ -2268,36 +2233,13 @@ function validateEvidenceBody(body, label) {
   if (body.kind !== "recovery-reconciliation" && body.content_ref === null) {
     invalid2(`${label}.content_ref is required`);
   }
-  if (body.kind === "dod-dimension") {
-    if (!DOD_DIMENSIONS.has(body.dimension)) invalid2(`${label}.dimension is unsupported`);
-    if (!(/* @__PURE__ */ new Set(["clear", "waived", "gap"])).has(body.outcome)) {
-      invalid2(`${label}.outcome is unsupported for a DoD dimension`);
-    }
-    if (body.outcome === "waived") assertNonEmptyString(body.reason, `${label}.reason`);
-  } else {
-    if (body.dimension !== null) invalid2(`${label}.dimension must be null`);
-    if (!(/* @__PURE__ */ new Set(["passed", "failed"])).has(body.outcome)) {
-      invalid2(`${label}.outcome is unsupported`);
-    }
+  if (body.dimension !== null) invalid2(`${label}.dimension must be null`);
+  if (!(/* @__PURE__ */ new Set(["passed", "failed"])).has(body.outcome)) {
+    invalid2(`${label}.outcome is unsupported`);
   }
   assertStringArray(body.evidence_refs, `${label}.evidence_refs`, { nonEmpty: true });
   assertNullableString(body.reason, `${label}.reason`);
-  if (body.kind === "dod-dimension") {
-    assertExactKeys(body.data, /* @__PURE__ */ new Set(), `${label}.data`);
-  } else if (body.kind === "deployment") {
-    assertExactKeys(
-      body.data,
-      /* @__PURE__ */ new Set(["environment", "deployment_id"]),
-      `${label}.data`
-    );
-    assertNonEmptyString(body.data.environment, `${label}.data.environment`);
-    assertNonEmptyString(body.data.deployment_id, `${label}.data.deployment_id`);
-  } else if (body.kind === "production-verification") {
-    assertExactKeys(body.data, /* @__PURE__ */ new Set(["environment", "deployment_id", "checks"]), `${label}.data`);
-    assertNonEmptyString(body.data.environment, `${label}.data.environment`);
-    assertNonEmptyString(body.data.deployment_id, `${label}.data.deployment_id`);
-    assertStringArray(body.data.checks, `${label}.data.checks`, { nonEmpty: true });
-  } else if (body.kind === "recovery-reconciliation") {
+  if (body.kind === "recovery-reconciliation") {
     assertExactKeys(body.data, /* @__PURE__ */ new Set([
       "stale_lease_token",
       "disposition",
@@ -2449,7 +2391,6 @@ function validateOperatorDecision(value) {
     "criteria_ref",
     "kind",
     "decision",
-    "deployment",
     "recovery"
   ];
   assertExactKeys(value, new Set(keys), "operator decision");
@@ -4529,12 +4470,7 @@ function effectiveApprovals(approvals, record2, lookup5) {
   );
 }
 function evidenceScope(record2) {
-  return canonicalJson([
-    record2.kind,
-    record2.dimension,
-    record2.data.environment ?? null,
-    record2.data.deployment_id ?? null
-  ]);
+  return canonicalJson([record2.kind, record2.dimension]);
 }
 function effectiveEvidence(evidence, record2, lookup5) {
   return effectiveRecords(
@@ -4816,42 +4752,6 @@ function completionApproval(tx, item) {
   }
   independent2.forEach((approval) => verifyVerdict(tx, item, approval, approval.authority));
   return independent2[0];
-}
-function requireReleaseEvidence(tx, item) {
-  taskOnly(item, "release evidence");
-  const evidence = effectiveEvidence(bodies(tx, "evidence", item), item, lookup2(tx)).filter((record2) => record2.kind === "dod-dimension");
-  for (const dimension of DOD_DIMENSIONS) {
-    const matching = evidence.filter((record2) => record2.dimension === dimension);
-    if (matching.length === 0 || matching.some((record2) => record2.outcome === "gap")) {
-      fail5("EVIDENCE_GAP", `task/${item.id} lacks accepted ${dimension} evidence for its current criteria`);
-    }
-    matching.forEach((record2) => verifyVerdict(tx, item, record2));
-  }
-}
-function requireOperatorApproval(tx, item, kind) {
-  taskOnly(item, "deployment approval");
-  const approvals = effectiveApprovals(bodies(tx, "approval", item), item, lookup2(tx)).filter((approval) => approval.kind === kind && approval.authority.role === "operator");
-  if (approvals.length === 0 || approvals.some((approval) => approval.decision !== "approved")) {
-    fail5("AUTHORITY_REQUIRED", `task/${item.id} lacks effective ${kind} operator confirmation`);
-  }
-  if (new Set(approvals.map((approval) => canonicalJson(approval.deployment))).size !== 1) {
-    fail5("AUTHORITY_REQUIRED", "operator confirmations disagree about the production deployment");
-  }
-  approvals.forEach((approval) => verifyVerdict(tx, item, approval, approval.authority));
-  return approvals[0];
-}
-function requireDeploymentEvidence(tx, item, kind) {
-  taskOnly(item, "deployment evidence");
-  const start = requireOperatorApproval(tx, item, "operator-deploy-start");
-  const complete = requireOperatorApproval(tx, item, "operator-deploy-complete");
-  if (canonicalJson(start.deployment) !== canonicalJson(complete.deployment)) {
-    fail5("AUTHORITY_REQUIRED", "deployment completion does not match the confirmed production start");
-  }
-  const evidence = effectiveEvidence(bodies(tx, "evidence", item), item, lookup2(tx)).filter((record2) => record2.kind === kind && record2.data.environment === start.deployment.environment && record2.data.deployment_id === start.deployment.deployment_id);
-  if (evidence.length === 0 || evidence.some((record2) => record2.outcome !== "passed")) {
-    fail5("EVIDENCE_GAP", `task/${item.id} lacks passed ${kind} evidence for the confirmed production deployment`);
-  }
-  evidence.forEach((record2) => verifyVerdict(tx, item, record2));
 }
 function recoveryResolution(tx, item, approvalId) {
   taskOnly(item, "recovery resolution");
@@ -5431,27 +5331,15 @@ import { randomUUID as randomUUID2 } from "node:crypto";
 var GRANTABLE_STATES = /* @__PURE__ */ new Set([
   "ready",
   "in-progress",
-  "in-review",
-  "release-ready",
-  "deploying",
-  "production-verification"
-]);
-var SHIP_STATES = /* @__PURE__ */ new Set([
-  "release-ready",
-  "deploying",
-  "production-verification"
+  "in-review"
 ]);
 var ALLOWED_TRANSITIONS = /* @__PURE__ */ new Map([
   ["proposed", /* @__PURE__ */ new Set(["dropped"])],
   ["ready", /* @__PURE__ */ new Set(["blocked", "dropped"])],
   ["in-progress", /* @__PURE__ */ new Set(["in-review", "blocked", "dropped"])],
-  ["in-review", /* @__PURE__ */ new Set(["in-progress", "completed", "release-ready", "blocked", "dropped"])],
-  ["release-ready", /* @__PURE__ */ new Set(["deploying", "blocked", "dropped"])],
-  ["deploying", /* @__PURE__ */ new Set(["production-verification", "blocked", "dropped"])],
-  ["production-verification", /* @__PURE__ */ new Set(["shipped", "blocked", "dropped"])],
+  ["in-review", /* @__PURE__ */ new Set(["in-progress", "completed", "blocked", "dropped"])],
   ["blocked", /* @__PURE__ */ new Set(["dropped"])],
   ["completed", /* @__PURE__ */ new Set()],
-  ["shipped", /* @__PURE__ */ new Set()],
   ["dropped", /* @__PURE__ */ new Set()]
 ]);
 function fail10(code, message, retryable = false) {
@@ -5473,27 +5361,10 @@ function requireKnownTaskRoles(body, authority) {
 }
 function taskStateSatisfies(task, requirement) {
   if (requirement === "in-review") {
-    return (/* @__PURE__ */ new Set([
-      "in-review",
-      "completed",
-      "release-ready",
-      "deploying",
-      "production-verification",
-      "shipped"
-    ])).has(task.body.state);
+    return (/* @__PURE__ */ new Set(["in-review", "completed"])).has(task.body.state);
   }
-  if (requirement === "completed") {
-    return task.body.delivery_class === "knowledge" && task.body.state === "completed";
-  }
-  if (requirement === "release-ready") {
-    return task.body.delivery_class !== "knowledge" && (/* @__PURE__ */ new Set([
-      "release-ready",
-      "deploying",
-      "production-verification",
-      "shipped"
-    ])).has(task.body.state);
-  }
-  return task.body.delivery_class !== "knowledge" && task.body.state === "shipped";
+  if (requirement === "completed") return task.body.state === "completed";
+  return false;
 }
 function dependencyStatus(tx, task) {
   const pending = [];
@@ -5629,45 +5500,9 @@ function requireTransition(tx, task, command2, authority, to) {
     requireImmutableSubject(task);
   }
   if (to === "completed") {
-    if (task.body.delivery_class !== "knowledge") {
-      fail10("INVALID_INPUT", "completed is reserved for knowledge Tasks");
-    }
     requireImmutableSubject(task);
     requireReviews(tx, task);
     return completionApproval(tx, task);
-  }
-  if (to === "release-ready") {
-    if (task.body.delivery_class === "knowledge") {
-      fail10("INVALID_INPUT", "knowledge Tasks do not enter release-ready");
-    }
-    if (command2.actor.role !== "workflow-ship") {
-      fail10("AUTHORITY_REQUIRED", "workflow-ship owns release readiness");
-    }
-    requireImmutableSubject(task);
-    requireReviews(tx, task);
-    const approval = completionApproval(tx, task);
-    requireReleaseEvidence(tx, task);
-    return approval;
-  }
-  if (to === "deploying") {
-    if (command2.actor.role !== "workflow-ship") {
-      fail10("AUTHORITY_REQUIRED", "workflow-ship owns deployment recording");
-    }
-    requireOperatorApproval(tx, task, "operator-deploy-start");
-  }
-  if (to === "production-verification") {
-    if (command2.actor.role !== "workflow-ship") {
-      fail10("AUTHORITY_REQUIRED", "workflow-ship owns deployment recording");
-    }
-    requireOperatorApproval(tx, task, "operator-deploy-complete");
-    requireDeploymentEvidence(tx, task, "deployment");
-  }
-  if (to === "shipped") {
-    if (command2.actor.role !== "workflow-ship") {
-      fail10("AUTHORITY_REQUIRED", "workflow-ship owns shipment recording");
-    }
-    requireDeploymentEvidence(tx, task, "deployment");
-    requireDeploymentEvidence(tx, task, "production-verification");
   }
   return null;
 }
@@ -5685,10 +5520,6 @@ function transitionBody(tx, task, command2, authority, to, at) {
     nextRole = task.body.producer_actor?.role ?? task.body.next_role;
   } else if (to === "in-review") {
     nextRole = task.body.review_requirements[0]?.role ?? task.body.completion_authority;
-  } else if (to === "release-ready") {
-    nextRole = "operator";
-  } else if (to === "deploying" || to === "production-verification") {
-    nextRole = "workflow-ship";
   } else if (TASK_TERMINAL_STATES.has(to)) {
     nextRole = null;
   }
@@ -5770,7 +5601,7 @@ function handleTaskUpdate(current, tx, command2, authority) {
   const changes = Object.hasOwn(command2.payload, "changes") ? command2.payload.changes : { title: command2.payload.title };
   const next = { ...current.body, ...changes };
   const acceptedState = current.body.state === "blocked" ? current.body.resume_state : current.body.state;
-  if ((TASK_TERMINAL_STATES.has(acceptedState) || SHIP_STATES.has(acceptedState)) && criteriaRef({ ...current, body: next }, (kind, id) => tx.get(kind, id)) !== criteriaRef(current, (kind, id) => tx.get(kind, id))) {
+  if (TASK_TERMINAL_STATES.has(acceptedState) && criteriaRef({ ...current, body: next }, (kind, id) => tx.get(kind, id)) !== criteriaRef(current, (kind, id) => tx.get(kind, id))) {
     fail10("INVALID_INPUT", "accepted criteria are frozen; record changed requirements as new work");
   }
   if (current.body.recovery_hold !== null && Object.hasOwn(changes, "next_role")) {
@@ -5965,9 +5796,6 @@ function handleTaskHandoff(current, tx, command2, authority) {
 }
 function requireRestorationAuthority(task, command2, authority) {
   requireHostActionGrant(command2, authority, "task.restore");
-  if (SHIP_STATES.has(task.body.resume_state) && command2.actor.role !== "workflow-ship") {
-    fail10("AUTHORITY_REQUIRED", `workflow-ship must restore ${task.body.resume_state}`);
-  }
 }
 function handleTaskRestore(current, tx, command2, authority) {
   requireRestorationAuthority(current, command2, authority);
@@ -6685,7 +6513,7 @@ function operatorDecision(context, command2) {
     fail4("AUTHORITY_REQUIRED", "an actual host interaction or attributed supplied operator decision is required");
   }
   const body = command2.payload.body;
-  for (const key2 of ["subject", "content_ref", "criteria_ref", "kind", "decision", "deployment", "recovery"]) {
+  for (const key2 of ["subject", "content_ref", "criteria_ref", "kind", "decision", "recovery"]) {
     if (canonicalJson(proof[key2]) !== canonicalJson(body[key2])) {
       fail4("AUTHORITY_REQUIRED", "operator decision does not bind the exact approval claim");
     }
@@ -6873,14 +6701,10 @@ function recordApproval(store, command2, authority) {
       recorded_at_subject_version: command3.expectedVersion,
       ...provenance ? { provenance } : {}
     };
-    const effective = effectiveApprovals([
+    effectiveApprovals([
       ...tx.list("approval", { kind: item.kind, id: item.id }).map((r) => r.body),
       body
     ], item, lookup4(tx));
-    const deployments = effective.filter((a) => a.deployment !== null && a.decision === "approved");
-    if (new Set(deployments.map((a) => canonicalJson(a.deployment))).size > 1) {
-      fail4("AUTHORITY_REQUIRED", "operator confirmations disagree about the production deployment");
-    }
     putNew(tx, "approval", b.approval_id, item, body);
     if (recovery2 && b.decision === "approved") recoveryResolution(tx, item, b.approval_id);
   });
@@ -6899,7 +6723,7 @@ function registerEvidence(store, command2, capture) {
     }
     currentBinding(b, item, tx, { recovery: recovery2 });
     if (!recovery2) {
-      subjectArtifact(context, tx, item, b.content_ref, b.outcome === "waived" ? command3.actor : null);
+      subjectArtifact(context, tx, item, b.content_ref);
     }
     const artifacts = verifyReferences(context, tx, item, b.evidence_refs, { recovery: recovery2 });
     let observation = null;
@@ -6907,8 +6731,8 @@ function registerEvidence(store, command2, capture) {
       if (!context.verifyCapture) fail4("INVALID_INPUT", "agent paste or a source label is not observed capture");
       observation = clone3(context.verifyCapture(clone3(command3), capture));
       validateCapture(observation);
-      const positive3 = (/* @__PURE__ */ new Set(["passed", "clear", "waived"])).has(b.outcome);
-      if (observation.command_digest !== commandDigest(command3) || !sameActor(observation.actor, command3.actor) || positive3 && (observation.exit_code !== 0 || observation.checks.length === 0) || observation.captured_at !== b.created_at || Date.parse(observation.captured_at) > Date.now() || b.kind === "production-verification" && b.data.checks.some((check) => !observation.checks.includes(check))) {
+      const positive3 = b.outcome === "passed";
+      if (observation.command_digest !== commandDigest(command3) || !sameActor(observation.actor, command3.actor) || positive3 && (observation.exit_code !== 0 || observation.checks.length === 0) || observation.captured_at !== b.created_at || Date.parse(observation.captured_at) > Date.now()) {
         fail4("EVIDENCE_GAP", "capture does not cover this actor, result, time, and complete claimed checks");
       }
       const privacy = { public: 0, internal: 1, confidential: 2, personal: 3 };
@@ -6918,22 +6742,8 @@ function registerEvidence(store, command2, capture) {
       if (recovery2 && Date.parse(observation.captured_at) < Date.parse(item.body.lease.expires_at)) {
         fail4("EVIDENCE_GAP", "recovery capture predates lease expiry");
       }
-    } else if (!(/* @__PURE__ */ new Set(["gap", "failed"])).has(b.outcome) || recovery2) {
-      fail4("EVIDENCE_GAP", "a declaration cannot establish observed success, waiver, or recovery");
-    }
-    if (b.outcome === "waived") {
-      requireNamedAuthority(tx, command3, authority, command3.kind, item.body.completion_authority);
-      independent(item, command3.actor);
-      if (artifacts.some((a) => a.producer.runId === command3.actor.runId)) {
-        fail4("AUTHORITY_REQUIRED", "a producing run cannot waive verification of its own supporting artifacts");
-      }
-    }
-    if (b.kind === "deployment" || b.kind === "production-verification") {
-      const start = requireOperatorApproval(tx, item, "operator-deploy-start");
-      const complete = requireOperatorApproval(tx, item, "operator-deploy-complete");
-      if (canonicalJson(start.deployment) !== canonicalJson(complete.deployment) || b.data.environment !== start.deployment.environment || b.data.deployment_id !== start.deployment.deployment_id) {
-        fail4("AUTHORITY_REQUIRED", "capture must match the operator-confirmed production deployment");
-      }
+    } else if (b.outcome !== "failed" || recovery2) {
+      fail4("EVIDENCE_GAP", "a declaration cannot establish observed success or recovery");
     }
     const body = { ...b, provenance: { tier: command3.payload.tier, capture: observation } };
     if (!recovery2) {
@@ -7066,8 +6876,8 @@ function actingTask(store, tx, command2, context, target) {
   if (!GRANTABLE_STATES.has(task.body.state) || task.body.recovery_hold !== null || task.body.waiting_on_questions.length > 0) {
     fail2("RECOVERY_REQUIRED", "Task is not available for host execution");
   }
-  if (target.role === "operator" || SHIP_STATES.has(task.body.state) && target.role !== "workflow-ship") {
-    fail2("AUTHORITY_REQUIRED", "host execution cannot replace the shipping role or the operator");
+  if (target.role === "operator") {
+    fail2("AUTHORITY_REQUIRED", "host execution cannot replace the operator");
   }
   requireHostActionGrant({
     ...command2,
@@ -7804,7 +7614,7 @@ ${body.command}`,
         const { source, reference, attributed_to, captured_at } = cap.receipt;
         const b = command2.payload.body;
         return { source, reference, attributed_to, captured_at, ...Object.fromEntries(
-          ["subject", "content_ref", "criteria_ref", "kind", "decision", "deployment", "recovery"].map((k) => [k, b[k]])
+          ["subject", "content_ref", "criteria_ref", "kind", "decision", "recovery"].map((k) => [k, b[k]])
         ) };
       };
       const embedding = createTrustedEmbedding({
@@ -7924,7 +7734,7 @@ var DEFAULT_CONTEXT_RECENT_LIMIT = 8;
 var MAX_RECENT_LIMIT = 8;
 var MAX_MESSAGE_PAGE = 100;
 var MAX_EXCERPT_BYTES = 512;
-var TERMINAL = /* @__PURE__ */ new Set(["completed", "shipped", "dropped"]);
+var TERMINAL = /* @__PURE__ */ new Set(["completed", "dropped"]);
 var bindsSubject2 = (record2, subject) => subjectEquals(record2?.subject, subject);
 function invalid4(message) {
   throw new RuntimeError("INVALID_INPUT", message);
@@ -8722,7 +8532,7 @@ function captureChanges(root, artifacts, addGap) {
 // src/core/lib/coordination-runtime/report-data.mjs
 var bindsSubject3 = (record2, subject) => record2?.subject?.kind === subject.kind && record2.subject.id === subject.id;
 var contentEquals5 = (left, right) => left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
-var terminal = /* @__PURE__ */ new Set(["completed", "shipped", "dropped"]);
+var terminal = /* @__PURE__ */ new Set(["completed", "dropped"]);
 var positive2 = (value) => ["approved", "clear", "waived", "passed"].includes(value);
 var negativeValidity = /* @__PURE__ */ new Set(["stale", "expired", "superseded", "invalidated", "retired"]);
 function excerpt2(value, limit = 512) {
@@ -8929,22 +8739,6 @@ function buildReport(store, { subject }) {
     }
     if (terminal.has(body.state) && body.state !== "dropped" && !completionClaims.length) {
       addGap("completion", "Recorded terminal state retained; current completion proof is missing or stale.");
-    }
-    const recordedPhase = body.state === "blocked" ? body.resume_state : body.state;
-    if (["release-ready", "deploying", "production-verification", "shipped"].includes(recordedPhase)) {
-      check("completion", () => completionApproval(tx, item), "broken-claim");
-      check("required-reviews", () => requireReviews(tx, item), "broken-claim");
-      check("release-evidence", () => requireReleaseEvidence(tx, item), "broken-claim");
-    }
-    if (["deploying", "production-verification", "shipped"].includes(recordedPhase)) {
-      check("deployment-start", () => requireOperatorApproval(tx, item, "operator-deploy-start"), "broken-claim");
-    }
-    if (["production-verification", "shipped"].includes(recordedPhase)) {
-      check("deployment-complete", () => requireOperatorApproval(tx, item, "operator-deploy-complete"), "broken-claim");
-      check("deployment", () => requireDeploymentEvidence(tx, item, "deployment"), "broken-claim");
-    }
-    if (recordedPhase === "shipped") {
-      check("production-verification", () => requireDeploymentEvidence(tx, item, "production-verification"), "broken-claim");
     }
     const criteria = body.acceptance.map((text2, index) => {
       const support = [
@@ -9157,7 +8951,7 @@ function buildReport(store, { subject }) {
 }
 
 // src/core/lib/coordination-runtime/task-view.mjs
-var terminal2 = /* @__PURE__ */ new Set(["completed", "shipped", "dropped"]);
+var terminal2 = /* @__PURE__ */ new Set(["completed", "dropped"]);
 function dependencyAttention(tasks, task) {
   const byId = new Map(tasks.map((record2) => [record2.id, record2]));
   const reasons = [];

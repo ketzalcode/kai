@@ -21,7 +21,10 @@ function assertExactManagedRegion(document, canonical = block) {
 }
 
 test('the canonical repository block has stable managed markers', () => {
-  assert.match(block, /^<!-- >>> kai repository instructions /);
+  assert.match(
+    block,
+    /^<!-- >>> kai repository instructions \(managed by kai-core-workspace-onboarding\) >>> -->/,
+  );
   assert.match(block, /<!-- <<< kai repository instructions <<< -->\s*$/);
 });
 

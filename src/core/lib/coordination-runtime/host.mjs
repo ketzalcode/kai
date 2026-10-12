@@ -4,7 +4,7 @@ import {
 } from './contract.mjs';
 import {requireActorAvailable, requireHostActionGrant, requireLease, sameActor} from './authority.mjs';
 import {applyOperation} from './store.mjs';
-import {GRANTABLE_STATES, SHIP_STATES} from './engine.mjs';
+import {GRANTABLE_STATES} from './engine.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {planDispatch, validateRoster} from './host-plan.mjs';
@@ -87,8 +87,8 @@ function actingTask(store, tx, command, context, target) {
     || task.body.recovery_hold !== null || task.body.waiting_on_questions.length > 0) {
     fail('RECOVERY_REQUIRED', 'Task is not available for host execution');
   }
-  if (target.role === 'operator' || (SHIP_STATES.has(task.body.state) && target.role !== 'workflow-ship')) {
-    fail('AUTHORITY_REQUIRED', 'host execution cannot replace the shipping role or the operator');
+  if (target.role === 'operator') {
+    fail('AUTHORITY_REQUIRED', 'host execution cannot replace the operator');
   }
   requireHostActionGrant({
     ...command, recordKind: 'task', recordId: task.id, expectedVersion: task.version,

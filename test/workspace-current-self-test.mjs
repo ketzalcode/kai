@@ -25,6 +25,14 @@ test('the workspace contract exposes only schema 6 and separate runtime database
   assert.equal(Object.hasOwn(WORKSPACE_CONTRACT, 'legacyDatabase'), false);
 });
 
+test('this repository uses the current private workspace ignore block', () => {
+  const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');
+  assert.match(gitignore, /managed by kai-core-workspace-onboarding/);
+  assert.match(gitignore, /^\/\.kai\/$/m);
+  assert.match(gitignore, /^\/\.kai-retired-\*\/$/m);
+  assert.match(gitignore, /^\*\*\/storageState\*\.json$/m);
+});
+
 test('only the current coordination database resolves a workspace root', () => {
   const root = join(tmpdir(), 'kai-current-root');
   assert.equal(
@@ -78,10 +86,22 @@ test('re-onboarding repeats the current path-safety contract before confirmation
     new URL('../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md', import.meta.url),
     'utf8',
   );
-  assert.match(skill, /Load\s+`kai-core-workspace-paths`/);
+  assert.match(skill, /apply\s+`kai-core-workspace-paths`/i);
   assert.match(skill, /Before confirmation[\s\S]*links[\s\S]*junctions[\s\S]*aliases[\s\S]*network\s+paths[\s\S]*nested Git roots[\s\S]*non-canonical/i);
   assert.match(skill, /Immediately before the rename[\s\S]*repeat the same path-safety validation/i);
   assert.match(skill, /source and destination/i);
+});
+
+test('re-onboarding initializes optional runtimes only when requested', () => {
+  const skill = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(skill, /Core onboarding creates no optional runtime/);
+  assert.match(skill, /Project Management[\s\S]*only when the operator explicitly requested it/);
+  assert.match(skill, /project\.mjs" init[\s\S]*--root "<workspace-root>"/);
+  assert.match(skill, /workspace-doctor\.mjs"[\s\S]*coordinate\.mjs" inspect/);
+  assert.match(skill, /Never infer optional package state from the\s+retired workspace/);
 });
 
 test('current inspection responses expose no migration shim or initiative compatibility branch', () => {
