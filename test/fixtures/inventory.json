@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 9,
-    "skills": 36
+    "skills": 37
   },
   "agents": [
     "creative-lead-design",
@@ -25,6 +25,7 @@
     "html-block-diagrams",
     "kai-core-create-agent",
     "kai-core-create-skill",
+    "kai-core-feedback",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
     "kai-core-work-acting",
@@ -68,6 +69,10 @@
     {
       "name": "kai-core-create-skill",
       "argument_hint": "skill purpose or existing skill path"
+    },
+    {
+      "name": "kai-core-feedback",
+      "argument_hint": "what Kai got wrong or missed"
     },
     {
       "name": "kai-core-workspace-onboarding",

@@ -381,6 +381,7 @@ a publication, or a host-verification claim.
 | **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the four packages supply |
 | **See what is parked and not shipping** | [Incubator](incubator/README.md) — the five capability packages and the components held out of the active tree |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/architecture.md#host-capabilities) — what differs, and how it degrades |
+| **Tell Kai what it got wrong or missed** | Invoke `kai-core-feedback`; it previews a public, privacy-reviewed issue before filing it with the `kai-feedback` label |
 | **Change Kai itself** | [Development process](docs/development-process.md) and [Plugin structure](docs/reference/plugin-structure.md) |
 
 Everything is indexed in **[docs/](docs/README.md)**.

@@ -104,7 +104,7 @@ const CATEGORIES = [
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
       'kai-core-peer-communication',
-      'kai-core-create-agent', 'kai-core-create-skill',
+      'kai-core-create-agent', 'kai-core-create-skill', 'kai-core-feedback',
     ],
   },
   {
