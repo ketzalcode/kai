@@ -8,6 +8,11 @@ follow semantic versioning.
 
 ### Added
 
+- Added the optional, agent-free `kai-contributor` package with `kai-feedback`,
+  `kai-create-agent`, and `kai-create-skill`. It has no runtime, workspace
+  state, package dependency, or publication vocabulary.
+- Added privacy-reviewed public feedback filing to `ketzalcode/kai` through the
+  `kai-feedback` label, with duplicate detection and explicit confirmation.
 - Added the optional, agent-free `kai-project-management` package with four
   focused planning skills and a bundled `project.mjs` runtime.
 - Added the private planning authority at
@@ -28,8 +33,14 @@ follow semantic versioning.
 - Made Engineering, Creative, and Nightshift operate from supplied approved
   scope without Project Management. Nightshift now admits an approved goal and
   bounded Tasks, with an optional supplied planning projection.
-- Expanded generation, marketplace metadata, publication vocabulary, catalog,
-  consumer packaging, and install order to four published plugins.
+- Expanded generation, marketplace metadata, catalog, consumer packaging, and
+  install order to five published plugins.
+- Separated installable package inventory from workspace-owning package
+  namespaces so `kai-contributor` cannot create `.kai` state or an empty
+  publication contract.
+- Moved Kai feedback and agent/skill authoring out of Core into Contributor.
+  Core now contains only shared collaboration, workspace, and Task/A2A
+  capabilities.
 - Folded the universal no-scope-expansion invariant into Core operating rules.
   Durable scope and planning closure now belong to Project Management.
 - Made pack publication contracts choose asset disposition while Core only
@@ -55,6 +66,9 @@ follow semantic versioning.
 - Removed `kai-core-no-self-remediation`; its concise assessor write boundary
   now lives in Core operating rules and active assessor role instructions,
   while runtime independence checks remain authoritative.
+- Removed the `kai-core-create-agent`, `kai-core-create-skill`, and
+  `kai-core-feedback` IDs. Their Contributor replacements are clean breaks with
+  no compatibility aliases.
 
 ## [22.3.0] - 2026-10-11
 
