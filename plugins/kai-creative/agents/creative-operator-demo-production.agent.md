@@ -158,9 +158,10 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 
-Apply `kai-core-asset-closing` before disposition or closure. Preserve exact
-paths, revision/status, limitations, validity owner, pending reviews, and
-missing stages. No external publication: the operator retains publication and
+The owning Creative publication contract decides disposition and records any
+authorized transition through `kai-core-asset-producing`. Preserve exact paths,
+revision/status, limitations, validity owner, pending reviews, and missing
+stages. No external publication: the operator retains publication and
 distribution authority.
 
 ## Return

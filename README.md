@@ -54,7 +54,7 @@ Four packages. Project Management is optional and agent-free.
   | kai-core                                                            |
   |                                                                      |
   |  0 agents                                                            |
-  | 18 skills                                                            |
+  | 15 skills                                                            |
   |  4 executable entry points                                           |
   | templates/ (decision, spec, report, publication)                     |
   |                                                                      |
@@ -81,7 +81,7 @@ Core, Engineering, and Creative do not depend on Project Management.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 0 / 18 | Shared skills, workspace machinery, standalone Task/A2A runtime |
+| `kai-core` | 0 / 15 | Shared skills, workspace machinery, standalone Task/A2A runtime |
 | `kai-project-management` | 0 / 4 | Optional Direction, Epic, Feature, Requirement, priority, holds, dependencies, closure, and Task handoff |
 | `kai-engineering` | 6 / 13 | Frontend and backend implementation, bounded unattended delivery, selective review, technical writing, and explicit delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
@@ -369,7 +369,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-project-management`, `kai-engineering`, `kai-creative` |
-| Surface | **9 agents and 42 skills** |
+| Surface | **9 agents and 39 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

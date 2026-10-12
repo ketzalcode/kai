@@ -43,8 +43,8 @@ dependencies, acceptance, completion authority, and current grants.
 Apply `kai-core-work-granting` only when preparing the bounded executable work
 that the approved run may launch.
 
-Apply `kai-core-scope-discipline` only when an adjacent idea appears; keep it
-suggested unless the relevant authority accepts it as separate scope.
+Keep every adjacent idea suggested unless the relevant authority accepts it as
+separate scope.
 
 Ask for one structured approval containing only:
 
@@ -118,7 +118,8 @@ rewrites the admission to reflect progress.
 
 ## RECONCILE
 
-Apply `kai-core-definition-of-done` to every claimed delivery. A pull request,
+Verify every claimed delivery against the standalone Task's acceptance,
+current evidence and reviews, and exact change reference. A pull request,
 child-process exit, self-check, or model statement is not acceptance.
 
 Read current Core records and the append-only runner events. Regenerate the report

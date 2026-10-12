@@ -91,9 +91,9 @@ terms; identify source text that is ambiguous or hard to translate. Package
 requested source/context and a return contract for approved translators.
 Do not invent translations or certify language quality.
 
-Apply `kai-core-scope-discipline` before expanding the document's agreed scope
-or changing a public claim. An editorial cleanup is not permission to add a
-capability, hide a defect or publish externally. In assessment-only mode, apply
+Do not expand the document's agreed scope or change a public claim without its
+named authority. An editorial cleanup is not permission to add a capability,
+hide a defect or publish externally. In assessment-only mode, apply
 `kai-core-no-self-remediation` before findings and do not edit what you assessed.
 Authoring and editorial self-checks never count as an independent review.
 

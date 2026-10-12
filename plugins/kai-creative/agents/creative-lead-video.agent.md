@@ -173,7 +173,8 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before handoff for stop.
 Never grant work, launch production, or dispatch another role.
 
-Apply `kai-core-asset-closing` before disposition or closure. The commissioning
+The owning Creative publication contract decides disposition and records any
+authorized transition through `kai-core-asset-producing`. The commissioning
 owner must accept the exact revision. A screenplay accepted as direction is
 still not proof that a take, narration, render, or published video exists.
 

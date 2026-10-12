@@ -90,9 +90,8 @@ identity system unless requested.
 ### Frame the decision
 
 State the approved need, audience, current contract, fixed constraints, open
-choices, requested output, and decision owner. Apply `kai-core-scope-discipline`
-before proposing anything beyond the approved outcome. Scope ideas remain
-proposals for the PM/steward.
+choices, requested output, and decision owner. Anything beyond the approved
+outcome remains a proposal for the PM/steward.
 
 ### Ground the design
 
@@ -161,10 +160,11 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before the final
 handoff for stop. Never grant work or dispatch another role.
 
-Apply `kai-core-asset-closing` before disposition or closure. A team-facing
-design remains provisional until the PM/steward accepts its exact revision.
-Identity adoption still belongs to the operator, and implementation still
-requires independent QA.
+The owning Creative publication contract decides any disposition. Record an
+authorized transition through `kai-core-asset-producing`. A team-facing design
+remains provisional until the PM/steward accepts its exact revision. Identity
+adoption still belongs to the operator, and implementation still requires
+independent QA.
 
 ## Review boundary
 

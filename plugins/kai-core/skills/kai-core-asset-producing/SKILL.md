@@ -1,6 +1,6 @@
 ---
 name: kai-core-asset-producing
-description: "Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure."
+description: "Use when a validated pack-owned artifact needs a private revision, provenance, acceptance binding, publication, or recorded state transition."
 tools: [read, edit, execute, search]
 ---
 
@@ -11,10 +11,11 @@ have loaded its owning pack publication skill immediately before this contract.
 That pack skill is the sole authority for namespace, type, subtype, formats,
 publication rules, and privacy rules.
 
-Core never substitutes a department vocabulary or invents a fallback lane.
-Before deriving a path, require an existing typed hierarchy subject, its
-current version, an authorized artifact target, current acting authority, and
-named acceptance authority. Direct work never enters this lifecycle.
+Core never substitutes a department vocabulary, chooses semantic disposition,
+or invents a fallback lane. Before deriving a path, require an existing
+standalone Task or explicit direct authority, an authorized artifact target,
+current acting authority, and named acceptance authority. Direct work never
+enters this lifecycle by implication.
 
 ## Interface
 
@@ -37,12 +38,12 @@ Execute this sequence:
    destination ownership, path safety, and current acceptance, then copy the
    exact bytes to the mirrored public path. Publication is never a rename of
    mutable private state.
-7. **Record the accepted asset.** Use `asset.transition` to bind public target,
-   accepted hash, authority, approval, subject version, provenance, validity,
-   inputs, and supersession.
-8. **Close private state.** Remove scratch. Move retained drafts and evidence to
-   `.kai/<pack>/archive/<type>/<id>/...` or the subtype equivalent. Preserve the
-   public accepted bytes.
+7. **Record the requested transition.** After the owning pack decides the
+   semantic state, use `asset.transition` to bind public target, accepted hash,
+   authority, approval, Task version, provenance, validity, inputs, and any
+   predecessor/successor link.
+8. **Apply pack-owned cleanup.** Remove scratch and retain or archive private
+   drafts/evidence exactly as the owning publication contract requires.
 
 SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination and
 acceptance authority. A file's existence, Git status, or polished appearance
@@ -52,8 +53,8 @@ does not establish acceptance.
 
 Refuse before creating a directory or copying bytes when:
 
-- the typed hierarchy subject does not exist, its version is stale, or acting,
-  target, or acceptance authority is missing;
+- the Task or direct authority basis is missing or stale, or acting, target, or
+  acceptance authority is missing;
 - the owning publication route is absent, belongs to another pack, or is not
   immediately before this contract;
 - type or subtype is unknown;
@@ -76,5 +77,6 @@ Mutable work remains private. A new accepted revision gets a new hash and
 provenance record. Supersession names the predecessor and successor; it never
 rewrites historical evidence or claims the predecessor was always invalid.
 
-Retraction and archival preserve the accepted record and rationale. Uninstall
-never deletes private or public content.
+Retraction and archival preserve the accepted record and rationale. The owning
+pack decides whether those states apply; Core only records the authorized
+transition. Uninstall never deletes private or public content.

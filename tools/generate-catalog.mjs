@@ -103,12 +103,11 @@ const CATEGORIES = [
     blurb: 'Shared operating, scope, communication, activity, completion, and durable asset lifecycle contracts.',
     members: [
       'kai-core-operating-rules', 'kai-core-work-activity',
-      'kai-core-definition-of-done',
-      'kai-core-scope-discipline', 'kai-core-no-self-remediation',
+      'kai-core-no-self-remediation',
       'kai-core-peer-communication',
       'kai-core-contract-v1', 'kai-core-create-agent',
       'kai-core-create-skill',
-      'kai-core-asset-producing', 'kai-core-asset-closing',
+      'kai-core-asset-producing',
     ],
   },
   {

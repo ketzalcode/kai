@@ -21,7 +21,7 @@ inside this repository only.
 | Workspace resolution, private schema-6 placement, and typed path grammar | `kai-core-workspace-paths`, `kai-core-workspace-onboarding` |
 | Direction, Epic, Feature, Requirement, priority, holds, dependencies, and closure | `project-management-work-hierarchy`, `project-management-work-stewardship` |
 | Pack-owned artifact vocabularies and formats | each package's `*-workspace-publication` skill |
-| Producing and closing durable assets | `kai-core-asset-producing`, `kai-core-asset-closing` |
+| Recording durable asset provenance, publication, and authorized transitions | `kai-core-asset-producing` |
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 

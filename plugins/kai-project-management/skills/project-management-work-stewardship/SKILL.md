@@ -35,9 +35,11 @@ Required children determine successful parent closure. Optional children do
 not. Child completion never auto-closes a parent.
 
 Requirement completion names every required opaque Core Task ID exactly and
-supplies evidence basis references. The Project Management database does not
-copy Task lifecycle state. Epic, Feature, and Direction closure checks only
-their package-owned child records.
+supplies current evidence basis references. The completion authority verifies
+the record's outcome and every acceptance criterion against that evidence.
+Missing, stale, or contradicted evidence blocks closure. The Project Management
+database does not copy Task lifecycle state. Epic, Feature, and Direction
+closure checks only their package-owned child records.
 
 Apply `project-management-workspace-publication` only when named authority asks
 to publish an accepted Direction or planning revision.

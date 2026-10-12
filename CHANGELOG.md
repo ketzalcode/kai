@@ -30,6 +30,10 @@ follow semantic versioning.
   bounded Tasks, with an optional supplied planning projection.
 - Expanded generation, marketplace metadata, publication vocabulary, catalog,
   consumer packaging, and install order to four published plugins.
+- Folded the universal no-scope-expansion invariant into Core operating rules.
+  Durable scope and planning closure now belong to Project Management.
+- Made pack publication contracts choose asset disposition while Core only
+  records authorized asset transitions and provenance.
 
 ### Removed
 
@@ -37,6 +41,9 @@ follow semantic versioning.
   lifecycle rules, runtime modules, and active planning skills from Core.
 - Removed Core-owned planning publication lanes and the schema-5 workspace
   shape. No compatibility alias or dual Task schema remains.
+- Removed the Core `definition-of-done`, `scope-discipline`, and
+  `asset-closing` skills. Domain evidence, Project Management closure, and
+  pack-owned publication contracts now own those decisions.
 
 ## [22.3.0] - 2026-10-11
 
