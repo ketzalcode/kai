@@ -192,7 +192,7 @@ schema and paths.
 
 ## Status
 
-Repository version: `v23.0.0`. The release badge shows the latest published
+Repository version: `v24.0.0`. The release badge shows the latest published
 version; the nightly badge shows validation status for current `main`.
 
 For the durable details:

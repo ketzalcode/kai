@@ -1,6 +1,6 @@
 {
   "name": "kai-contributor",
-  "version": "23.0.0",
+  "version": "24.0.0",
   "description": "Optional agent-free Kai feedback and agent/skill authoring tools with no workspace runtime.",
   "skills": "skills"
 }

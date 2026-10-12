@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Kai core, optional contributor and project management tools, engineering, and creative. Other capability packages are incubated and do not ship.",
-    "version": "23.0.0",
+    "version": "24.0.0",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./plugins/kai-core",
       "description": "kai-core: shared operating contracts, schema-6 workspace machinery, and standalone Task/A2A execution.",
-      "version": "23.0.0",
+      "version": "24.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -37,7 +37,7 @@
       "name": "kai-contributor",
       "source": "./plugins/kai-contributor",
       "description": "Optional agent-free Kai feedback and agent/skill authoring tools with no workspace runtime.",
-      "version": "23.0.0",
+      "version": "24.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -60,7 +60,7 @@
       "name": "kai-project-management",
       "source": "./plugins/kai-project-management",
       "description": "Optional agent-free Direction, Epic, Feature, and Requirement planning over standalone kai-core Tasks.",
-      "version": "23.0.0",
+      "version": "24.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -83,7 +83,7 @@
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "Explicit frontend and backend implementation, bounded unattended delivery, selective code review, technical writing, and delivery procedures over kai-core.",
-      "version": "23.0.0",
+      "version": "24.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"
@@ -106,7 +106,7 @@
       "name": "kai-creative",
       "source": "./plugins/kai-creative",
       "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
-      "version": "23.0.0",
+      "version": "24.0.0",
       "author": {
         "name": "ketzalcode",
         "url": "https://github.com/ketzalcode"

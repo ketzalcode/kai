@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
-## [23.0.0] - 2026-10-11
+## [24.0.0] - 2026-10-12
 
 ### Added
 
@@ -28,8 +28,15 @@ follow semantic versioning.
   completion authorities, actors, dependencies, touched areas, evidence,
   reviews, leases, recovery, and lifecycle without `feature_id`, `satisfies`,
   planning priority, Direction alignment, or ancestor holds.
+- Reduced Core Tasks to the executable lifecycle `proposed`, `ready`,
+  `in-progress`, `in-review`, `blocked`, `completed`, and `dropped`.
+  `completed` closes the accepted A2A execution record; release, deployment,
+  shipment, and parent-scope closure remain outside Core.
 - Split workspace/runtime authority as a clean schema-6 contract. Unsupported
   workspaces re-onboard; no records are migrated or mirrored.
+- Updated schema-6 onboarding and re-onboarding to use current managed markers,
+  verify the clean Core runtime explicitly, and initialize optional Project
+  Management state only when the operator requests it.
 - Made Engineering, Creative, and Nightshift operate from supplied approved
   scope without Project Management. Nightshift now admits an approved goal and
   bounded Tasks, with an optional supplied planning projection.
@@ -51,6 +58,8 @@ follow semantic versioning.
 - Simplified the active validation surface: malformed loader cases now run
   directly in the authoring suite, package tests reuse generated builds, and
   nightly no longer repeats copied-package acceptance after `npm test`.
+- Hardened active agent validation so an incubated or retired identity cannot
+  bypass the responsibility-based taxonomy when reintroduced.
 - Refreshed the README hero with the KetzalCode mark, release/nightly/license
   badges, and a clearer mission and vision without expanding it into a manual.
 
@@ -58,6 +67,9 @@ follow semantic versioning.
 
 - Removed Direction, Epic, Feature, and Requirement commands, records, views,
   lifecycle rules, runtime modules, and active planning skills from Core.
+- Removed Core-owned release readiness, deployment, production verification,
+  shipment states, and their unreachable `workflow-ship` authority and
+  evidence contracts.
 - Removed Core-owned planning publication lanes and the schema-5 workspace
   shape. No compatibility alias or dual Task schema remains.
 - Removed the Core `definition-of-done`, `scope-discipline`, and
@@ -77,6 +89,9 @@ follow semantic versioning.
 - Removed the retired `pack-preview`, golden-inventory `host-contract`,
   standalone syntax scanner, incubated Microsoft Learn extractor, schema-5
   fixtures, and their stale npm commands.
+- Removed the implemented Project Management design, retired Azure/Lectoria
+  configuration, obsolete validator exemptions, and unreferenced coordination
+  test helpers.
 
 ## [22.3.0] - 2026-10-11
 
@@ -4715,7 +4730,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[23.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v23.0.0
+[24.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v24.0.0
 [22.3.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.3.0
 [22.2.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v22.2.0
 [22.1.0]: https://github.com/ketzalcode/kai/compare/v22.0.0...v22.1.0
