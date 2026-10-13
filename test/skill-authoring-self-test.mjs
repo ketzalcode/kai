@@ -37,35 +37,14 @@ test('create-skill keeps reusable resources caller-agnostic and lean', () => {
   assert.match(body, /\*\*Instructions:\*\*/);
   assert.match(body, /\*\*Resources:\*\*/);
   assert.match(body, /Do not begin with a collected dependency list/);
+  assert.match(body, /\.github\/skills\/<skill-name>\/SKILL\.md/);
+  assert.match(body, /new, still evolving, or unproven outside that workspace/);
+  assert.match(body, /operator explicitly requests Kai-wide\s+ownership/);
+  assert.match(body, /stable, caller-agnostic reuse across\s+repositories/);
+  assert.match(body, /Apparent generality is insufficient by itself/);
+  assert.match(body, /ask one local-versus-Kai question/);
+  assert.match(body, /Do not\s+edit Kai, create a Kai branch, or open a public Kai PR before this decision/);
   assert.doesNotMatch(body, /eng-nightshift|eng-lead-software/);
-});
-
-test('development-design documents keep Markdown authoritative and Word readable', () => {
-  const body = skills.get('development-design-documents');
-  assert.ok(body, 'development-design-documents must exist');
-  assert.match(body, /^user-invocable:\s*true$/m);
-  assert.match(body, /Markdown is the content authority/i);
-  assert.match(body, /Describe the full design before reporting current completion/i);
-  assert.match(body, /Put volatile current-state tables near the end/i);
-  assert.match(body, /Word document defaults/);
-  assert.match(body, /Do not meet a page target by shrinking body text/i);
-
-  const reference = readFileSync(
-    join(
-      root,
-      'plugins',
-      'kai-engineering',
-      'skills',
-      'development-design-documents',
-      'references',
-      'word-document-format.md',
-    ),
-    'utf8',
-  );
-  assert.match(reference, /A4, portrait/i);
-  assert.match(reference, /Calibri 11 pt/i);
-  assert.match(reference, /Place explanatory text after the image/i);
-  assert.match(reference, /page count is observed, not estimated/i);
 });
 
 test('create-agent keeps roles focused and routes shared context just in time', () => {

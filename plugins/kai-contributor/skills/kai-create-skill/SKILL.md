@@ -15,6 +15,21 @@ skill.
 Repository instructions and loader conventions govern. Inspect them before
 editing.
 
+## Choose ownership before editing
+Default to a repository-local skill at
+`.github/skills/<skill-name>/SKILL.md` when the method:
+
+- is requested for one workspace;
+- is new, still evolving, or unproven outside that workspace; or
+- depends on repository terminology, team practice, or local tools.
+
+Choose a Kai package only when the operator explicitly requests Kai-wide
+ownership or grounded evidence shows stable, caller-agnostic reuse across
+repositories. Apparent generality is insufficient by itself.
+
+When ownership remains ambiguous, ask one local-versus-Kai question. Do not
+edit Kai, create a Kai branch, or open a public Kai PR before this decision.
+
 ## Establish the boundary
 
 A skill is justified when the method:
@@ -24,10 +39,8 @@ A skill is justified when the method:
 - benefits from context that should load only when needed; and
 - can be applied without knowing which agent invoked it.
 
-Keep phases of one method as sections or companion references. Split another
-skill only when it has an independent trigger, independent reuse, or materially
-different tools/context. Do not create prepare, execute, and report skills only
-because a lifecycle has three phases.
+Keep phases of one method together. Split only for an independent trigger,
+independent reuse, or materially different tools/context.
 
 ## Preserve dependency direction
 
@@ -66,13 +79,6 @@ Use progressive disclosure:
 3. **Resources:** load references, scripts, assets, or lower-level skills only
    at the step that needs them.
 
-The main `SKILL.md` contains:
-
-- a precise use-when description;
-- the stable decision or method;
-- hard boundaries and failure behavior; and
-- links to companion material only when it is needed.
-
 Put large examples, templates, and lookup material under `references/`. Put
 deterministic parsing, persistence, and machine validation in scripts or source
 code. Do not copy a runtime schema into prose merely so an agent can keep
@@ -103,8 +109,8 @@ The report is not another authority and the admission is not a progress log.
 7. Update the owning catalog and generated artifacts when the repository
    requires them.
 
-When revising, remove accidental caller awareness and duplicated operating
-contracts before adding more instructions.
+When revising, remove caller awareness and duplicated operating contracts
+before adding instructions.
 
 ## Validate
 
