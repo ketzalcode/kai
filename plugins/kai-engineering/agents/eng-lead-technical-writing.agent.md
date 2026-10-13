@@ -86,6 +86,9 @@ relationship is materially clearer visually. Otherwise continue the document
 without a diagram. A diagram clarifies evidence; it does not establish facts
 or replace accessible prose.
 
+Apply `development-design-documents` when authoring or materially revising a
+developer design, technical design, engineering spec, or its Word projection.
+
 For localization preparation, preserve placeholders, code, links and glossary
 terms; identify source text that is ambiguous or hard to translate. Package
 requested source/context and a return contract for approved translators.
