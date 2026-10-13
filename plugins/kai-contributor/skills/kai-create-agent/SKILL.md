@@ -1,12 +1,12 @@
 ---
 name: kai-create-agent
-description: "Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them."
+description: "Use when creating or materially revising a repository-local or Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only when needed."
 tools: [read, edit, search, execute]
 user-invocable: true
 argument-hint: "agent purpose or existing agent path"
 ---
 
-# Create a Kai Agent
+# Create an Agent
 
 Create the smallest durable role that improves routing or execution. An agent
 is permanent context and coordination cost, not a container for every rule that
@@ -14,6 +14,19 @@ might someday apply.
 
 Repository instructions and loader conventions govern. Inspect them before
 editing.
+
+## Choose ownership before editing
+
+Default to a repository-local agent when the role is requested for one
+workspace, is still evolving, or depends on local authority, tools, or team
+practice. Inspect the repository and active host before choosing its format.
+For Copilot CLI, the documented project location is
+`.github/agents/<agent-id>.agent.md`; do not invent a cross-host agent path.
+
+Choose a Kai package only when the operator explicitly requests Kai-wide
+ownership or evidence shows a stable recurring responsibility across
+repositories. Apparent generality is insufficient. If ownership is ambiguous,
+ask one local-versus-Kai question before editing Kai or opening a public PR.
 
 ## Decide whether an agent is warranted
 
@@ -56,13 +69,9 @@ callers.
 
 ## Use progressive disclosure
 
-Kai follows three layers:
-
-1. **Catalog:** `name` and `description` are enough to select the role.
-2. **Agent body:** when selected, load only identity, authority, routing,
-   universal boundaries, and the short operating loop.
-3. **Task-local resources:** activate a skill, reference, script, or another
-   agent only when execution reaches the decision that needs it.
+Use three layers: **Catalog:** metadata selects the role; **Agent body:**
+identity, authority, routing, and its short loop; **Task-local resources:** load
+only when execution reaches the decision that needs them.
 
 An agent body loads as a whole. Do not use it as a catalog of possible skills.
 Move reusable methods into skills and large lookup material into skill
@@ -104,7 +113,8 @@ earn a slot. Otherwise extract method into a skill.
 
 ## Author and validate
 
-1. Read roster metadata first; read only the nearest one to three agent bodies.
+1. Use the nearest accepted agent as the repository-native shape; do not impose
+   Kai frontmatter on another host.
 2. Search for an existing owner or method before adding a surface.
 3. Draft the contract, then the smallest prompt that implements it.
 4. Search references in both directions and keep dependencies one-way.

@@ -120,7 +120,7 @@ Optional feedback and lean Kai agent/skill authoring guidance.
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-feedback`](../../plugins/kai-contributor/skills/kai-feedback/SKILL.md) | `kai-contributor` | Use when the operator says Kai was incorrect, missed a principle, added too much process, or needs an improvement recorded for the Kai maintainers. |
-| [`kai-create-agent`](../../plugins/kai-contributor/skills/kai-create-agent/SKILL.md) | `kai-contributor` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
+| [`kai-create-agent`](../../plugins/kai-contributor/skills/kai-create-agent/SKILL.md) | `kai-contributor` | Use when creating or materially revising a repository-local or Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only when needed. |
 | [`kai-create-skill`](../../plugins/kai-contributor/skills/kai-create-skill/SKILL.md) | `kai-contributor` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
 
 ### Engineering craft

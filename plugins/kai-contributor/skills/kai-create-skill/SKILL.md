@@ -16,12 +16,17 @@ Repository instructions and loader conventions govern. Inspect them before
 editing.
 
 ## Choose ownership before editing
-Default to a repository-local skill at
-`.github/skills/<skill-name>/SKILL.md` when the method:
+Default to a repository-local skill when the method:
 
 - is requested for one workspace;
 - is new, still evolving, or unproven outside that workspace; or
 - depends on repository terminology, team practice, or local tools.
+
+Before choosing its directory, inspect repository instructions, existing skill
+roots, and the active host. Copilot CLI supports `.github/skills/`,
+`.claude/skills/`, and `.agents/skills/` without a documented preference.
+Preserve the repository's established supported root. If several or none make
+the placement clear, ask one placement question instead of inventing a default.
 
 Choose a Kai package only when the operator explicitly requests Kai-wide
 ownership or grounded evidence shows stable, caller-agnostic reuse across
@@ -88,26 +93,20 @@ Do not begin with a collected dependency list. Route a lower-level skill inline
 where the method reaches that decision. If every run needs another skill before
 this one can be understood, the boundary is probably misplaced.
 
-When work accumulates incrementally, prefer:
-
-- one small immutable admission or accepted basis;
-- append-only observations or checkpoints; and
-- a final read-only projection or report.
-
-The report is not another authority and the admission is not a progress log.
+For incremental work, prefer one immutable admission or accepted basis and
+append-only observations or checkpoints; use a final read-only projection or report
+rather than another mutable authority.
 
 ## Author or revise
 
-1. Read neighboring skills and reuse their frontmatter, naming, tools, and
-   reference conventions.
+1. Use the nearest accepted skill as the repository-native shape; do not impose
+   Kai frontmatter on a local host.
 2. Search for an existing skill that already owns the method.
 3. Write the trigger around the real repeated request, not the current task.
 4. Keep caller-specific routing in the caller.
 5. Add only the tools the skill itself needs.
-6. Add focused examples or references only where prose would otherwise become
-   ambiguous.
-7. Update the owning catalog and generated artifacts when the repository
-   requires them.
+6. Add references only where prose would be ambiguous; update required catalogs
+   and generated artifacts.
 
 When revising, remove caller awareness and duplicated operating contracts
 before adding instructions.

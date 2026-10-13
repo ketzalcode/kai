@@ -37,7 +37,10 @@ test('create-skill keeps reusable resources caller-agnostic and lean', () => {
   assert.match(body, /\*\*Instructions:\*\*/);
   assert.match(body, /\*\*Resources:\*\*/);
   assert.match(body, /Do not begin with a collected dependency list/);
-  assert.match(body, /\.github\/skills\/<skill-name>\/SKILL\.md/);
+  assert.match(body, /Copilot CLI supports `\.github\/skills\/`,\s+`\.claude\/skills\/`, and `\.agents\/skills\/`/);
+  assert.match(body, /without a documented preference/);
+  assert.match(body, /Preserve the repository's established supported root/);
+  assert.match(body, /ask one placement question instead of inventing a default/);
   assert.match(body, /new, still evolving, or unproven outside that workspace/);
   assert.match(body, /operator explicitly requests Kai-wide\s+ownership/);
   assert.match(body, /stable, caller-agnostic reuse across\s+repositories/);
@@ -60,6 +63,12 @@ test('create-agent keeps roles focused and routes shared context just in time', 
   assert.match(body, /Do not add an `\*\*Inherits:\*\*` line/);
   assert.match(body, /A conditional route is still just in time/);
   assert.match(body, /Never create a\s+`workflow-\*` agent/);
+  assert.match(body, /Default to a repository-local agent/);
+  assert.match(body, /`.github\/agents\/<agent-id>\.agent\.md`/);
+  assert.match(body, /do not invent a cross-host agent path/);
+  assert.match(body, /operator explicitly requests Kai-wide\s+ownership/);
+  assert.match(body, /stable recurring responsibility across\s+repositories/);
+  assert.match(body, /ask one local-versus-Kai question before editing Kai/);
 });
 
 test('loader contract rejects malformed agent and skill frontmatter', () => {
