@@ -40,6 +40,34 @@ test('create-skill keeps reusable resources caller-agnostic and lean', () => {
   assert.doesNotMatch(body, /eng-nightshift|eng-lead-software/);
 });
 
+test('development-design documents keep Markdown authoritative and Word readable', () => {
+  const body = skills.get('development-design-documents');
+  assert.ok(body, 'development-design-documents must exist');
+  assert.match(body, /^user-invocable:\s*true$/m);
+  assert.match(body, /Markdown is the content authority/i);
+  assert.match(body, /Describe the full design before reporting current completion/i);
+  assert.match(body, /Put volatile current-state tables near the end/i);
+  assert.match(body, /Word document defaults/);
+  assert.match(body, /Do not meet a page target by shrinking body text/i);
+
+  const reference = readFileSync(
+    join(
+      root,
+      'plugins',
+      'kai-engineering',
+      'skills',
+      'development-design-documents',
+      'references',
+      'word-document-format.md',
+    ),
+    'utf8',
+  );
+  assert.match(reference, /A4, portrait/i);
+  assert.match(reference, /Calibri 11 pt/i);
+  assert.match(reference, /Place explanatory text after the image/i);
+  assert.match(reference, /page count is observed, not estimated/i);
+});
+
 test('create-agent keeps roles focused and routes shared context just in time', () => {
   const body = skills.get('kai-create-agent');
   assert.ok(body, 'kai-create-agent must exist');

@@ -18,7 +18,8 @@ review, PR delivery, and bounded Nightshift execution.
 Methods include `software-development`, shared/frontend/backend coding
 standards, repository onboarding, research, PR sizing, review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
-diagrams, `nightshift-run`, and the manual `my-insights`, `team-insights`, and
+diagrams, development-design documents and readable Word projections,
+`nightshift-run`, and the manual `my-insights`, `team-insights`, and
 `refine-insights` workspace-learning commands.
 
 ## Install
