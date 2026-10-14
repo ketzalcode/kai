@@ -464,7 +464,7 @@ export function selfTest() {
   const take = parseTake(JSON.stringify({
     schema: TAKE_SCHEMA, take_id: 't1', recording: 'raw.mp4',
     capture: { region: [0, 0, 1256, 784], fps: 30 },
-    steps: [{ id: 'st-2', start: 4.02, end: 4.33, rect: [80, 136, 150, 162] }],
+    steps: [{ id: 'st-2', start: 4.02, end: 4.33, status: 'ok', rect: [80, 136, 150, 162] }],
     pointer: { samples: [{ t: 1, x: 628, y: 392, visible: true }, { t: 2, x: 0, y: 0, visible: false }], clicks: [1.5] },
   }));
   ok(take.pointer.track[0].x === 0.5 && take.pointer.track[0].y === 0.5,
@@ -472,7 +472,7 @@ export function selfTest() {
   ok(take.pointer.track[1].visible === false, 'a hidden pointer sample stays hidden through the manifest');
   ok(parseTake(JSON.stringify({
     schema: TAKE_SCHEMA, take_id: 't1', recording: 'raw.mp4',
-    capture: { region: [0, 0, 100, 100] }, steps: [{ id: 'a', start: 1, end: 2 }],
+    capture: { region: [0, 0, 100, 100] }, steps: [{ id: 'a', start: 1, end: 2, status: 'ok' }],
   })).pointer === null, 'a take without pointer telemetry yields no track, rather than one inferred from the rects');
   ok(take.steps[0].start === 4.02, 'a take manifest carries measured seconds');
   ok(take.steps[0].rect.x0 === 80, 'a take manifest carries the rectangle actually acted on');

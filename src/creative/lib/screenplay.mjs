@@ -25,6 +25,7 @@ const SCREENPLAY_SCHEMA = 'kai.demo-screenplay/v1';
 const TAKE_SCHEMA = 'kai.demo-take/v1';
 const ACTIONS = new Set(['hold', 'click', 'type', 'key', 'navigate']);
 const ANCHORS = new Set(['center', 'leading', 'trailing', 'pointer']);
+const TAKE_STATUSES = new Set(['ok', 'failed', 'unsettled']);
 const MAX_STEPS = 200;
 // Schema-level names only. The durations, caps and byte limits behind them are
 // editorial policy and live in demo-format, which pins this list in its own
@@ -358,13 +359,16 @@ export function parseTake(text) {
     const start = num(step.start, `${where}.start`, { min: 0 });
     const end = num(step.end, `${where}.end`, { min: 0 });
     if (end < start) fail(`${where} ends before it starts`);
+    if (!TAKE_STATUSES.has(step.status)) {
+      fail(`${where}.status must be one of ${[...TAKE_STATUSES].join(', ')}, got ${JSON.stringify(step.status ?? null)}`);
+    }
     return {
       id: str(step.id, `${where}.id`),
       start,
       end,
       rect: step.rect ? parseRect(step.rect, `${where}.rect`) : null,
       pointer: Array.isArray(step.pointer) ? { x: num(step.pointer[0], `${where}.pointer[0]`), y: num(step.pointer[1], `${where}.pointer[1]`) } : null,
-      status: step.status === 'failed' ? 'failed' : step.status === 'unsettled' ? 'unsettled' : 'ok',
+      status: step.status,
     };
   });
 
