@@ -31,9 +31,9 @@
 // a lie about how fast the product is. Those are script defects, and the fix is a
 // shorter line or a wider span -- both of which this tool computes for you.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
 
@@ -270,11 +270,29 @@ export function place(screenplay, take, narrationTake) {
 // Narration is laid onto the finished render rather than mixed during it, so a
 // re-narration in another language never re-encodes the video and can never
 // change a single frame of what was recorded.
-export function buildMixArgs(plan, { video, out }) {
+export function buildMixArgs(plan, { video, out, replace = false }) {
   if (!plan.ok) fail('this narration plan was rejected, so there is nothing to mix; fix the rejections first');
   if (plan.beats.length === 0) fail('this narration plan places no beats');
   for (const label of [video, out]) {
     if (label.startsWith('-')) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
+  }
+
+  const pathIdentity = (path) => {
+    const absolute = resolve(path);
+    const identity = existsSync(absolute) ? realpathSync(absolute) : absolute;
+    return process.platform === 'win32' ? identity.toLowerCase() : identity;
+  };
+  const outputIdentity = pathIdentity(out);
+  const sources = [
+    { role: 'video input', path: video },
+    ...plan.beats.map((beat) => ({ role: `narration clip "${beat.beat}"`, path: beat.path })),
+  ];
+  const inputCollision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
+  if (inputCollision) {
+    fail(`output path "${out}" is the same as the ${inputCollision.role}; mixing must write a distinct file`);
+  }
+  if (existsSync(out) && !replace) {
+    fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);
   }
 
   const inputs = [];
@@ -292,7 +310,7 @@ export function buildMixArgs(plan, { video, out }) {
   chain.push(`${labels.join('')}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0[mix]`);
 
   return [
-    '-y', '-hide_banner', '-v', 'error',
+    replace ? '-y' : '-n', '-hide_banner', '-v', 'error',
     '-i', video,
     ...inputs,
     '-filter_complex', chain.join(';'),
@@ -327,8 +345,9 @@ function usage() {
   --place      <screenplay.json> <take.json> <narration_take.json> [--out plan.json]
       Lay the beats against the measured recording, or refuse and say why.
 
-  --mix        <plan.json> --video <render.mp4> --out <narrated.mp4>
+  --mix        <plan.json> --video <render.mp4> --out <narrated.mp4> [--replace]
       Print the ffmpeg command that lays the placed clips onto the finished video.
+      Existing outputs are refused unless replacement is explicitly authorized.
 `);
 }
 
@@ -359,7 +378,7 @@ function main(argv) {
     const video = flag(argv, '--video') ?? fail('--mix needs --video <render.mp4>');
     const out = flag(argv, '--out') ?? fail('--mix needs --out <narrated.mp4>');
     if (!existsSync(video)) fail(`${video} does not exist; mix the narration onto a render that was already made`);
-    console.log(['ffmpeg', ...buildMixArgs(plan, { video, out })].map((a) => (/[\s;'"\[\]]/.test(a) ? `"${a}"` : a)).join(' '));
+    console.log(['ffmpeg', ...buildMixArgs(plan, { video, out, replace: argv.includes('--replace') })].map((a) => (/[\s;'"\[\]]/.test(a) ? `"${a}"` : a)).join(' '));
     return 0;
   }
 

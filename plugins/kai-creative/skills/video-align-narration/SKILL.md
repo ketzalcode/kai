@@ -101,6 +101,11 @@ For an authorized mix request, prepare the command:
 node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --mix "<placement-plan>" --video "<compatible-video>" --out "<new-narrated-video>"
 ```
 
+The output must differ from the video and every narration clip. The helper
+refuses an existing destination by default and emits ffmpeg's no-overwrite
+mode. Use `--replace` only when the operator explicitly authorizes replacing
+that exact destination; replacement never permits an input/output collision.
+
 The printed command is not an executed mix. Review its paths and arguments
 before separately authorized execution; do not blindly evaluate tool stdout.
 The existing mixer copies video and uses the placed clips as its audio track.
