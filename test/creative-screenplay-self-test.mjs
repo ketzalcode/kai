@@ -11,6 +11,11 @@ import {
   parseTake,
   parseTargets,
 } from '../src/creative/lib/screenplay.mjs';
+import {
+  TAKE_SCHEMA as NARRATION_TAKE_SCHEMA,
+  parseNarrationTake,
+  place,
+} from '../src/creative/demo-narrate.mjs';
 
 const screenplay = {
   schema: SCREENPLAY_SCHEMA,
@@ -62,7 +67,7 @@ test('take parsing preserves measured timing and normalized pointer telemetry', 
     take_id: 'take-1',
     recording: 'raw.mp4',
     capture: {region: [0, 0, 1256, 784], fps: 30},
-    steps: [{id: 'click', start: 4.02, end: 4.33, rect: [80, 136, 150, 162]}],
+    steps: [{id: 'click', start: 4.02, end: 4.33, status: 'ok', rect: [80, 136, 150, 162]}],
     pointer: {
       samples: [
         {t: 1, x: 628, y: 392, visible: true},
@@ -88,4 +93,96 @@ test('take parsing rejects reversed timing', () => {
     capture: {region: [0, 0, 10, 10]},
     steps: [{id: 'click', start: 5, end: 2}],
   })), /ends before it starts/);
+});
+
+test('take parsing rejects missing and unknown step statuses', () => {
+  const take = {
+    schema: TAKE_SCHEMA,
+    take_id: 'take-1',
+    recording: 'raw.mp4',
+    capture: {region: [0, 0, 10, 10]},
+    steps: [{id: 'click', start: 1, end: 2}],
+  };
+
+  assert.throws(() => parseTake(JSON.stringify(take)), /status must be one of ok, failed, unsettled, got null/);
+  take.steps[0].status = 'unknown';
+  assert.throws(() => parseTake(JSON.stringify(take)), /status must be one of ok, failed, unsettled, got "unknown"/);
+});
+
+test('narration placement rejects failed or unsettled interior states', () => {
+  const parsedScreenplay = parseScreenplay(JSON.stringify({
+    schema: SCREENPLAY_SCHEMA,
+    title: 'Interior state validation',
+    capture: {region: '0,0 10x10'},
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+      {id: 'c', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'The result is ready.',
+      visual_span: {from_step: 'a', through_step: 'c'},
+      start_after: 'b',
+    }],
+  }));
+  const narrationTake = parseNarrationTake(JSON.stringify({
+    schema: NARRATION_TAKE_SCHEMA,
+    clips: [{beat: 'n-1', status: 'ok', path: 'n-1.wav', durationSec: 1}],
+  }));
+
+  for (const status of ['failed', 'unsettled']) {
+    const take = parseTake(JSON.stringify({
+      schema: TAKE_SCHEMA,
+      take_id: `take-${status}`,
+      recording: 'raw.mp4',
+      capture: {region: [0, 0, 10, 10]},
+      steps: [
+        {id: 'a', start: 0, end: 3, status: 'ok'},
+        {id: 'b', start: 3, end: 6, status},
+        {id: 'c', start: 6, end: 10, status: 'ok'},
+      ],
+    }));
+    const plan = place(parsedScreenplay, take, narrationTake);
+    assert.equal(plan.ok, false);
+    assert.equal(plan.rejections[0].reason, `step-${status}`);
+    assert.match(plan.rejections[0].detail, /step "b"/);
+  }
+});
+
+test('narration placement rejects unrecorded interior states', () => {
+  const parsedScreenplay = parseScreenplay(JSON.stringify({
+    schema: SCREENPLAY_SCHEMA,
+    title: 'Missing interior state validation',
+    capture: {region: '0,0 10x10'},
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+      {id: 'c', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'The result is ready.',
+      visual_span: {from_step: 'a', through_step: 'c'},
+    }],
+  }));
+  const take = parseTake(JSON.stringify({
+    schema: TAKE_SCHEMA,
+    take_id: 'take-missing-interior',
+    recording: 'raw.mp4',
+    capture: {region: [0, 0, 10, 10]},
+    steps: [
+      {id: 'a', start: 0, end: 3, status: 'ok'},
+      {id: 'c', start: 6, end: 10, status: 'ok'},
+    ],
+  }));
+  const narrationTake = parseNarrationTake(JSON.stringify({
+    schema: NARRATION_TAKE_SCHEMA,
+    clips: [{beat: 'n-1', status: 'ok', path: 'n-1.wav', durationSec: 1}],
+  }));
+
+  const plan = place(parsedScreenplay, take, narrationTake);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.rejections[0].reason, 'unrecorded-step');
+  assert.match(plan.rejections[0].detail, /"b"/);
 });

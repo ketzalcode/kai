@@ -44,10 +44,11 @@ gate, as well as the span endpoints. Every referenced step needs valid
 measurement and status evidence. A failed, unsettled, unrecorded, or unknown
 relevant state blocks the composition before placement.
 
-The helper checks span endpoints; it does not establish that all interior
-states or an interior gate are valid. Its successful plan cannot override the
-input inspection. In particular, do not place a line after an unsettled gate
-just because its endpoint leaves enough seconds to speak.
+The helper checks every step in the visual span, including an interior
+`start_after` gate, and rejects missing or non-`ok` status evidence. Its
+successful plan still cannot establish visual meaning or visibility. In
+particular, do not treat action timing as proof that a referenced result was
+readable on screen.
 
 Missing visibility evidence remains an unresolved gap. Action end times are
 not proof that the result appeared, stayed readable, or matched the words.

@@ -73,21 +73,26 @@ function place(screenplay, take, narrationTake) {
   const beats = screenplay.narration;
   if (!beats || beats.length === 0) fail("this screenplay has no narration beats, so there is nothing to place");
   const measured = new Map(take.steps.map((step) => [step.id, step]));
+  const stepOrder = new Map(screenplay.steps.map((step, index) => [step.id, index]));
   const rejections = [];
   const placed = [];
   let cursor = 0;
   for (const beat of beats) {
-    const from = measured.get(beat.visual_span.from_step);
-    const through = measured.get(beat.visual_span.through_step);
-    if (!from || !through) {
+    const spanStepIds = screenplay.steps.slice(
+      stepOrder.get(beat.visual_span.from_step),
+      stepOrder.get(beat.visual_span.through_step) + 1
+    ).map((step) => step.id);
+    const missing = spanStepIds.filter((id) => !measured.has(id));
+    if (missing.length > 0) {
       rejections.push({
         beat: beat.id,
         reason: "unrecorded-step",
-        detail: `beat "${beat.id}" spans ${!from ? `"${beat.visual_span.from_step}"` : `"${beat.visual_span.through_step}"`}, which this take does not contain; the screenplay and the take are not from the same demo`
+        detail: `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(", ")}, which this take does not contain; the screenplay and the take are not from the same demo`
       });
       continue;
     }
-    const broken = [from, through].filter((s) => s.status !== "ok");
+    const relevantSteps = spanStepIds.map((id) => measured.get(id));
+    const broken = relevantSteps.filter((step) => step.status !== "ok");
     if (broken.length > 0) {
       rejections.push({
         beat: beat.id,
@@ -96,6 +101,8 @@ function place(screenplay, take, narrationTake) {
       });
       continue;
     }
+    const from = relevantSteps[0];
+    const through = relevantSteps[relevantSteps.length - 1];
     const clip = narrationTake.clips.get(beat.id);
     if (!clip) {
       rejections.push({ beat: beat.id, reason: "no-clip", detail: `beat "${beat.id}" has no clip in the narration take; synthesis was partial` });
