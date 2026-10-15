@@ -15,6 +15,26 @@ skill.
 Repository instructions and loader conventions govern. Inspect them before
 editing.
 
+## Choose ownership before editing
+Default to a repository-local skill when the method:
+
+- is requested for one workspace;
+- is new, still evolving, or unproven outside that workspace; or
+- depends on repository terminology, team practice, or local tools.
+
+Before choosing its directory, inspect repository instructions, existing skill
+roots, and the active host. Copilot CLI supports `.github/skills/`,
+`.claude/skills/`, and `.agents/skills/` without a documented preference.
+Preserve the repository's established supported root. If several or none make
+the placement clear, ask one placement question instead of inventing a default.
+
+Choose a Kai package only when the operator explicitly requests Kai-wide
+ownership or grounded evidence shows stable, caller-agnostic reuse across
+repositories. Apparent generality is insufficient by itself.
+
+When ownership remains ambiguous, ask one local-versus-Kai question. Do not
+edit Kai, create a Kai branch, or open a public Kai PR before this decision.
+
 ## Establish the boundary
 
 A skill is justified when the method:
@@ -24,10 +44,8 @@ A skill is justified when the method:
 - benefits from context that should load only when needed; and
 - can be applied without knowing which agent invoked it.
 
-Keep phases of one method as sections or companion references. Split another
-skill only when it has an independent trigger, independent reuse, or materially
-different tools/context. Do not create prepare, execute, and report skills only
-because a lifecycle has three phases.
+Keep phases of one method together. Split only for an independent trigger,
+independent reuse, or materially different tools/context.
 
 ## Preserve dependency direction
 
@@ -66,13 +84,6 @@ Use progressive disclosure:
 3. **Resources:** load references, scripts, assets, or lower-level skills only
    at the step that needs them.
 
-The main `SKILL.md` contains:
-
-- a precise use-when description;
-- the stable decision or method;
-- hard boundaries and failure behavior; and
-- links to companion material only when it is needed.
-
 Put large examples, templates, and lookup material under `references/`. Put
 deterministic parsing, persistence, and machine validation in scripts or source
 code. Do not copy a runtime schema into prose merely so an agent can keep
@@ -82,29 +93,23 @@ Do not begin with a collected dependency list. Route a lower-level skill inline
 where the method reaches that decision. If every run needs another skill before
 this one can be understood, the boundary is probably misplaced.
 
-When work accumulates incrementally, prefer:
-
-- one small immutable admission or accepted basis;
-- append-only observations or checkpoints; and
-- a final read-only projection or report.
-
-The report is not another authority and the admission is not a progress log.
+For incremental work, prefer one immutable admission or accepted basis and
+append-only observations or checkpoints; use a final read-only projection or report
+rather than another mutable authority.
 
 ## Author or revise
 
-1. Read neighboring skills and reuse their frontmatter, naming, tools, and
-   reference conventions.
+1. Use the nearest accepted skill as the repository-native shape; do not impose
+   Kai frontmatter on a local host.
 2. Search for an existing skill that already owns the method.
 3. Write the trigger around the real repeated request, not the current task.
 4. Keep caller-specific routing in the caller.
 5. Add only the tools the skill itself needs.
-6. Add focused examples or references only where prose would otherwise become
-   ambiguous.
-7. Update the owning catalog and generated artifacts when the repository
-   requires them.
+6. Add references only where prose would be ambiguous; update required catalogs
+   and generated artifacts.
 
-When revising, remove accidental caller awareness and duplicated operating
-contracts before adding more instructions.
+When revising, remove caller awareness and duplicated operating contracts
+before adding instructions.
 
 ## Validate
 

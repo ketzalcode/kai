@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **42 skills**.
+The repository ships **9 agents** and **41 skills**.
 
-The default marketplace supplies **9 agents** and **42 skills** through core, optional project management, engineering, and creative (21 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **41 skills** through core, optional project management, engineering, and creative (20 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -120,7 +120,7 @@ Optional feedback and lean Kai agent/skill authoring guidance.
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-feedback`](../../plugins/kai-contributor/skills/kai-feedback/SKILL.md) | `kai-contributor` | Use when the operator says Kai was incorrect, missed a principle, added too much process, or needs an improvement recorded for the Kai maintainers. |
-| [`kai-create-agent`](../../plugins/kai-contributor/skills/kai-create-agent/SKILL.md) | `kai-contributor` | Use when creating or materially revising a Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only at the decision that needs them. |
+| [`kai-create-agent`](../../plugins/kai-contributor/skills/kai-create-agent/SKILL.md) | `kai-contributor` | Use when creating or materially revising a repository-local or Kai agent so the role earns its context cost, owns one clear lane, and loads reusable instructions only when needed. |
 | [`kai-create-skill`](../../plugins/kai-contributor/skills/kai-create-skill/SKILL.md) | `kai-contributor` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
 
 ### Engineering craft
@@ -144,7 +144,6 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`team-insights`](../../plugins/kai-engineering/skills/team-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to extract repository-specific guidance from selected team PR comments, reviews, or documents. |
 | [`refine-insights`](../../plugins/kai-engineering/skills/refine-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to reconcile workspace insight candidates into the compact profile used for future work in that repository. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | `kai-engineering` | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
-| [`development-design-documents`](../../plugins/kai-engineering/skills/development-design-documents/SKILL.md) | `kai-engineering` | Use when creating or materially revising a developer design, technical design, engineering spec, or its Markdown-to-DOCX projection. |
 
 ### Engineering automation
 
