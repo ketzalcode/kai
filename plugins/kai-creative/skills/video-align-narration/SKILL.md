@@ -95,6 +95,18 @@ node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --place "<screenplay>" "<m
 Keep drift and rejection details visible. Name whether a finding came from
 input inspection or an actually executed helper; do not invent helper output.
 
+Once the placement plan exists, feed it to `demo-format` to flag measured
+narration-free holds between placed beats (a gap before the first beat, such
+as operator-requested settling time, is never flagged; the gap after the
+last beat is `demo-format`'s separate tail check):
+
+```text
+node "<kai-creative-plugin>/scripts/demo-format.mjs" "<screenplay>" --video "<compatible-video>" --narration-plan "<placement-plan>"
+```
+
+A flagged hold is a measured gap, not proof the time was unnecessary — judge
+it against the interaction or reading work it actually carries before cutting.
+
 For an authorized mix request, prepare the command:
 
 ```text
