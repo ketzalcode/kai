@@ -149,6 +149,12 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     beats: [{path: 'clip.wav', start: 0}],
   }));
   writeFileSync(narrationVideo, '');
+  const statusDescriptor = join(consumerRoot, 'status-descriptor.json');
+  const statusReceipts = join(consumerRoot, 'status-receipts.json');
+  writeFileSync(statusDescriptor, JSON.stringify({
+    schema: 'kai.demo-production-descriptor/v1',
+    stages: [{stage: 'smoke', output: narrationPlan}],
+  }));
   const bundleScreenplay = join(consumerRoot, 'bundle-screenplay.json');
   const bundleTake = join(consumerRoot, 'bundle-take.json');
   const bundlePlan = join(consumerRoot, 'bundle-plan.json');
@@ -202,6 +208,10 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
       ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
     ],
     ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+    [
+      'kai-creative/scripts/demo-status.mjs',
+      ['--report', statusDescriptor, '--receipts', statusReceipts],
+    ],
     [
       'kai-creative/scripts/demo-bundle.mjs',
       ['--inspect', '--screenplay', bundleScreenplay, '--take', bundleTake, '--plan', bundlePlan, '--render', bundleRender, '--variant', 'draft'],
