@@ -149,6 +149,12 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     beats: [{path: 'clip.wav', start: 0}],
   }));
   writeFileSync(narrationVideo, '');
+  const statusDescriptor = join(consumerRoot, 'status-descriptor.json');
+  const statusReceipts = join(consumerRoot, 'status-receipts.json');
+  writeFileSync(statusDescriptor, JSON.stringify({
+    schema: 'kai.demo-production-descriptor/v1',
+    stages: [{stage: 'smoke', output: narrationPlan}],
+  }));
   const invocations = new Map([
     ['kai-core/scripts/activity.mjs', ['--help']],
     ['kai-core/scripts/coordinate.mjs', ['direct']],
@@ -162,6 +168,10 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
       ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
     ],
     ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+    [
+      'kai-creative/scripts/demo-status.mjs',
+      ['--report', statusDescriptor, '--receipts', statusReceipts],
+    ],
   ]);
   let executed = 0;
   for (const pack of packs) {
