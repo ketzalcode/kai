@@ -171,11 +171,23 @@ function parseNarrationBeats(raw, steps) {
         fail(`${where} covers only "${from}" and also waits for it to finish, leaving no time in which to speak. Extend through_step past "${from}", or drop start_after if the line describes the step happening rather than its result.`);
       }
     }
+    let referencesStep = null;
+    if (beat.references_step !== void 0 && beat.references_step !== null) {
+      referencesStep = str(beat.references_step, `${where}.references_step`);
+      if (!order.has(referencesStep)) fail(`${where}.references_step names "${referencesStep}", which is not a step in this screenplay`);
+      if (order.get(referencesStep) < order.get(from) || order.get(referencesStep) > order.get(through)) {
+        fail(`${where}.references_step names "${referencesStep}", which is outside the beat's own visual span; a beat cannot claim evidence it does not cover`);
+      }
+      if (startAfter === null || order.get(startAfter) < order.get(referencesStep)) {
+        fail(`${where}.references_step names "${referencesStep}" as the evidence this beat is about, but start_after is ${startAfter ? `"${startAfter}"` : "unset"}, which does not gate on it; the line could begin before that evidence is on screen. Set start_after to "${referencesStep}" or a later step in the span.`);
+      }
+    }
     return {
       id,
       text,
       visual_span: { from_step: from, through_step: through },
       start_after: startAfter,
+      references_step: referencesStep,
       voice: typeof beat.voice === "string" && beat.voice.trim() !== "" ? beat.voice : null
     };
   }).map((beat, i, all) => {
