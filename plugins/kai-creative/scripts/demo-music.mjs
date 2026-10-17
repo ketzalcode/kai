@@ -72,6 +72,7 @@ function parseMusicAcceptance(text) {
   return {
     schema: ACCEPTANCE_SCHEMA,
     cue_hash: str(raw.cue_hash, "cue_hash"),
+    track_hash: str(raw.track_hash, "track_hash"),
     operator: str(raw.operator, "operator"),
     accepted_at: str(raw.accepted_at, "accepted_at"),
     note: typeof raw.note === "string" ? raw.note : "",
@@ -87,6 +88,7 @@ function acceptCue(cueText, { operator, note = "", auditioned = "speech+music", 
   return {
     schema: ACCEPTANCE_SCHEMA,
     cue_hash: cueHash(cueText),
+    track_hash: createHash("sha256").update(readFileSync(parseMusicCue(cueText).path)).digest("hex"),
     operator,
     accepted_at: now(),
     note,
@@ -98,6 +100,8 @@ function requireAcceptance(cueText, acceptance) {
   if (acceptance.cue_hash !== expected) {
     fail(`this acceptance names cue hash "${acceptance.cue_hash}", but the supplied cue hashes to "${expected}"; it was not accepted -- the cue changed, or a different candidate was approved`);
   }
+  const trackHash = createHash("sha256").update(readFileSync(parseMusicCue(cueText).path)).digest("hex");
+  if (acceptance.track_hash !== trackHash) fail("the music track bytes changed after acceptance; audition and accept the new track before using it");
   if (acceptance.auditioned !== "speech+music") {
     fail(`this acceptance recorded a "${acceptance.auditioned}" audition, not "speech+music"; technical validity is not an aesthetic acceptance, and a music-only audition cannot judge fit against the narration`);
   }
@@ -205,6 +209,8 @@ function main(argv) {
     const note = flag(argv, "--note", "");
     const auditioned = flag(argv, "--auditioned", "speech+music");
     const out = flag(argv, "--out") ?? fail("--accept needs --out <acceptance.json>");
+    const cue = parseMusicCue(cueText);
+    assertSafeOutput([{ role: "music cue", path: cuePath }, { role: "music track", path: cue.path }], out, argv.includes("--replace"));
     const acceptance = acceptCue(cueText, { operator, note, auditioned });
     console.log(JSON.stringify(acceptance, null, 2));
     mkdirSync(dirname(out) || ".", { recursive: true });
