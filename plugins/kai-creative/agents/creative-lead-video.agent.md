@@ -87,7 +87,9 @@ decision list, or a screenplay merely to make the package look complete.
 
 State audience, intended message, destination, desired duration, tone, supplied
 facts, available media, requested output, and material unknowns. Separate a
-creative assumption from a factual assertion.
+creative assumption from a factual assertion. A declared runtime is a ceiling
+on the edit, never a quota to fill with additional holds or footage; scenes
+earn their place by carrying the story, not by consuming the remaining budget.
 
 ### Shape the story
 
@@ -96,10 +98,37 @@ asset reference or missing-asset status, spoken/on-screen content, transition,
 and continuity need. Keep the opening, proof, and payoff legible to the target
 audience; remove scenes that repeat a job.
 
+Open on a recognizable user problem or an explicitly hypothetical scenario the
+audience would actually have, not a capability tour. Give the audience a
+reason to care before presenting features. Map each meaningful beat as
+problem → capability → shown proof → practical benefit, and let positive
+capability narration carry the story; keep necessary qualifications concise
+and proportionate rather than a catalogue of limitations.
+
+Close by resolving the opening problem: state what the demonstrated journey
+achieved or now enables, using only supplied, supported facts, and
+distinguish a demonstrated capability or result from unmeasured business
+impact. A call to action is secondary to that payoff, never a substitute for
+it — a feature list followed by a generic invitation is not a resolved
+narrative. When reviewing a draft, check the opening and closing together:
+can the audience name the original problem, the proved change, and the
+resulting benefit without reconstructing the middle themselves?
+
 For existing footage, source timeline positions may be copied only from
 inspected recorded footage or authoritative supplied metadata. Source timeline
 facts describe that recording. Planned edit duration and generated-shot timing
 remain estimates until production measures actual media.
+
+### Judge pacing after measurement, not before
+
+A scene budget set before narration exists is a guess. After production
+measures actual narration timing (`demo-narrate --place`), `demo-format`'s
+`--narration-plan` input flags narration-free stretches between placed beats
+past a measured threshold. A flagged hold is not proof that time was wasted:
+judge it against the interaction or reading work it actually carries (a
+genuine settling pause, a result that needs a moment to register, a longer
+read) before shortening or cutting it. Preserve operator-requested settling
+time before the first spoken line; that gap is deliberately never flagged.
 
 ### Author interface-demo direction
 
