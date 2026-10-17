@@ -112,7 +112,8 @@ export function checkProvenance(screenplay, take) {
   if (!take) return skip('provenance', 'a take manifest');
   const authored = new Set(screenplay.steps.map((s) => s.id));
   const recorded = new Set(take.steps.map((s) => s.id));
-  const missing = [...authored].filter((id) => !recorded.has(id));
+  const dropped = new Set(take.schema === EDITED_TAKE_SCHEMA ? take.dropped_steps : []);
+  const missing = [...authored].filter((id) => !recorded.has(id) && !dropped.has(id));
   const extra = [...recorded].filter((id) => !authored.has(id));
   if (missing.length || extra.length) {
     return bad('provenance', `the screenplay and the take are not the same revision${missing.length ? `; never recorded: ${missing.join(', ')}` : ''}${extra.length ? `; recorded but not authored: ${extra.join(', ')}` : ''}. Every number derived from them would describe a demo that does not exist.`);
