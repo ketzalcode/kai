@@ -359,7 +359,7 @@ export function validatePlan(raw) {
         min: 1,
         max: 100,
       }),
-      maxAiCredits: finite(raw.limits.maxAiCredits, 'plan.limits.maxAiCredits', {
+      maxAiCredits: raw.limits.maxAiCredits === null ? null : finite(raw.limits.maxAiCredits, 'plan.limits.maxAiCredits', {
         min: 0.01,
         max: 1_000_000,
       }),
@@ -887,6 +887,10 @@ export function buildCopilotArgs({
   workspaceRoot = null,
   env = process.env,
 }) {
+  if (aiCredits === null && plan.limits.maxAiCredits !== null) {
+    fail('uncapped AI credits require explicit approval in plan.limits.maxAiCredits');
+  }
+  if (aiCredits !== null) finite(aiCredits, 'aiCredits', {min: 0.000001});
   const args = [
     '--agent',
     string(profile, 'Copilot profile'),
@@ -897,9 +901,8 @@ export function buildCopilotArgs({
     '--no-auto-update',
     '--max-autopilot-continues',
     String(plan.limits.maxAutopilotContinues),
-    '--max-ai-credits',
-    String(aiCredits),
   ];
+  if (aiCredits !== null) args.push('--max-ai-credits', String(aiCredits));
   if (workspaceRoot) args.push('--add-dir', resolve(workspaceRoot));
   for (const url of plan.permissions.allowedUrls) args.push('--allow-url', url);
   if (plan.permissions.secretRefs.length > 0) {
@@ -1053,11 +1056,16 @@ function reviewPrompt(plan, slice, basis, deliveryResult) {
   ].join('\n\n');
 }
 
-function worktreePath(projectRoot, runId, sliceId) {
-  const parent = resolve(dirname(projectRoot), '.kai-nightshift-worktrees');
-  const path = resolve(parent, projectRoot.split(/[\\/]/).at(-1), runId, sliceId);
+export function worktreePath(projectRoot, runId, sliceId) {
+  const parent = resolve(projectRoot, '.worktrees');
+  const path = resolve(parent, 'nightshift', safeId(runId, 'runId'), safeId(sliceId, 'sliceId'));
   if (!isWithin(parent, path)) fail('derived worktree path escapes Nightshift root');
-  assertNoLinks(parent, path, 'Nightshift worktree path');
+  assertNoLinks(projectRoot, path, 'Nightshift worktree path');
+  if (git(projectRoot, ['check-ignore', '--quiet', '--no-index', path], {
+    allowFailure: true,
+  }).status !== 0) {
+    fail('Nightshift requires its project-local worktree path to be ignored');
+  }
   return path;
 }
 
@@ -1311,7 +1319,7 @@ function runSession({
 }) {
   const worktree = createWorktree(projectRoot, plan, slice, baseHead);
   const profiles = profilesForSlice(slice);
-  const stageCredits = aiCredits / profiles.length;
+  const stageCredits = aiCredits === null ? null : aiCredits / profiles.length;
   const basis = {baseHead, pullRequestBase};
 
   const builder = runProfile({
@@ -1549,7 +1557,7 @@ ${suggestionRows.length ? suggestionRows.join('\n') : '| None | - | - | - | - | 
 - Finished: ${safe(state.finishedAt)}
 - Terminal reason: ${safe(state.terminalReason)}
 - Pull requests: ${rows.filter(({state}) => state?.status === 'delivered').length}/${plan.limits.maxPullRequests}
-- AI credits: unavailable (approved soft ceiling ${plan.limits.maxAiCredits})
+- AI credits: unavailable (${plan.limits.maxAiCredits === null ? 'no credit ceiling approved' : `approved soft ceiling ${plan.limits.maxAiCredits}`})
 - Retained worktrees: ${retained.length ? retained.map(safe).join(', ') : 'none'}
 `;
 }
@@ -1583,7 +1591,7 @@ export function executeRun({
     writeReport(paths, plan, events);
     return {plan, events, state, paths};
   }
-  const creditUnit = plan.limits.maxAiCredits
+  const creditUnit = plan.limits.maxAiCredits === null ? null : plan.limits.maxAiCredits
     / ((plan.limits.maxPullRequests * 4) + 1);
   while (true) {
     verifyRunBasis(projectRoot, plan);
@@ -1695,7 +1703,7 @@ export function executeRun({
         paths,
         baseHead: slice.baseHead,
         pullRequestBase: slice.pullRequestBase,
-        aiCredits: creditUnit * 3,
+        aiCredits: creditUnit === null ? null : creditUnit * 3,
         env,
       });
     } catch (error) {

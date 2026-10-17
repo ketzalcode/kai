@@ -149,6 +149,52 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     beats: [{path: 'clip.wav', start: 0}],
   }));
   writeFileSync(narrationVideo, '');
+  const statusDescriptor = join(consumerRoot, 'status-descriptor.json');
+  const statusReceipts = join(consumerRoot, 'status-receipts.json');
+  writeFileSync(statusDescriptor, JSON.stringify({
+    schema: 'kai.demo-production-descriptor/v1',
+    stages: [{stage: 'smoke', output: narrationPlan}],
+  }));
+  const bundleScreenplay = join(consumerRoot, 'bundle-screenplay.json');
+  const bundleTake = join(consumerRoot, 'bundle-take.json');
+  const bundlePlan = join(consumerRoot, 'bundle-plan.json');
+  const bundleRender = join(consumerRoot, 'bundle-render.mp4');
+  const bundleClip = join(consumerRoot, 'bundle-clip.wav');
+  writeFileSync(bundleScreenplay, JSON.stringify({
+    schema: 'kai.demo-screenplay/v1',
+    title: 'Smoke demo',
+    capture: {region: '0,0 1256x784', fps: 30},
+    steps: [{id: 'hold', action: 'hold', seconds: 1}],
+    narration: [{id: 'n-1', text: 'hi', visual_span: {from_step: 'hold'}}],
+  }));
+  writeFileSync(bundleTake, JSON.stringify({
+    schema: 'kai.demo-take/v1',
+    take_id: 'take-1',
+    recording: 'raw.mp4',
+    capture: {region: [0, 0, 1256, 784], fps: 30},
+    steps: [{id: 'hold', start: 0, end: 1, status: 'ok'}],
+  }));
+  writeFileSync(bundleClip, '');
+  writeFileSync(bundlePlan, JSON.stringify({
+    schema: 'kai.demo-narration-plan/v1',
+    take_id: 'take-1',
+    recording: 'raw.mp4',
+    ok: true,
+    rejections: [],
+    beats: [{beat: 'n-1', path: bundleClip, start: 0, end: 1, durationSec: 1, text: 'hi'}],
+  }));
+  writeFileSync(bundleRender, '');
+  const musicCue = join(consumerRoot, 'music-cue.json');
+  writeFileSync(join(consumerRoot, 'candidate.wav'), 'smoke-candidate-bytes');
+  const musicAcceptance = join(consumerRoot, 'music-acceptance.json');
+  writeFileSync(musicCue, JSON.stringify({
+    schema: 'kai.demo-music-cue/v1',
+    path: 'candidate.wav',
+    title: 'Smoke candidate',
+    source: 'supplied',
+    rights: 'Smoke-test fixture, not a real licensed track.',
+    duration_sec: 30,
+  }));
   const invocations = new Map([
     ['kai-core/scripts/activity.mjs', ['--help']],
     ['kai-core/scripts/coordinate.mjs', ['direct']],
@@ -162,6 +208,18 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
       ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
     ],
     ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+    [
+      'kai-creative/scripts/demo-status.mjs',
+      ['--report', statusDescriptor, '--receipts', statusReceipts],
+    ],
+    [
+      'kai-creative/scripts/demo-bundle.mjs',
+      ['--inspect', '--screenplay', bundleScreenplay, '--take', bundleTake, '--plan', bundlePlan, '--render', bundleRender, '--variant', 'draft'],
+    ],
+    [
+      'kai-creative/scripts/demo-music.mjs',
+      ['--accept', musicCue, '--operator', 'smoke-test', '--out', musicAcceptance],
+    ],
   ]);
   let executed = 0;
   for (const pack of packs) {

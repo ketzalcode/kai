@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  EDITED_TAKE_SCHEMA,
+  TAKE_SCHEMA,
+  parseEditedTake,
   parseScreenplay,
   parseTake
 } from "./runtime-creative.mjs";
@@ -40,7 +43,8 @@ function checkProvenance(screenplay, take) {
   if (!take) return skip("provenance", "a take manifest");
   const authored = new Set(screenplay.steps.map((s) => s.id));
   const recorded = new Set(take.steps.map((s) => s.id));
-  const missing = [...authored].filter((id) => !recorded.has(id));
+  const dropped = new Set(take.schema === EDITED_TAKE_SCHEMA ? take.dropped_steps : []);
+  const missing = [...authored].filter((id) => !recorded.has(id) && !dropped.has(id));
   const extra = [...recorded].filter((id) => !authored.has(id));
   if (missing.length || extra.length) {
     return bad("provenance", `the screenplay and the take are not the same revision${missing.length ? `; never recorded: ${missing.join(", ")}` : ""}${extra.length ? `; recorded but not authored: ${extra.join(", ")}` : ""}. Every number derived from them would describe a demo that does not exist.`);
@@ -270,6 +274,23 @@ function flag(argv, name, fallback = null) {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, "utf8");
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, "--source-take");
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); supply --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, "utf8"));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
 function main(argv) {
   if (argv.includes("--placements")) {
     for (const [name, p] of Object.entries(PLACEMENTS)) {
@@ -278,11 +299,11 @@ function main(argv) {
     console.log("\nEvidence-informed product defaults, not scientific optima. Only max_seconds, which you declare, can fail a demo on runtime.");
     return 0;
   }
-  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--caption-review"]);
+  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--source-take", "--caption-review"]);
   const screenplayPath = argv.find((a, i) => !a.startsWith("-") && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log("demo-format \u2014 does this demo meet the format its placement demands?\n");
-    console.log("  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]");
+    console.log("  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]");
     console.log("  demo-format --placements");
     return 2;
   }
@@ -290,7 +311,7 @@ function main(argv) {
   const takePath = flag(argv, "--take");
   const captionReviewPath = flag(argv, "--caption-review");
   const result = checkAll(screenplay, {
-    take: takePath ? parseTake(readFileSync(takePath, "utf8")) : null,
+    take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, "--video")),
     wpm: Number(flag(argv, "--wpm", WPM.default)),
     captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null
