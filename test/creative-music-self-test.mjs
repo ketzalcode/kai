@@ -8,6 +8,8 @@ import {
   acceptCue,
   requireAcceptance,
   buildAuditionArgs,
+  buildMusicMixArgs,
+  buildPeakCheckArgs,
   assertSafeOutput,
 } from '../src/creative/demo-music.mjs';
 
@@ -94,4 +96,53 @@ test('assertSafeOutput refuses an existing destination without --replace', () =>
     () => assertSafeOutput([{role: 'video input', path: 'test/creative-music-self-test.mjs'}], 'test/creative-music-self-test.mjs', false),
     /is the same as the video input/,
   );
+});
+
+// ----------------------------------------------------------------- mixing
+
+test('music mix refuses an unaccepted cue', () => {
+  const cue = parseMusicCue(cueText);
+  const badAcceptance = acceptCue(JSON.stringify({...cueJson, title: 'Different track'}), {operator: 'ruben'});
+  assert.throws(
+    () => buildMusicMixArgs(plan, cue, cueText, badAcceptance, {video: 'render.mp4', out: 'scored.mp4'}),
+    /it was not accepted/,
+  );
+});
+
+test('music mix refuses a cue shorter than the narrated timeline', () => {
+  const shortCueJson = {...cueJson, duration_sec: 3};
+  const shortCueText = JSON.stringify(shortCueJson);
+  const cue = parseMusicCue(shortCueText);
+  const acceptance = acceptCue(shortCueText, {operator: 'ruben'});
+  assert.throws(
+    () => buildMusicMixArgs(plan, cue, shortCueText, acceptance, {video: 'render.mp4', out: 'scored.mp4'}),
+    /shorter than the narrated timeline/,
+  );
+});
+
+test('music mix ducks under every narrated beat, fades, and limits peak level', () => {
+  const cue = parseMusicCue(cueText);
+  const acceptance = acceptCue(cueText, {operator: 'ruben'});
+  const args = buildMusicMixArgs(plan, cue, cueText, acceptance, {video: 'render.mp4', out: 'scored.mp4'});
+  assert.equal(args[0], '-n');
+  const filterArg = args[args.indexOf('-filter_complex') + 1];
+  assert.match(filterArg, /afade=t=in:d=1\.5/);
+  assert.match(filterArg, /afade=t=out:st=3\.5:d=1\.5/);
+  assert.match(filterArg, /volume=-14dB:enable='between\(t,0,2\)'/);
+  assert.match(filterArg, /volume=-14dB:enable='between\(t,3,5\)'/);
+  assert.match(filterArg, /alimiter=limit=0\.95/);
+});
+
+test('music mix refuses to replace an existing output without authorization', () => {
+  const cue = parseMusicCue(cueText);
+  const acceptance = acceptCue(cueText, {operator: 'ruben'});
+  assert.throws(
+    () => buildMusicMixArgs(plan, cue, cueText, acceptance, {video: 'render.mp4', out: 'test/creative-music-self-test.mjs'}),
+    /already exists/,
+  );
+});
+
+test('peak check prints a read-only measurement command', () => {
+  const args = buildPeakCheckArgs('scored.mp4');
+  assert.deepEqual(args, ['-hide_banner', '-v', 'info', '-i', 'scored.mp4', '-af', 'astats=metadata=1:reset=1', '-f', 'null', '-']);
 });

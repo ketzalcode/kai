@@ -136,8 +136,27 @@ did not judge the track against the actual narration. If no candidate is
 acceptable, say so and offer a supplied track or a music-free result rather
 than defaulting to an unreviewed composition.
 
-No full-length music mix exists yet in this helper; report that gap rather
-than silently dropping or inventing a composed soundtrack.
+Only after acceptance, prepare the full composition:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --mix "<placement-plan>" --music "<music-cue>" --acceptance "<music-acceptance>" --video "<compatible-video>" --out "<scored-video>"
+```
+
+The helper refuses an unaccepted or changed cue, a cue shorter than the
+narrated timeline, and silently replacing an existing output (same `--replace`
+authorization contract as narration mixing). The music is faded in/out, ducked
+under every narrated beat so the voice always reads over it, and passed through
+a peak limiter in the generated command. A limiter bounds level by
+construction; it is not a substitute for actually inspecting the rendered
+file. After mixing, print and separately run the peak-check command to verify
+the actual result:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --check-levels "<rendered-file>"
+```
+
+Report the printed peak-check command as a pending verification step, not as
+a completed one, unless it was actually run and its output inspected.
 
 Load `kai-core-workspace-paths` before persistent output, and Load
 `creative-workspace-publication` when retaining durable plans or reports. Raw
