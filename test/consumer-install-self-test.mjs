@@ -150,6 +150,7 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
   }));
   writeFileSync(narrationVideo, '');
   const musicCue = join(consumerRoot, 'music-cue.json');
+  writeFileSync(join(consumerRoot, 'candidate.wav'), 'smoke-candidate-bytes');
   const musicAcceptance = join(consumerRoot, 'music-acceptance.json');
   writeFileSync(musicCue, JSON.stringify({
     schema: 'kai.demo-music-cue/v1',

@@ -129,7 +129,8 @@ Record the operator's judgment before anything downstream relies on it:
 node "<kai-creative-plugin>/scripts/demo-music.mjs" --accept "<music-cue>" --operator "<name>" --auditioned speech+music --out "<music-acceptance>"
 ```
 
-An acceptance is keyed to the exact cue content (`cue_hash`); editing the cue
+An acceptance binds both the cue content (`cue_hash`) and the audio bytes
+(`track_hash`); replacing audio at the same path also invalidates it. Editing the cue
 after acceptance, or substituting a different candidate, invalidates it. A
 `music-only` audition is recorded as such and is not sufficient acceptance: it
 did not judge the track against the actual narration. If no candidate is
@@ -142,9 +143,12 @@ Only after acceptance, prepare the full composition:
 node "<kai-creative-plugin>/scripts/demo-music.mjs" --mix "<placement-plan>" --music "<music-cue>" --acceptance "<music-acceptance>" --video "<compatible-video>" --out "<scored-video>"
 ```
 
-The helper refuses an unaccepted or changed cue, a cue shorter than the
-narrated timeline, and silently replacing an existing output (same `--replace`
-authorization contract as narration mixing). The music is faded in/out, ducked
+The helper probes the input video and refuses an existing source audio track
+rather than silently discarding it. It refuses an unaccepted or changed cue,
+a cue shorter than the full video, and silently replacing an existing output (same `--replace`
+authorization contract as narration mixing). The music spans the full measured
+video, with separate `--voice-db` and `--music-db` controls in addition to
+`--duck-db` and `--fade-sec`. It is faded in/out and ducked
 under every narrated beat so the voice always reads over it, and passed through
 a peak limiter in the generated command. A limiter bounds level by
 construction; it is not a substitute for actually inspecting the rendered

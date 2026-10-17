@@ -19,8 +19,9 @@
 // *that exact file*. A technically valid track with no recorded acceptance is
 // not a soundtrack; it is an unreviewed candidate.
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 
 export const CUE_SCHEMA = 'kai.demo-music-cue/v1';
@@ -170,7 +171,12 @@ function pathIdentity(path) {
 
 export function assertSafeOutput(sources, out, replace) {
   const outputIdentity = pathIdentity(out);
-  const collision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
+  const outputStat = existsSync(out) ? statSync(out) : null;
+  const collision = sources.find((source) => {
+    if (pathIdentity(source.path) === outputIdentity) return true;
+    const inputStat = outputStat && existsSync(source.path) ? statSync(source.path) : null;
+    return inputStat && inputStat.dev === outputStat.dev && inputStat.ino === outputStat.ino;
+  });
   if (collision) fail(`output path "${out}" is the same as the ${collision.role}; this must write a distinct file`);
   if (existsSync(out) && !replace) {
     fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);
@@ -246,9 +252,12 @@ export function buildAuditionArgs(plan, cue, { video, out, maxBeats = 3, replace
 export function buildMusicMixArgs(plan, cue, cueText, acceptance, {
   video,
   out,
+  videoInfo,
   replace = false,
   duckDb = -14,
   fadeSec = 1.5,
+  voiceDb = 0,
+  musicDb = -6,
 } = {}) {
   requireAcceptance(cueText, acceptance);
   if (!plan.ok) fail('this narration plan was rejected, so there is nothing to mix; fix the rejections first');
@@ -256,7 +265,14 @@ export function buildMusicMixArgs(plan, cue, cueText, acceptance, {
   for (const label of [video, out]) {
     if (label.startsWith('-')) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
   }
-  if (cue.duration_sec < plan.beats[plan.beats.length - 1].end) {
+  const videoEnd = num(videoInfo?.seconds, 'measured video duration', { min: 0.1 });
+  if (videoInfo?.audioStreams !== 0) fail('source video has an existing or unmeasured audio track; this composition cannot silently replace it');
+  if (videoEnd < Math.max(...plan.beats.map((beat) => beat.end))) fail('narration extends beyond the measured video duration');
+  duckDb = num(duckDb, 'duckDb', { min: -60, max: 0 });
+  fadeSec = Math.min(num(fadeSec, 'fadeSec', { min: 0.01, max: 30 }), videoEnd / 2);
+  voiceDb = num(voiceDb, 'voiceDb', { min: -60, max: 12 });
+  musicDb = num(musicDb, 'musicDb', { min: -60, max: 0 });
+  if (cue.duration_sec < videoEnd) {
     fail(`the music cue is ${cue.duration_sec}s long, shorter than the narrated timeline it would score (${plan.beats[plan.beats.length - 1].end}s); supply a longer or looped track rather than mixing a track that runs out`);
   }
 
@@ -270,7 +286,6 @@ export function buildMusicMixArgs(plan, cue, cueText, acceptance, {
     replace,
   );
 
-  const videoEnd = plan.beats[plan.beats.length - 1].end;
   const inputs = [];
   const chain = [];
   const voiceLabels = [];
@@ -289,13 +304,13 @@ export function buildMusicMixArgs(plan, cue, cueText, acceptance, {
     .map((beat) => `volume=${duckGain}:enable='between(t,${beat.start},${beat.end})'`)
     .join(',');
   const fadeOutStart = Math.max(0, videoEnd - fadeSec);
-  chain.push(`[1:a]atrim=0:${videoEnd},afade=t=in:d=${fadeSec},afade=t=out:st=${fadeOutStart}:d=${fadeSec},${duckStages}[music]`);
-  chain.push(`${voiceLabels.join('')}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0[voice]`);
+  chain.push(`[1:a]atrim=0:${videoEnd},volume=${musicDb}dB,afade=t=in:d=${fadeSec},afade=t=out:st=${fadeOutStart}:d=${fadeSec},${duckStages}[music]`);
+  chain.push(`${voiceLabels.join('')}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0,volume=${voiceDb}dB[voice]`);
   // A hard limiter on the final mix bounds peak level by construction; it does
   // not replace an actual post-render peak check, which `buildPeakCheckArgs`
   // prints separately for the operator to run against the rendered file.
-  chain.push('[voice][music]amix=inputs=2:normalize=0:dropout_transition=0:weights=1 0.5[premix]');
-  chain.push('[premix]alimiter=limit=0.95[mix]');
+  chain.push('[voice][music]amix=inputs=2:normalize=0:dropout_transition=0[premix]');
+  chain.push('[premix]alimiter=limit=0.95:level=false[mix]');
 
   return [
     replace ? '-y' : '-n', '-hide_banner', '-v', 'error',
@@ -305,8 +320,23 @@ export function buildMusicMixArgs(plan, cue, cueText, acceptance, {
     '-filter_complex', chain.join(';'),
     '-map', '0:v', '-map', '[mix]',
     '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k',
+    '-t', String(videoEnd),
     out,
   ];
+}
+
+export function probeVideoInfo(video) {
+  const result = spawnSync('ffprobe', [
+    '-v', 'error', '-show_entries', 'format=duration:stream=codec_type',
+    '-of', 'json', video,
+  ], { encoding: 'utf8' });
+  if (result.error || result.status !== 0) fail(`cannot inspect source video: ${result.error?.message ?? result.stderr}`);
+  const metadata = JSON.parse(result.stdout);
+  if (!metadata.streams?.some((stream) => stream.codec_type === 'video')) fail('source has no video stream');
+  return {
+    seconds: num(metadata.format?.duration, 'measured video duration', { min: 0.1 }),
+    audioStreams: metadata.streams.filter((stream) => stream.codec_type === 'audio').length,
+  };
 }
 
 // A read-only measurement command, not a mix: astats reports the actual peak
@@ -336,8 +366,8 @@ function usage() {
       Record that an operator judged this exact cue, keyed by its content hash.
 
   --mix        <plan.json> --music <cue.json> --acceptance <acceptance.json> --video <render.mp4> --out <scored.mp4>
-               [--duck-db -14] [--fade-sec 1.5] [--replace]
-      Print the ffmpeg command for the full narration+music composition. Refuses an
+               [--duck-db -14] [--fade-sec 1.5] [--voice-db 0] [--music-db -6] [--replace]
+      Probe the video, then print the ffmpeg command for the full narration+music composition. Refuses existing source audio and an
       unaccepted or changed cue, a cue shorter than the narrated timeline, and an
       existing output unless replacement is explicitly authorized.
 
@@ -396,7 +426,9 @@ function main(argv) {
     const duckDb = Number(flag(argv, '--duck-db', -14));
     const fadeSec = Number(flag(argv, '--fade-sec', 1.5));
     const args = buildMusicMixArgs(plan, cue, cueText, acceptance, {
-      video, out, replace: argv.includes('--replace'), duckDb, fadeSec,
+      video, out, videoInfo: probeVideoInfo(video), replace: argv.includes('--replace'), duckDb, fadeSec,
+      voiceDb: Number(flag(argv, '--voice-db', 0)),
+      musicDb: Number(flag(argv, '--music-db', -6)),
     });
     console.log(['ffmpeg', ...args].map((a) => (/[\s;'"[\]]/.test(a) ? `"${a}"` : a)).join(' '));
     return 0;
