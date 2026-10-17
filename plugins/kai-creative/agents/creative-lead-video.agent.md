@@ -183,6 +183,15 @@ duration, source second, frame coordinate, or offset to a narration beat.
 Direction names the state and emphasis. Production measures when the state
 appears, how long speech takes, and where source pixels are.
 
+Agree on capture mode before production builds anything: `capture_mode`
+defaults to `"recorded"` (an actual recorded interaction) when omitted. If a
+recording is unavailable or unsuitable and the alternative is a truthfully
+labelled replay of real evidence or an illustration, declare that explicitly
+as `"replay"` or `"illustration"` with a `capture_mode_note` explaining why and
+confirming the operator chose it — never let a replay or illustration be
+built silently in place of a requested recording, and never let direction or
+production imply that either one is an actual interaction recording.
+
 Keep field detail proportional. Add only fields needed by the requested
 direction and existing parser contract; do not create an unshipped companion
 schema or another method merely to document the screenplay.

@@ -9,6 +9,7 @@ var ANCHORS = /* @__PURE__ */ new Set(["center", "leading", "trailing", "pointer
 var TAKE_STATUSES = /* @__PURE__ */ new Set(["ok", "failed", "unsettled"]);
 var MAX_STEPS = 200;
 var PLACEMENTS_NAMES = /* @__PURE__ */ new Set(["social-teaser", "landing-hero", "readme", "walkthrough", "deep-walkthrough"]);
+var CAPTURE_MODES = /* @__PURE__ */ new Set(["recorded", "replay", "illustration"]);
 var INTENDS = /* @__PURE__ */ new Set(["intended-outcome", "primary-action"]);
 function fail(message) {
   throw new Error(message);
@@ -64,6 +65,11 @@ function parseScreenplay(text) {
   const capture = raw.capture ?? {};
   const region = parseRegion(capture.region ?? fail("capture.region is required: the driver has to know what rectangle of the screen it is recording"));
   const fps = num(capture.fps ?? 30, "capture.fps", { min: 1, max: 240 });
+  const captureMode = raw.capture_mode === void 0 || raw.capture_mode === null ? "recorded" : raw.capture_mode;
+  if (!CAPTURE_MODES.has(captureMode)) {
+    fail(`capture_mode must be one of ${[...CAPTURE_MODES].join(", ")}, got ${JSON.stringify(raw.capture_mode)}`);
+  }
+  const captureModeNote = captureMode === "recorded" ? null : str(raw.capture_mode_note, "capture_mode_note (required to explain a replay or illustration, since it is not an actual recording)");
   if (!Array.isArray(raw.steps) || raw.steps.length === 0) fail("steps must be a non-empty array");
   if (raw.steps.length > MAX_STEPS) fail(`a screenplay of ${raw.steps.length} steps is past the ${MAX_STEPS} this tool will drive; split the demo`);
   const seen = /* @__PURE__ */ new Set();
@@ -126,6 +132,8 @@ function parseScreenplay(text) {
     max_seconds: maxSeconds,
     captions,
     capture: { region, fps },
+    capture_mode: captureMode,
+    capture_mode_note: captureModeNote,
     steps,
     narration: parseNarrationBeats(raw.narration, steps)
   };
