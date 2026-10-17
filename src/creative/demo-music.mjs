@@ -19,7 +19,7 @@
 // *that exact file*. A technically valid track with no recorded acceptance is
 // not a soundtrack; it is an unreviewed candidate.
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 
@@ -170,7 +170,12 @@ function pathIdentity(path) {
 
 export function assertSafeOutput(sources, out, replace) {
   const outputIdentity = pathIdentity(out);
-  const collision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
+  const outputStat = existsSync(out) ? statSync(out) : null;
+  const collision = sources.find((source) => {
+    if (pathIdentity(source.path) === outputIdentity) return true;
+    const inputStat = outputStat && existsSync(source.path) ? statSync(source.path) : null;
+    return inputStat && inputStat.dev === outputStat.dev && inputStat.ino === outputStat.ino;
+  });
   if (collision) fail(`output path "${out}" is the same as the ${collision.role}; this must write a distinct file`);
   if (existsSync(out) && !replace) {
     fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);

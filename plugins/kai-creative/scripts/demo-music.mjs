@@ -3,7 +3,7 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import "./runtime-creative.mjs";
 
 // src/creative/demo-music.mjs
-import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync, realpathSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, resolve } from "node:path";
 var CUE_SCHEMA = "kai.demo-music-cue/v1";
@@ -113,7 +113,12 @@ function pathIdentity(path) {
 }
 function assertSafeOutput(sources, out, replace) {
   const outputIdentity = pathIdentity(out);
-  const collision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
+  const outputStat = existsSync(out) ? statSync(out) : null;
+  const collision = sources.find((source) => {
+    if (pathIdentity(source.path) === outputIdentity) return true;
+    const inputStat = outputStat && existsSync(source.path) ? statSync(source.path) : null;
+    return inputStat && inputStat.dev === outputStat.dev && inputStat.ino === outputStat.ino;
+  });
   if (collision) fail(`output path "${out}" is the same as the ${collision.role}; this must write a distinct file`);
   if (existsSync(out) && !replace) {
     fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);

@@ -129,7 +129,8 @@ Record the operator's judgment before anything downstream relies on it:
 node "<kai-creative-plugin>/scripts/demo-music.mjs" --accept "<music-cue>" --operator "<name>" --auditioned speech+music --out "<music-acceptance>"
 ```
 
-An acceptance is keyed to the exact cue content (`cue_hash`); editing the cue
+An acceptance binds both the cue content (`cue_hash`) and the audio bytes
+(`track_hash`); replacing audio at the same path also invalidates it. Editing the cue
 after acceptance, or substituting a different candidate, invalidates it. A
 `music-only` audition is recorded as such and is not sufficient acceptance: it
 did not judge the track against the actual narration. If no candidate is
