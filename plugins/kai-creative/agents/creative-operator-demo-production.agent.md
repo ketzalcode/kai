@@ -191,7 +191,43 @@ a visually accepted render.
 
 No operation automatically triggers either of the others.
 
-### 4. Inspect and report
+### 3. Select a narration voice before new synthesis
+
+A new narration synthesis request is a creative decision, not an inherited
+default. Before requesting new synthesis, offer 2-3 actually available voice
+candidates and recommend one with a reason tied to the approved direction's
+audience, tone, pace, and language — never invent voice availability beyond
+what the provider or operator actually confirms. Compare candidates using the
+same approved line(s) of text where a short sample is useful, and reuse a
+cached or previously supplied sample instead of generating a new one when it
+already answers the comparison. This is proportional to the task: skip it
+when reusing an existing voice/take, or when the operator has already made
+the selection.
+
+Use `ask_user` to get explicit operator consent and cost awareness before
+generating any new paid audition or full-pass synthesis; an existing allowed
+paid operation does not itself authorize a provider call without the
+operator having seen and chosen among the offered candidates.
+
+### 4. Run only authorized media operations
+
+Report measured clips, failures, and partial output; estimates are not
+measurements.
+
+Invoke `video-align-narration` only for an explicit fit, placement, command, or
+mix request with matching measured inputs. Inspect relevant interior states and
+visibility evidence; action times alone do not prove state visibility. Missing
+clips are a named gap, not something to generate. A printed command is not an executed mix.
+
+Invoke `video-render-zoom` only for an explicit focus operation or evidenced
+legibility need on existing footage. Supplied intent chooses emphasis; measured
+frames establish coordinates and times. Surface compiler skips, clamping,
+unsettled states, and missing duration evidence. A plan or contact sheet is not
+a visually accepted render.
+
+No operation automatically triggers either of the others.
+
+### 5. Inspect and report
 
 Verify requested files exist and distinguish source media, intermediate files,
 commands, plans, and final deliverables. Report actual inspection performed.
