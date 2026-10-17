@@ -57,7 +57,7 @@ function parseScreenplay(text) {
     fail(`the screenplay must declare "schema": "${SCREENPLAY_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
   }
   const title = str(raw.title, "title");
-  const placement = raw.placement === void 0 || raw.placement === null ? null : PLACEMENTS_NAMES.has(raw.placement) ? raw.placement : fail(`placement must be one of ${[...PLACEMENTS_NAMES].join(", ")}, got ${JSON.stringify(raw.placement)}`);
+  const placement = raw.placement === void 0 || raw.placement === null ? null : typeof raw.placement === "object" && !Array.isArray(raw.placement) ? raw.placement : PLACEMENTS_NAMES.has(raw.placement) ? raw.placement : fail(`placement must be one of ${[...PLACEMENTS_NAMES].join(", ")}, or an explicit dimension object, got ${JSON.stringify(raw.placement)}`);
   const maxSeconds = raw.max_seconds === void 0 || raw.max_seconds === null ? null : num(raw.max_seconds, "max_seconds", { min: 1, max: 7200 });
   const captions = raw.captions === true || (typeof raw.captions === "string" && raw.captions.trim() !== "" ? raw.captions : false);
   const capture = raw.capture ?? {};

@@ -92,6 +92,23 @@ List anything the review did not actually cover in `uninspected` (for example
 `"last 5 seconds"`) rather than implying full coverage; that still reports
 `warn`, naming the specific gap.
 
+The five named placements (`--placements` lists them) are supported sugar
+over four underlying values: an editorial duration target/cap, a destination
+upload byte limit (a published fact), and whether the destination autoplays
+muted (an observed playback fact). When a real destination combines these
+differently than any preset — for example a short teaser bound for a
+byte-capped doc page — declare `"placement"` as an explicit object instead of
+a name:
+
+```json
+"placement": { "target": 20, "cap": 30, "maxBytes": 5242880, "muted": true, "note": "short teaser embedded in a byte-capped doc" }
+```
+
+This is deliberately only those four preset fields, not a new named dimension
+vocabulary (purpose, destination, or orientation enums and similar remain an
+open design question that has not been approved); it only lets a declaration
+combine values a preset cannot.
+
 Keep screenplay, take, clips, source footage, and output paths explicit and
 outside plugin files.
 
