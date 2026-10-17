@@ -121,6 +121,9 @@ function checkPacingHolds(plan, render) {
     return skip("pacing", "a narration placement plan (demo-narrate --place output) with at least one placed beat");
   }
   if (!render?.seconds) return skip("pacing", "a rendered video (gaps are measured against the render, not the take)");
+  if (plan.ok !== true || plan.beats.some((beat) => !Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start || beat.end > render.seconds + 0.1)) {
+    return bad("pacing", "the narration plan is rejected or its measured beats do not fit this render; no pacing verification is possible");
+  }
   const beats = [...plan.beats].sort((a, b) => a.start - b.start);
   const holds = [];
   for (let i = 1; i < beats.length; i++) {
@@ -191,7 +194,7 @@ function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, n
     checkDuration(screenplay, render),
     checkTail(take, render),
     checkArrival(screenplay, take, render),
-    checkPacingHolds(narrationPlan, render),
+    (screenplay.narration ?? []).length > 0 ? checkPacingHolds(narrationPlan, render) : na("pacing", "this demo has no narration, so there are no narration gaps to measure"),
     checkSize(screenplay, render),
     checkMutedComprehension(screenplay),
     checkFraming(screenplay, render)

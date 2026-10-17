@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PACING_HOLD_WARN, checkPacingHolds } from '../src/creative/demo-format.mjs';
+import { PACING_HOLD_WARN, checkPacingHolds, checkAll } from '../src/creative/demo-format.mjs';
+import {parseScreenplay, SCREENPLAY_SCHEMA} from '../src/creative/lib/screenplay.mjs';
 
 const plan = (beats) => ({ schema: 'kai.demo-narration-plan/v1', beats, ok: true });
 
@@ -67,4 +68,19 @@ test('unordered beats are sorted by start before gaps are measured', () => {
 
 test('PACING_HOLD_WARN is the documented 6s default', () => {
   assert.equal(PACING_HOLD_WARN, 6);
+});
+
+test('a rejected or malformed plan cannot report verified pacing', () => {
+  assert.equal(checkPacingHolds({...plan([{beat: 'a', start: 0, end: 2}]), ok: false}, {seconds: 30}).status, 'fail');
+  assert.equal(checkPacingHolds(plan([{beat: 'a', start: 0, end: 40}]), {seconds: 30}).status, 'fail');
+});
+
+test('silent demos do not acquire an impossible missing-narration check', () => {
+  const screenplay = parseScreenplay(JSON.stringify({
+    schema: SCREENPLAY_SCHEMA, title: 'Silent demo', placement: 'readme',
+    capture: {region: '0,0 100x100'},
+    steps: [{id: 'a', action: 'hold', seconds: 2}],
+  }));
+  const result = checkAll(screenplay, {render: {seconds: 2, width: 100, height: 100, bytes: 1000}});
+  assert.equal(result.checks.find((check) => check.id === 'pacing').status, 'n/a');
 });
