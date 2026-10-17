@@ -281,11 +281,35 @@ export function parseNarrationBeats(raw, steps) {
       }
     }
 
+    // `start_after` gates *when* a beat may begin; it does not say *what* the
+    // words are actually about. A span covering states A and B, with timing
+    // that gates on neither, still passes every existing check even when the
+    // line names B's result specifically -- that is the gap this issue
+    // reports. `references_step` names the one state the beat's text is
+    // actually a claim about, distinct from scenery the beat merely passes
+    // through on its way there. Declaring it is optional: a setup line that
+    // describes an action happening, rather than a result already proven,
+    // legitimately references nothing yet. But a beat that does name a
+    // reference must also gate on it (or later), or the claim could play
+    // before its own evidence exists on screen.
+    let referencesStep = null;
+    if (beat.references_step !== undefined && beat.references_step !== null) {
+      referencesStep = str(beat.references_step, `${where}.references_step`);
+      if (!order.has(referencesStep)) fail(`${where}.references_step names "${referencesStep}", which is not a step in this screenplay`);
+      if (order.get(referencesStep) < order.get(from) || order.get(referencesStep) > order.get(through)) {
+        fail(`${where}.references_step names "${referencesStep}", which is outside the beat's own visual span; a beat cannot claim evidence it does not cover`);
+      }
+      if (startAfter === null || order.get(startAfter) < order.get(referencesStep)) {
+        fail(`${where}.references_step names "${referencesStep}" as the evidence this beat is about, but start_after is ${startAfter ? `"${startAfter}"` : 'unset'}, which does not gate on it; the line could begin before that evidence is on screen. Set start_after to "${referencesStep}" or a later step in the span.`);
+      }
+    }
+
     return {
       id,
       text,
       visual_span: { from_step: from, through_step: through },
       start_after: startAfter,
+      references_step: referencesStep,
       voice: typeof beat.voice === 'string' && beat.voice.trim() !== '' ? beat.voice : null,
     };
   }).map((beat, i, all) => {
