@@ -24,6 +24,14 @@ prove the files share a revision.
 `demo_narration_take.json` is the speech take: clips and measured durations.
 A defect in one is not a reason to replace the other.
 
+When the footage was edited (trimmed, reordered, or had steps removed) before
+narration, the measured source is a `kai.demo-edited-take/v1` take, not the raw
+`kai.demo-take/v1` recording. Require both: the edited take and the raw
+capture take it names as `source_take_id`. The edited take may re-time or drop
+a step; it may not change the status the raw take measured for it, and the
+helper refuses a mismatch. Never substitute a hand-written plan for either
+canonical take.
+
 Mixing additionally needs a compatible video on the same timebase and a
 distinct output path. A finished render is not a prerequisite for a
 placement-only assessment. No zoom or new synthesis is required merely
@@ -90,6 +98,12 @@ After the state and correspondence checks, prepare the requested placement:
 
 ```text
 node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --place "<screenplay>" "<measured-take>" "<narration-take>" --out "<placement-plan>"
+```
+
+When `<measured-take>` is an edited take, add `--source-take "<raw-take>"`:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --place "<screenplay>" "<edited-take>" "<narration-take>" --source-take "<raw-take>" --out "<placement-plan>"
 ```
 
 Keep drift and rejection details visible. Name whether a finding came from

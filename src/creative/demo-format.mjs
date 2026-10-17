@@ -33,7 +33,7 @@
 
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
+import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
 
 // Placement profiles.
 //
@@ -340,6 +340,28 @@ function flag(argv, name, fallback = null) {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
 
+// A --take path may hold either a raw capture take or an edited take (cut from
+// one). Accepting both here, not only the raw schema, is what lets a format
+// check run against the timeline the production actually produced instead of
+// forcing an adapter that relabels one as the other.
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, 'utf8');
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === RAW_TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, '--source-take');
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); supply --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, 'utf8'));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${RAW_TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
+
 function main(argv) {
   if (argv.includes('--placements')) {
     for (const [name, p] of Object.entries(PLACEMENTS)) {
@@ -349,11 +371,11 @@ function main(argv) {
     return 0;
   }
 
-  const consumed = new Set(['--take', '--video', '--wpm']);
+  const consumed = new Set(['--take', '--video', '--wpm', '--source-take']);
   const screenplayPath = argv.find((a, i) => !a.startsWith('-') && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log('demo-format — does this demo meet the format its placement demands?\n');
-    console.log('  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120]');
+    console.log('  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120]');
     console.log('  demo-format --placements');
     return 2;
   }
@@ -361,7 +383,7 @@ function main(argv) {
   const screenplay = parseScreenplay(readFileSync(screenplayPath, 'utf8'));
   const takePath = flag(argv, '--take');
   const result = checkAll(screenplay, {
-    take: takePath ? parseTake(readFileSync(takePath, 'utf8')) : null,
+    take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, '--video')),
     wpm: Number(flag(argv, '--wpm', WPM.default)),
   });
