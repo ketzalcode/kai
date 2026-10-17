@@ -35,7 +35,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
+import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
 
 export const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
 const PLAN_SCHEMA = 'kai.demo-narration-plan/v1';
@@ -151,11 +151,11 @@ export function place(screenplay, take, narrationTake) {
     // Every state covered by the beat is relevant evidence. Valid endpoints
     // cannot conceal a failed or absent state in the middle of the span.
     if (missing.length > 0) {
-      rejections.push({
-        beat: beat.id,
-        reason: 'unrecorded-step',
-        detail: `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(', ')}, which this take does not contain; the screenplay and the take are not from the same demo`,
-      });
+      const dropped = Array.isArray(take.dropped_steps) ? missing.filter((id) => take.dropped_steps.includes(id)) : [];
+      const detail = dropped.length === missing.length
+        ? `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(', ')}, which this edited take cut from the timeline; narrate against the remaining steps or restore the cut`
+        : `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(', ')}, which this take does not contain; the screenplay and the take are not from the same demo`;
+      rejections.push({ beat: beat.id, reason: 'unrecorded-step', detail });
       continue;
     }
 
@@ -343,7 +343,11 @@ function usage() {
   console.log(`demo-narrate — place measured speech against a measured recording
 
   --place      <screenplay.json> <take.json> <narration_take.json> [--out plan.json]
+               [--source-take <raw_take.json>]
       Lay the beats against the measured recording, or refuse and say why.
+      <take.json> may be a raw capture take (kai.demo-take/v1) or an edited
+      take (kai.demo-edited-take/v1). An edited take requires --source-take,
+      the raw capture take it was cut from, to prove provenance.
 
   --mix        <plan.json> --video <render.mp4> --out <narrated.mp4> [--replace]
       Print the ffmpeg command that lays the placed clips onto the finished video.
@@ -356,15 +360,36 @@ function flag(argv, name, fallback = null) {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
 
+// A take path may hold either schema. Detecting it here, instead of asking the
+// caller to know in advance, keeps `--place` a single command regardless of
+// whether the production edited the footage before narrating it.
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, 'utf8');
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === RAW_TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, '--source-take');
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); place needs --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, 'utf8'));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${RAW_TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
+
 function main(argv) {
-  const positional = argv.filter((a, i) => !a.startsWith('-') && !argv[i - 1]?.startsWith('--out') && !argv[i - 1]?.startsWith('--video'));
+  const positional = argv.filter((a, i) => !a.startsWith('-') && !argv[i - 1]?.startsWith('--out') && !argv[i - 1]?.startsWith('--video') && !argv[i - 1]?.startsWith('--source-take'));
 
   if (argv.includes('--place')) {
     const [screenplayPath, takePath, narrPath] = positional;
     if (!screenplayPath || !takePath || !narrPath) { usage(); return 2; }
     const plan = place(
       parseScreenplay(readFileSync(screenplayPath, 'utf8')),
-      parseTake(readFileSync(takePath, 'utf8')),
+      loadTake(takePath, argv),
       parseNarrationTake(readFileSync(narrPath, 'utf8')),
     );
     console.log(formatReport(plan));
