@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -14,8 +14,12 @@ import {
   hashFile,
 } from '../src/creative/demo-status.mjs';
 
+const fixtureDirs = [];
+after(() => fixtureDirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
+
 function makeFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'demo-status-test-'));
+  fixtureDirs.push(dir);
   const screenplay = join(dir, 'screenplay.json');
   const take = join(dir, 'take.json');
   const plan = join(dir, 'plan.json');
@@ -142,7 +146,7 @@ test('buildProductionReport names a concrete, non-automatic next action per unre
   const takeAction = report.pending_operations.find((p) => p.stage === 'take');
   assert.match(takeAction.action, /verify "take" manually/);
   const musicAction = report.pending_operations.find((p) => p.stage === 'music');
-  assert.match(musicAction.action, /run "music"/);
+  assert.match(musicAction.action, /before running "music"/);
 });
 
 test('report treats an incomplete optional stage as not blocking all_complete', () => {
@@ -154,4 +158,21 @@ test('report treats an incomplete optional stage as not blocking all_complete', 
   const receipts = loadReceipts(fx.receiptsPath);
   const report = buildProductionReport(fx.descriptor, receipts);
   assert.equal(report.all_complete, true);
+});
+
+test('removing a declared input invalidates the receipt instead of completing the stage', () => {
+  const fx = makeFixture();
+  recordStage(fx.receiptsPath, 'render', { output: fx.render, inputs: [fx.plan], status: 'ok' });
+  const stage = { stage: 'render', output: fx.render, inputs: [], optional: false };
+  assert.equal(computeStageStatus(stage, loadReceipts(fx.receiptsPath)).status, 'stale');
+});
+
+test('unknown receipt statuses cannot establish completion', () => {
+  const fx = makeFixture();
+  recordStage(fx.receiptsPath, 'screenplay', { output: fx.screenplay, status: 'ok' });
+  const receipts = loadReceipts(fx.receiptsPath);
+  receipts.stages.screenplay.status = 'unverified';
+  assert.equal(computeStageStatus(fx.descriptor[0], receipts).status, 'unknown');
+  writeFileSync(fx.receiptsPath, JSON.stringify(receipts));
+  assert.throws(() => loadReceipts(fx.receiptsPath), /invalid recorded status/);
 });

@@ -53,6 +53,10 @@ function loadReceipts(path) {
     fail(`${path} is not valid JSON: ${error.message}`);
   }
   if (raw.schema !== RECEIPTS_SCHEMA) fail(`${path} must declare "schema": "${RECEIPTS_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  if (!raw.stages || typeof raw.stages !== "object" || Array.isArray(raw.stages)) fail(`${path}.stages must be an object`);
+  for (const [stage, receipt] of Object.entries(raw.stages)) {
+    if (!receipt || !RECEIPT_STATUSES.has(receipt.status)) fail(`${path}: invalid recorded status for "${stage}"`);
+  }
   return raw;
 }
 function recordStage(receiptsPath, stageName, { output, inputs = [], status, note = "" }) {
@@ -83,7 +87,7 @@ function computeStageStatus(descriptorStage, receipts) {
     }
     return { stage, status: "pending", optional, reason: optional ? "optional stage, not yet attempted" : "not yet produced" };
   }
-  if (!receipt) {
+  if (!receipt || !RECEIPT_STATUSES.has(receipt.status)) {
     return { stage, status: "unknown", optional, reason: "the output file exists but no receipt was ever recorded for it; its acceptance cannot be verified" };
   }
   const missingInput = inputs.find((input) => !existsSync(input));
@@ -105,14 +109,14 @@ function computeStageStatus(descriptorStage, receipts) {
   return { stage, status: "stale", optional, reason: "the recorded output still matches, but a declared input has changed since; it may need to be redone" };
 }
 function inputsStillMatch(inputs, receipt) {
-  return inputs.every((input) => existsSync(input) && hashFile(input) === receipt.input_hashes?.[input]);
+  return inputs.length === Object.keys(receipt.input_hashes ?? {}).length && inputs.every((input) => existsSync(input) && hashFile(input) === receipt.input_hashes?.[input]);
 }
 function buildProductionReport(descriptor, receipts) {
   const stages = descriptor.map((stage) => computeStageStatus(stage, receipts));
   const pending = stages.filter((s) => s.status !== "complete").map((s) => ({
     stage: s.stage,
     status: s.status,
-    action: s.status === "failed" ? `review the recorded failure for "${s.stage}" before deciding whether to retry; do not retry automatically` : s.status === "unknown" ? `verify "${s.stage}" manually; an existing file is not proof it was accepted` : s.status === "stale" ? `re-run "${s.stage}"; its inputs changed since it was last accepted` : `run "${s.stage}"`
+    action: s.status === "failed" ? `review the recorded failure for "${s.stage}" before deciding whether to retry; do not retry automatically` : s.status === "unknown" ? `verify "${s.stage}" manually; an existing file is not proof it was accepted` : s.status === "stale" ? `review "${s.stage}" before retrying; its inputs changed, and an uncertain paid operation must not be retried automatically` : `confirm the operation and any paid-operation status before running "${s.stage}"`
   }));
   return {
     schema: "kai.demo-production-report/v1",
