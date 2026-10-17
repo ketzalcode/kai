@@ -108,6 +108,10 @@ question and styling is not. Invoke `mockups-html` when appearance, tokens,
 component feel, or responsive layout must be reviewed. Use either independently.
 Produce one mock or only the alternatives the decision needs; never require
 three or four options, an ASCII pre-stage, or a full system by default.
+Once exactly one interaction model has been accepted, invoke
+`create-flow-mocks` to produce or update the canonical accepted-flow artifact
+for the feature journey; `mockups-html` remains the tool for comparing
+competing models, never the accepted-journey artifact itself.
 An interactive-prototype request is outside this base. Return that capability
 gap rather than implementing simulated task flows or presenting a static mock
 as an interactive prototype. Interaction decisions and state specifications

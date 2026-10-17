@@ -64,8 +64,40 @@ Run the existing format helper directly:
 ```text
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json>
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <take.json> --video <final.mp4>
+node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --video <final.mp4> --caption-review <review.json>
+node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <edited_take.json> --source-take <raw_take.json> --video <final.mp4>
 node "<kai-creative-provider>/scripts/demo-format.mjs" --placements
 ```
+
+For a muted-autoplay placement, `captions: true` on the screenplay is a
+declared intent, not inspected rendered proof. Without `--caption-review`, the
+sound-off check reports `warn`, not `pass` — it names the gap instead of
+claiming unverified proof. To report `pass`, inspect the actual rendered file
+(a contact sheet, a full watch, or the subtitle track's metadata — never
+computer-vision approval) and write a review record:
+
+```json
+{
+  "schema": "kai.demo-caption-review/v1",
+  "reviewer": "<who actually watched it>",
+  "method": "contact-sheet",
+  "render_sha256": "<SHA-256 of the exact reviewed video bytes>",
+  "captions_present": true,
+  "captions_readable": true,
+  "captions_clipped": false,
+  "captions_accurate": true,
+  "captions_cover_narration": true,
+  "opening_identifies_outcome": true,
+  "uninspected": []
+}
+```
+
+List anything the review did not actually cover in `uninspected` (for example
+`"last 5 seconds"`) rather than implying full coverage; that still reports
+`warn`, naming the specific gap.
+The hash must match the current render. Subtitle metadata alone cannot prove
+rendered legibility, clipping, or the opening; it remains a warning until
+visual inspection supplies that evidence.
 
 Keep screenplay, take, clips, source footage, and output paths explicit and
 outside plugin files.
@@ -89,9 +121,39 @@ unapproved substitution. Any produced replay or illustration output must carry
 that label visibly and must never be presented, captioned, or described as an
 actual recording of the live interaction.
 
+Production's own canonical artifacts — the `kai.demo-screenplay/v1` direction
+and its `kai.demo-take/v1` capture take (or a `kai.demo-edited-take/v1` cut
+from one, carrying `source_take_id`) — are required production outputs, not an
+adapter built later to satisfy a helper. If direction arrived as Markdown or a
+custom editorial plan, obtain or project the canonical screenplay and take
+before running format or narration checks; do not hand-build a plan the
+helpers were never given to validate, and do not relabel edited timing as the
+original capture measurement or the reverse.
+
 Do not turn production into a fixed capture → zoom → speech chain. There is no
 worker-per-stage dispatch, mandatory zoom, mandatory speech, or automatic
 director call.
+
+### Resuming an interrupted production
+
+An existing file is not proof a stage was accepted. Before reusing any prior
+output after an interruption, check its verified status with
+`scripts/demo-status.mjs`:
+
+```text
+node "<kai-creative-provider>/scripts/demo-status.mjs" --report <production-descriptor.json> --receipts <receipts.json>
+```
+
+Each stage reports exactly one of `complete`, `pending`, `stale`, `failed`, or
+`unknown`. Treat `unknown` and `failed` as distinct from `complete`: an
+`unknown` stage has a file but no verified receipt, and a `failed` stage was
+recorded as not succeeding. Neither licenses reuse, and neither is retried
+automatically — report the printed `pending_operations` to the operator and
+let them decide, especially for any stage that would re-run a paid operation.
+A stage only earns `complete` when its output and every declared input still
+match the hashes recorded the last time it actually finished; record a stage's
+own receipt immediately after it finishes with
+`--record <stage> --output <path> [--input <path> ...] --status ok|failed`.
 
 ### 2. Check direction and format
 
@@ -108,7 +170,11 @@ Preserve all known helper limitations:
 
 - step-ID sets and step statuses are checked, but matching IDs do not bind
   screenplay edits or rendered file bytes to the same exact revision;
-- captions are declared, not inspected for presence, accuracy, or readability;
+- without a `--caption-review` record, captions are only a screenplay
+  declaration (`warn`), not inspected rendered proof; a review confirms
+  presence, readability, uncut composition, and a silent-comprehensible
+  opening manually (contact sheet, full watch, or subtitle metadata), never by
+  computer-vision approval;
 - the word budget is a forecast, not measured speech fit, and can fail policy
   before narration is supplied;
 - exit zero can accompany `INCOMPLETE` because `ok` means no known failures,
@@ -135,7 +201,43 @@ a visually accepted render.
 
 No operation automatically triggers either of the others.
 
-### 4. Inspect and report
+### 3. Select a narration voice before new synthesis
+
+A new narration synthesis request is a creative decision, not an inherited
+default. Before requesting new synthesis, offer 2-3 actually available voice
+candidates and recommend one with a reason tied to the approved direction's
+audience, tone, pace, and language — never invent voice availability beyond
+what the provider or operator actually confirms. Compare candidates using the
+same approved line(s) of text where a short sample is useful, and reuse a
+cached or previously supplied sample instead of generating a new one when it
+already answers the comparison. This is proportional to the task: skip it
+when reusing an existing voice/take, or when the operator has already made
+the selection.
+
+Use `ask_user` to get explicit operator consent and cost awareness before
+generating any new paid audition or full-pass synthesis; an existing allowed
+paid operation does not itself authorize a provider call without the
+operator having seen and chosen among the offered candidates.
+
+### 4. Run only authorized media operations
+
+Report measured clips, failures, and partial output; estimates are not
+measurements.
+
+Invoke `video-align-narration` only for an explicit fit, placement, command, or
+mix request with matching measured inputs. Inspect relevant interior states and
+visibility evidence; action times alone do not prove state visibility. Missing
+clips are a named gap, not something to generate. A printed command is not an executed mix.
+
+Invoke `video-render-zoom` only for an explicit focus operation or evidenced
+legibility need on existing footage. Supplied intent chooses emphasis; measured
+frames establish coordinates and times. Surface compiler skips, clamping,
+unsettled states, and missing duration evidence. A plan or contact sheet is not
+a visually accepted render.
+
+No operation automatically triggers either of the others.
+
+### 5. Inspect and report
 
 Verify requested files exist and distinguish source media, intermediate files,
 commands, plans, and final deliverables. Report actual inspection performed.
