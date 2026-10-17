@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { SCREENPLAY_SCHEMA, TAKE_SCHEMA } from '../src/creative/lib/screenplay.mjs';
+import { SCREENPLAY_SCHEMA, TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from '../src/creative/lib/screenplay.mjs';
 import { BUNDLE_SCHEMA, buildBundleManifest, writeBundle } from '../src/creative/demo-bundle.mjs';
 
 function cueHash(cueText) {
@@ -32,6 +32,10 @@ function makeFixture() {
       { id: 'hold', action: 'hold', seconds: 2 },
       { id: 'click', action: 'click', target: 'issues-tab', settle: 4 },
     ],
+    narration: [
+      {id: 'n-1', text: 'hello', visual_span: {from_step: 'hold'}},
+      {id: 'n-2', text: 'world', visual_span: {from_step: 'click'}},
+    ],
   }));
   writeFileSync(takePath, JSON.stringify({
     schema: TAKE_SCHEMA,
@@ -47,6 +51,8 @@ function makeFixture() {
   writeFileSync(clip2, 'clip-2');
   writeFileSync(planPath, JSON.stringify({
     schema: 'kai.demo-narration-plan/v1',
+    take_id: 'take-1',
+    recording: 'raw.mp4',
     ok: true,
     rejections: [],
     beats: [
@@ -201,6 +207,35 @@ test('bundle rejects changed music bytes and unsafe narration filenames', () => 
   plan.beats[0].beat = '../../outside';
   writeFileSync(fx.planPath, JSON.stringify(plan));
   assert.throws(() => buildBundleManifest(options), /filename-safe/);
+});
+
+test('bundle refuses a plan from another take or screenplay revision', () => {
+  const fx = makeFixture();
+  const plan = JSON.parse(readFileSync(fx.planPath, 'utf8'));
+  const options = {variant: 'draft', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath};
+  writeFileSync(fx.planPath, JSON.stringify({...plan, take_id: 'other-take'}));
+  assert.throws(() => buildBundleManifest(options), /different recordings/);
+  plan.beats[0].text = 'unapproved new words';
+  writeFileSync(fx.planPath, JSON.stringify(plan));
+  assert.throws(() => buildBundleManifest(options), /stale or unrelated text/);
+});
+
+test('an edited bundle includes the raw take and source footage it needs', () => {
+  const fx = makeFixture();
+  const source = JSON.parse(readFileSync(fx.takePath, 'utf8'));
+  const editedPath = join(fx.dir, 'edited-take.json');
+  writeFileSync(editedPath, JSON.stringify({...source, schema: EDITED_TAKE_SCHEMA, take_id: 'edit-1', source_take_id: source.take_id}));
+  const plan = JSON.parse(readFileSync(fx.planPath, 'utf8'));
+  writeFileSync(fx.planPath, JSON.stringify({...plan, take_id: 'edit-1'}));
+  const manifest = buildBundleManifest({
+    variant: 'draft', screenplayPath: fx.screenplayPath, takePath: editedPath,
+    sourceTakePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath,
+  });
+  const dest = join(fx.dir, 'edited-bundle');
+  const result = writeBundle(manifest, dest);
+  assert.equal(result.manifest.take.source_path, 'source/raw-take.json');
+  assert.ok(existsSync(join(dest, result.manifest.take.source_path)));
+  assert.ok(existsSync(join(dest, result.manifest.take.raw_recording_path)));
 });
 
 const mediaAvailable = spawnSync('ffmpeg', ['-version'], {encoding: 'utf8'}).status === 0

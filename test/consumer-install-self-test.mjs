@@ -159,6 +159,7 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     title: 'Smoke demo',
     capture: {region: '0,0 1256x784', fps: 30},
     steps: [{id: 'hold', action: 'hold', seconds: 1}],
+    narration: [{id: 'n-1', text: 'hi', visual_span: {from_step: 'hold'}}],
   }));
   writeFileSync(bundleTake, JSON.stringify({
     schema: 'kai.demo-take/v1',
@@ -170,6 +171,8 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
   writeFileSync(bundleClip, '');
   writeFileSync(bundlePlan, JSON.stringify({
     schema: 'kai.demo-narration-plan/v1',
+    take_id: 'take-1',
+    recording: 'raw.mp4',
     ok: true,
     rejections: [],
     beats: [{beat: 'n-1', path: bundleClip, start: 0, end: 1, durationSec: 1, text: 'hi'}],

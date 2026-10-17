@@ -134,16 +134,19 @@ export function buildBundleManifest({
   } catch (error) {
     fail(`${narrationPlanPath} is not valid JSON: ${error.message}`);
   }
-  if (!plan.ok) {
+  if (plan.ok !== true) {
     fail(`${narrationPlanPath} is a rejected narration plan (ok: false); a rejected placement is not ready to hand off. Resolve its rejections and re-place first.`);
   }
   if (!Array.isArray(plan.beats) || plan.beats.length === 0) fail(`${narrationPlanPath} places no narration beats`);
   if (plan.schema !== 'kai.demo-narration-plan/v1') fail('the narration plan must use the canonical plan schema');
-  if (plan.take && plan.take !== take.take_id) fail('the narration plan and take identify different recordings');
+  if (plan.take_id !== take.take_id || plan.recording !== take.recording) fail('the narration plan and take identify different recordings');
+  const authoredBeats = new Map(screenplay.narration.map((beat) => [beat.id, beat]));
+  if (authoredBeats.size !== plan.beats.length) fail('the narration plan does not cover the current screenplay beats');
   const beatIds = new Set();
   for (const beat of plan.beats) {
     if (!/^[a-z0-9][a-z0-9._-]*$/i.test(beat.beat ?? '') || beatIds.has(beat.beat)) fail('bundle narration beat IDs must be unique filename-safe identifiers');
     beatIds.add(beat.beat);
+    if (authoredBeats.get(beat.beat)?.text !== beat.text) fail(`the narration plan carries stale or unrelated text for "${beat.beat}"`);
     if (!Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start) fail(`invalid measured timing for narration beat "${beat.beat}"`);
     if (!existsSync(beat.path)) fail(`the narration plan names clip "${beat.path}" for beat "${beat.beat}", which does not exist`);
   }
