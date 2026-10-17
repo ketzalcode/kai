@@ -3,9 +3,13 @@ import test from 'node:test';
 import { SCREENPLAY_SCHEMA, parseScreenplay } from '../src/creative/lib/screenplay.mjs';
 import {
   CAPTION_REVIEW_SCHEMA,
-  checkMutedComprehension,
+  checkMutedComprehension as inspectMutedComprehension,
   parseCaptionReview,
 } from '../src/creative/demo-format.mjs';
+
+const renderHash = 'a'.repeat(64);
+const checkMutedComprehension = (screenplay, options = {}) =>
+  inspectMutedComprehension(screenplay, {render: {sha256: renderHash}, ...options});
 
 const base = {
   schema: SCREENPLAY_SCHEMA,
@@ -22,9 +26,12 @@ const review = (overrides = {}) => ({
   schema: CAPTION_REVIEW_SCHEMA,
   reviewer: 'ana',
   method: 'contact-sheet',
+  render_sha256: renderHash,
   captions_present: true,
   captions_readable: true,
   captions_clipped: false,
+  captions_accurate: true,
+  captions_cover_narration: true,
   opening_identifies_outcome: true,
   uninspected: [],
   ...overrides,
@@ -102,4 +109,24 @@ test('parseCaptionReview rejects missing boolean fields', () => {
 test('parseCaptionReview keeps uninspected list and drops junk entries', () => {
   const parsed = parseCaptionReview(JSON.stringify(review({ uninspected: ['tail', '', 42, '  '] })));
   assert.deepEqual(parsed.uninspected, ['tail']);
+});
+
+test('a caption review for different render bytes never establishes verification', () => {
+  const screenplay = parseScreenplay(JSON.stringify({...base, captions: true}));
+  const result = checkMutedComprehension(screenplay, {captionReview: review({render_sha256: 'b'.repeat(64)})});
+  assert.equal(result.status, 'warn');
+  assert.match(result.detail, /not bound to this exact rendered file/);
+});
+
+test('subtitle metadata alone cannot verify rendered legibility', () => {
+  const screenplay = parseScreenplay(JSON.stringify({...base, captions: true}));
+  assert.equal(checkMutedComprehension(screenplay, {captionReview: review({method: 'subtitle-metadata'})}).status, 'warn');
+});
+
+test('uninspected clipping and narration coverage cannot default to verified', () => {
+  for (const field of ['captions_clipped', 'captions_accurate', 'captions_cover_narration']) {
+    const input = review();
+    delete input[field];
+    assert.throws(() => parseCaptionReview(JSON.stringify(input)), new RegExp(field));
+  }
 });
