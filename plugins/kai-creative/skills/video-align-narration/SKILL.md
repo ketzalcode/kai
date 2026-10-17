@@ -58,6 +58,20 @@ successful plan still cannot establish visual meaning or visibility. In
 particular, do not treat action timing as proof that a referenced result was
 readable on screen.
 
+Scene-level timing and state validity are necessary, not sufficient: a beat
+can time-fit a whole span while its words actually claim a specific state
+within it. When a beat names `references_step`, the helper already requires
+`start_after` to gate on that same step or later -- a beat cannot declare what
+evidence it is about and then time-fit so loosely that the claim could play
+before that evidence exists. Still do the proportional review by hand: a line
+that reads as a specific result or proof, not merely an action happening,
+needs `references_step` set, or it is unreviewed. Spot-check a sample of
+beats against a contact sheet or the actual footage rather than assuming the
+schema alone proves correspondence; an intentional setup line (describing an
+action rather than a settled result) legitimately has no `references_step`.
+Do not add heavier automated semantic matching here -- this is a proportional,
+manual review dimension, not a substitute for it.
+
 Missing visibility evidence remains an unresolved gap. Action end times are
 not proof that the result appeared, stayed readable, or matched the words.
 Do not invent offsets or rewrite measurements to hide that gap.
@@ -76,6 +90,7 @@ A new recording is an input request, not permission to run capture here.
 | Missing or failed speech clip | Obtain a valid measured replacement clip, or request separate creation authorization. This does not authorize an automatic paid retry. |
 | Actual text, intent, or span defect | Return that specific creative decision to the author. Do not revise a screenplay merely to hide a bad recorded state. |
 | Unknown correspondence or visibility | Request the missing evidence; do not turn unknowns into measured facts. |
+| A beat claims a result with no `references_step`, or spot-check finds the wrong state visible | Return it to the author as a script defect: add or correct `references_step` (and `start_after` if needed), or soften the line to describe the action rather than claim a result it does not yet show. |
 
 Waiting does not repair a completed recording. Do not edit its status flags,
 move a narration gate to bypass an invalid state, or request a new speech take

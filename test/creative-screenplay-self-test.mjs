@@ -332,3 +332,90 @@ test('narration mix output is non-destructive by default', () => {
     replace: true,
   })[0], '-y');
 });
+
+test('a narration beat may declare which step its text is actually evidence for', () => {
+  const parsed = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+      {id: 'c', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'Now the result is visible.',
+      visual_span: {from_step: 'a', through_step: 'c'},
+      start_after: 'b',
+      references_step: 'b',
+    }],
+  }));
+  assert.equal(parsed.narration[0].references_step, 'b');
+});
+
+test('references_step outside the beat\'s own span is refused', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({
+    ...screenplay,
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+      {id: 'c', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'The result is ready.',
+      visual_span: {from_step: 'a', through_step: 'b'},
+      start_after: 'a',
+      references_step: 'c',
+    }],
+  })), /outside the beat's own visual span; a beat cannot claim evidence it does not cover/);
+});
+
+test('a beat that references a step but does not gate on it is refused: the line could play before its own evidence', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({
+    ...screenplay,
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'Now the result is visible.',
+      visual_span: {from_step: 'a', through_step: 'b'},
+      references_step: 'b',
+    }],
+  })), /does not gate on it; the line could begin before that evidence is on screen/);
+});
+
+test('a beat that references an earlier step than its start_after gate is still refused', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({
+    ...screenplay,
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+      {id: 'c', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'Setup, then the real result is visible.',
+      visual_span: {from_step: 'a', through_step: 'c'},
+      start_after: 'a',
+      references_step: 'c',
+    }],
+  })), /does not gate on it; the line could begin before that evidence is on screen/);
+});
+
+test('a setup beat with no references_step is unaffected: it claims no specific result yet', () => {
+  const parsed = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    steps: [
+      {id: 'a', action: 'hold', seconds: 1},
+      {id: 'b', action: 'hold', seconds: 1},
+    ],
+    narration: [{
+      id: 'n-1',
+      text: 'Watch this happen.',
+      visual_span: {from_step: 'a', through_step: 'b'},
+    }],
+  }));
+  assert.equal(parsed.narration[0].references_step, null);
+});
