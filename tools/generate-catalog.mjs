@@ -139,7 +139,7 @@ const CATEGORIES = [
     title: 'Creative methods',
     blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
     members: [
-      'mockups-ascii', 'mockups-html', 'html-block-diagrams',
+      'mockups-ascii', 'mockups-html', 'create-flow-mocks', 'html-block-diagrams',
       'video-align-narration', 'video-render-zoom',
     ],
   },
