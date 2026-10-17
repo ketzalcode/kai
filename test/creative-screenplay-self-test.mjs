@@ -15,6 +15,7 @@ import {
 } from '../src/creative/lib/screenplay.mjs';
 import {
   TAKE_SCHEMA as NARRATION_TAKE_SCHEMA,
+  buildMixArgs,
   parseNarrationTake,
   place,
 } from '../src/creative/demo-narrate.mjs';
@@ -303,4 +304,31 @@ test('narration placement names a cut step when the edited take dropped it', () 
   assert.equal(plan.ok, false);
   assert.equal(plan.rejections[0].reason, 'unrecorded-step');
   assert.match(plan.rejections[0].detail, /cut from the timeline/);
+});
+
+test('narration mix output is non-destructive by default', () => {
+  const plan = {
+    ok: true,
+    beats: [{beat: 'n-1', path: 'voice.wav', start: 1}],
+  };
+  const availableOutput = `narrated-${process.pid}.mp4`;
+
+  assert.equal(buildMixArgs(plan, {video: 'video.mp4', out: availableOutput})[0], '-n');
+  assert.throws(
+    () => buildMixArgs(plan, {video: 'video.mp4', out: './video.mp4'}),
+    /same as the video input/,
+  );
+  assert.throws(
+    () => buildMixArgs(plan, {video: 'video.mp4', out: 'voice.wav'}),
+    /same as the narration clip "n-1"/,
+  );
+  assert.throws(
+    () => buildMixArgs(plan, {video: 'video.mp4', out: import.meta.filename}),
+    /already exists/,
+  );
+  assert.equal(buildMixArgs(plan, {
+    video: 'video.mp4',
+    out: import.meta.filename,
+    replace: true,
+  })[0], '-y');
 });

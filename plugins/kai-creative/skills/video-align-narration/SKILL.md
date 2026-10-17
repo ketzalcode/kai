@@ -115,11 +115,71 @@ For an authorized mix request, prepare the command:
 node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --mix "<placement-plan>" --video "<compatible-video>" --out "<new-narrated-video>"
 ```
 
+The output must differ from the video and every narration clip. The helper
+refuses an existing destination by default and emits ffmpeg's no-overwrite
+mode. Use `--replace` only when the operator explicitly authorizes replacing
+that exact destination; replacement never permits an input/output collision.
+
 The printed command is not an executed mix. Review its paths and arguments
 before separately authorized execution; do not blindly evaluate tool stdout.
 The existing mixer copies video and uses the placed clips as its audio track.
-It does not preserve another audio track or mix music. If that is required,
-report the unsupported composition rather than silently dropping that audio.
+It does not preserve another audio track or mix music into the render.
+
+## Background music: audition and acceptance gate
+
+A requested background track needs a human-judged quality gate before it is
+ever trusted, not only a technical check. Use
+`scripts/demo-music.mjs` for a candidate music track:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --audition "<placement-plan>" --music "<music-cue>" --video "<compatible-video>" --out "<sample.mp4>"
+```
+
+The cue (`kai.demo-music-cue/v1`) names an operator-supplied track, its
+declared rights/provenance, and its measured duration; never invent a track or
+treat a quick oscillator-based sketch as a polished default soundtrack. The
+printed command renders a short speech-plus-music sample, not a technical
+waveform check alone -- the operator has to actually hear narration and music
+together to judge fit, balance, and whether the track suits the story.
+
+Record the operator's judgment before anything downstream relies on it:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --accept "<music-cue>" --operator "<name>" --auditioned speech+music --out "<music-acceptance>"
+```
+
+An acceptance binds both the cue content (`cue_hash`) and the audio bytes
+(`track_hash`); replacing audio at the same path also invalidates it. Editing the cue
+after acceptance, or substituting a different candidate, invalidates it. A
+`music-only` audition is recorded as such and is not sufficient acceptance: it
+did not judge the track against the actual narration. If no candidate is
+acceptable, say so and offer a supplied track or a music-free result rather
+than defaulting to an unreviewed composition.
+
+Only after acceptance, prepare the full composition:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --mix "<placement-plan>" --music "<music-cue>" --acceptance "<music-acceptance>" --video "<compatible-video>" --out "<scored-video>"
+```
+
+The helper probes the input video and refuses an existing source audio track
+rather than silently discarding it. It refuses an unaccepted or changed cue,
+a cue shorter than the full video, and silently replacing an existing output (same `--replace`
+authorization contract as narration mixing). The music spans the full measured
+video, with separate `--voice-db` and `--music-db` controls in addition to
+`--duck-db` and `--fade-sec`. It is faded in/out and ducked
+under every narrated beat so the voice always reads over it, and passed through
+a peak limiter in the generated command. A limiter bounds level by
+construction; it is not a substitute for actually inspecting the rendered
+file. After mixing, print and separately run the peak-check command to verify
+the actual result:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --check-levels "<rendered-file>"
+```
+
+Report the printed peak-check command as a pending verification step, not as
+a completed one, unless it was actually run and its output inspected.
 
 ## Edit-ready handoff bundle
 
