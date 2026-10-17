@@ -33,6 +33,7 @@
 
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
 
 // Placement profiles.
@@ -238,18 +239,94 @@ export function checkSize(screenplay, render) {
   return pass('size', `${mb(size)}, inside the ${mb(profile.maxBytes)} limit (${profile.note})`);
 }
 
+// A record of an operator or reviewer actually inspecting the *rendered*
+// result for sound-off comprehension, as opposed to the screenplay merely
+// declaring `captions: true`. Deliberately a manual-inspection record, not a
+// computer-vision verdict: a contact sheet, a full watch, or deterministic
+// subtitle-track metadata are all legitimate methods, and the issue explicitly
+// asks for proportional review, not a new heavy dependency.
+export const CAPTION_REVIEW_SCHEMA = 'kai.demo-caption-review/v1';
+const CAPTION_REVIEW_METHODS = new Set(['contact-sheet', 'full-video', 'subtitle-metadata']);
+
+export function parseCaptionReview(text) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`the caption review is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema !== CAPTION_REVIEW_SCHEMA) {
+    fail(`the caption review must declare "schema": "${CAPTION_REVIEW_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  }
+  if (typeof raw.reviewer !== 'string' || raw.reviewer.trim() === '') fail('reviewer must be a non-empty string');
+  if (!CAPTION_REVIEW_METHODS.has(raw.method)) fail(`method must be one of ${[...CAPTION_REVIEW_METHODS].join(', ')}, got ${JSON.stringify(raw.method ?? null)}`);
+  if (!/^[a-f0-9]{64}$/.test(raw.render_sha256 ?? '')) fail('render_sha256 must name the reviewed render SHA-256');
+  for (const field of ['captions_present', 'captions_readable', 'captions_clipped', 'captions_accurate', 'captions_cover_narration', 'opening_identifies_outcome']) {
+    if (typeof raw[field] !== 'boolean') fail(`${field} must be a boolean (what was actually observed), got ${JSON.stringify(raw[field] ?? null)}`);
+  }
+  return {
+    schema: CAPTION_REVIEW_SCHEMA,
+    reviewer: raw.reviewer,
+    method: raw.method,
+    render_sha256: raw.render_sha256,
+    captions_present: raw.captions_present,
+    captions_readable: raw.captions_readable,
+    captions_clipped: raw.captions_clipped === true,
+    captions_accurate: raw.captions_accurate,
+    captions_cover_narration: raw.captions_cover_narration,
+    opening_identifies_outcome: raw.opening_identifies_outcome,
+    // Named gaps the reviewer did not look at — e.g. a reviewer who only
+    // sampled a contact sheet should say so rather than implying full coverage.
+    uninspected: Array.isArray(raw.uninspected) ? raw.uninspected.filter((v) => typeof v === 'string' && v.trim() !== '') : [],
+    note: typeof raw.note === 'string' ? raw.note : '',
+  };
+}
+
 // Where a video autoplays muted, a demo that only works with sound on does not
-// work. Tracking captions in another issue does not make an uncaptioned demo
-// acceptable in a feed today.
-export function checkMutedComprehension(screenplay) {
+// work. A `captions: true` declaration is the screenplay's intent, not proof
+// the rendered file actually shows legible captions or a silent-comprehensible
+// opening; those are review questions this function will not answer on its
+// own. It only reports "verified" once a caption review record says so.
+export function checkMutedComprehension(screenplay, { captionReview = null, render = null } = {}) {
   const profile = profileFor(screenplay);
   if (!profile.muted) return na('sound-off', `${screenplay.placement} does not autoplay muted`);
   const beats = screenplay.narration ?? [];
-  if (screenplay.captions) return pass('sound-off', `captions declared (${typeof screenplay.captions === 'string' ? screenplay.captions : 'burned in'}), so the demo survives that it ${profile.note}`);
-  if (beats.length > 0) {
-    return bad('sound-off', `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+
+  if (!screenplay.captions) {
+    if (beats.length > 0) {
+      return bad('sound-off', `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+    }
+    return warn('sound-off', `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually — check that what is on screen tells the story alone.`);
   }
-  return warn('sound-off', `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually — check that what is on screen tells the story alone.`);
+
+  const declared = typeof screenplay.captions === 'string' ? screenplay.captions : 'burned in';
+  if (!captionReview) {
+    return warn('sound-off', `captions declared (${declared}), but that is a screenplay declaration, not inspected rendered proof: it ${profile.note}. Supply a caption review (contact sheet, full watch, or subtitle metadata) confirming captions are actually present, readable, uncut, and that the silent opening identifies the task or outcome.`);
+  }
+  if (!render?.sha256 || captionReview.render_sha256 !== render.sha256) {
+    return warn('sound-off', 'the caption review is not bound to this exact rendered file; inspect the current render before claiming verified captions');
+  }
+  if (!captionReview.captions_accurate || !captionReview.captions_cover_narration) {
+    return bad('sound-off', 'the reviewed captions are inaccurate or do not cover the narration; a declaration does not establish sound-off comprehension');
+  }
+
+  if (!captionReview.captions_present) {
+    return bad('sound-off', `captions were declared (${declared}), but the review (${captionReview.reviewer}, ${captionReview.method}) found them absent from the rendered file. A declaration is not proof; the render does not carry what it ${profile.note} requires.`);
+  }
+  if (!captionReview.captions_readable || captionReview.captions_clipped) {
+    const defect = captionReview.captions_clipped ? 'clipped or hidden by composition' : 'present but not readable at the target placement';
+    return bad('sound-off', `the review (${captionReview.reviewer}, ${captionReview.method}) found captions ${defect}; it ${profile.note} and an unreadable caption does not satisfy that.`);
+  }
+  if (!captionReview.opening_identifies_outcome) {
+    return bad('sound-off', `the review (${captionReview.reviewer}, ${captionReview.method}) found the opening frames do not identify the task or outcome without audio; a viewer landing muted would not know what they are looking at before any caption appears.`);
+  }
+  if (captionReview.uninspected.length > 0) {
+    return warn('sound-off', `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening identifies the outcome without audio; left uninspected: ${captionReview.uninspected.join(', ')}.`);
+  }
+  if (captionReview.method === 'subtitle-metadata') {
+    return warn('sound-off', 'subtitle metadata cannot establish rendered readability, clipping, or the visible opening; visual inspection is still required');
+  }
+  return pass('sound-off', `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening frames identify the task/outcome without audio.`);
 }
 
 // A vertical cut of a desktop capture is not a vertical demo: the readable
@@ -278,6 +355,7 @@ export function probeRender(path, run = defaultProbe) {
     height: Number.isFinite(height) ? height : null,
     seconds: Number.isFinite(duration) ? duration : null,
     bytes: statSync(path).size,
+    sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
   };
 }
 
@@ -288,7 +366,7 @@ function defaultProbe(path) {
 
 // ------------------------------------------------------------------- report
 
-export function checkAll(screenplay, { take = null, render = null, wpm = WPM.default } = {}) {
+export function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
     checkWordBudget(screenplay, { wpm }),
@@ -296,7 +374,7 @@ export function checkAll(screenplay, { take = null, render = null, wpm = WPM.def
     checkTail(take, render),
     checkArrival(screenplay, take, render),
     checkSize(screenplay, render),
-    checkMutedComprehension(screenplay),
+    checkMutedComprehension(screenplay, { captionReview, render }),
     checkFraming(screenplay, render),
   ];
   const skipped = checks.filter((c) => c.status === 'skipped');
@@ -372,21 +450,23 @@ function main(argv) {
     return 0;
   }
 
-  const consumed = new Set(['--take', '--video', '--wpm', '--source-take']);
+  const consumed = new Set(['--take', '--video', '--wpm', '--source-take', '--caption-review']);
   const screenplayPath = argv.find((a, i) => !a.startsWith('-') && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log('demo-format — does this demo meet the format its placement demands?\n');
-    console.log('  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120]');
+    console.log('  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]');
     console.log('  demo-format --placements');
     return 2;
   }
 
   const screenplay = parseScreenplay(readFileSync(screenplayPath, 'utf8'));
   const takePath = flag(argv, '--take');
+  const captionReviewPath = flag(argv, '--caption-review');
   const result = checkAll(screenplay, {
     take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, '--video')),
     wpm: Number(flag(argv, '--wpm', WPM.default)),
+    captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, 'utf8')) : null,
   });
   console.log(formatReport(result));
   return result.ok ? 0 : 1;
