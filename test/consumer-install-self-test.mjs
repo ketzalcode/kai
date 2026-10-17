@@ -154,7 +154,6 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
   const bundlePlan = join(consumerRoot, 'bundle-plan.json');
   const bundleRender = join(consumerRoot, 'bundle-render.mp4');
   const bundleClip = join(consumerRoot, 'bundle-clip.wav');
-  const bundleOut = join(consumerRoot, 'bundle-out');
   writeFileSync(bundleScreenplay, JSON.stringify({
     schema: 'kai.demo-screenplay/v1',
     title: 'Smoke demo',
@@ -191,7 +190,7 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
     [
       'kai-creative/scripts/demo-bundle.mjs',
-      ['--build', '--screenplay', bundleScreenplay, '--take', bundleTake, '--plan', bundlePlan, '--render', bundleRender, '--variant', 'draft', '--out', bundleOut],
+      ['--inspect', '--screenplay', bundleScreenplay, '--take', bundleTake, '--plan', bundlePlan, '--render', bundleRender, '--variant', 'draft'],
     ],
   ]);
   let executed = 0;

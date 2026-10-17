@@ -18,6 +18,7 @@ import {
   parseNarrationTake,
   place,
 } from '../src/creative/demo-narrate.mjs';
+import {checkProvenance} from '../src/creative/demo-format.mjs';
 
 const screenplay = {
   schema: SCREENPLAY_SCHEMA,
@@ -221,6 +222,8 @@ test('edited take re-times steps carried over from a verified source take', () =
   assert.deepEqual(edited.dropped_steps, ['b']);
   assert.equal(edited.steps[1].end, 5);
   assert.equal(edited.steps[1].status, 'ok');
+  assert.equal(checkProvenance({steps: [{id: 'a'}, {id: 'b'}, {id: 'c'}]}, edited).status, 'pass');
+  assert.equal(checkProvenance({steps: [{id: 'a'}, {id: 'b'}, {id: 'c'}, {id: 'unrecorded'}]}, edited).status, 'fail');
 });
 
 test('edited take rejects a source_take_id that does not match the supplied source', () => {

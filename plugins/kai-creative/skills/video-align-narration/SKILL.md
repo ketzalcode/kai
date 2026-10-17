@@ -141,6 +141,11 @@ since acceptance), and writing into a non-empty destination without
 was supplied; never silently omit that disclosure. Distinguish an `accepted`
 variant (ready for handoff) from a `draft` one (still subject to change) by
 the `--variant` the operator actually supplied -- never default or infer it.
+The CLI measures the render and exports a full-length aligned voice WAV,
+including silence after the last beat. It retains source footage when
+available, the raw take for an edited timeline, and the music acceptance.
+Missing source footage or an unexported aligned stem is disclosed explicitly;
+timed source clips alone are not called a full-length stem.
 
 This bundle does not produce or claim a native editor project (for example a
 Premiere or Final Cut project) export; it is a folder of aligned source files

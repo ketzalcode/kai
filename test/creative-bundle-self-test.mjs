@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import test, {after} from 'node:test';
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -11,8 +12,11 @@ function cueHash(cueText) {
   return createHash('sha256').update(cueText.trim(), 'utf8').digest('hex').slice(0, 16);
 }
 
+const fixtureDirs = [];
+after(() => fixtureDirs.forEach((dir) => rmSync(dir, {recursive: true, force: true})));
 function makeFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'demo-bundle-test-'));
+  fixtureDirs.push(dir);
   const screenplayPath = join(dir, 'screenplay.json');
   const takePath = join(dir, 'take.json');
   const planPath = join(dir, 'plan.json');
@@ -51,8 +55,9 @@ function makeFixture() {
     ],
   }));
   writeFileSync(renderPath, 'render-bytes');
+  writeFileSync(join(dir, 'raw.mp4'), 'raw-recording-bytes');
 
-  return { dir, screenplayPath, takePath, planPath, renderPath };
+  return { dir, screenplayPath, takePath, planPath, renderPath, clip1, clip2 };
 }
 
 function makeMusic(dir) {
@@ -73,6 +78,7 @@ function makeMusic(dir) {
   writeFileSync(acceptancePath, JSON.stringify({
     schema: 'kai.demo-music-acceptance/v1',
     cue_hash: cueHash(cueText),
+    track_hash: createHash('sha256').update(readFileSync(trackPath)).digest('hex'),
     operator: 'ruben',
     auditioned: 'speech+music',
     accepted_at: '2026-10-16T00:00:00Z',
@@ -175,12 +181,44 @@ test('writeBundle copies every file into a role-named layout and writes a self-c
   const result = writeBundle(manifest, destDir);
   assert.ok(existsSync(join(destDir, 'manifest.json')));
   assert.ok(existsSync(join(destDir, 'render', 'final.mp4')));
-  assert.ok(existsSync(join(destDir, 'narration', 'n-1.wav')));
-  assert.ok(existsSync(join(destDir, 'narration', 'n-2.wav')));
+  assert.ok(existsSync(join(destDir, 'narration', 'clips', 'n-1.wav')));
+  assert.ok(existsSync(join(destDir, 'narration', 'clips', 'n-2.wav')));
+  assert.ok(existsSync(join(destDir, 'source', 'recording.mp4')));
+  assert.ok(existsSync(join(destDir, 'music', 'acceptance.json')));
   assert.ok(existsSync(join(destDir, 'music', 'track.wav')));
   const written = JSON.parse(readFileSync(join(destDir, 'manifest.json'), 'utf8'));
   assert.equal(written.render.path, 'render/final.mp4');
-  assert.equal(written.narration.beats[0].path, 'narration/n-1.wav');
+  assert.equal(written.narration.beats[0].path, 'narration/clips/n-1.wav');
+});
+
+test('bundle rejects changed music bytes and unsafe narration filenames', () => {
+  const fx = makeFixture();
+  const {cuePath, acceptancePath} = makeMusic(fx.dir);
+  writeFileSync(join(fx.dir, 'track.wav'), 'replaced-track');
+  const options = {variant: 'draft', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath};
+  assert.throws(() => buildBundleManifest({...options, musicCuePath: cuePath, musicAcceptancePath: acceptancePath}), /track bytes changed/);
+  const plan = JSON.parse(readFileSync(fx.planPath, 'utf8'));
+  plan.beats[0].beat = '../../outside';
+  writeFileSync(fx.planPath, JSON.stringify(plan));
+  assert.throws(() => buildBundleManifest(options), /filename-safe/);
+});
+
+const mediaAvailable = spawnSync('ffmpeg', ['-version'], {encoding: 'utf8'}).status === 0
+  && spawnSync('ffprobe', ['-version'], {encoding: 'utf8'}).status === 0;
+test('bundle exports a full-length aligned narration stem with silence through the tail', {skip: !mediaAvailable}, () => {
+  const fx = makeFixture();
+  for (const [clip, duration] of [[fx.clip1, 2], [fx.clip2, 2.5]]) {
+    const result = spawnSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=800:duration=${duration}`, clip], {encoding: 'utf8'});
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const manifest = buildBundleManifest({variant: 'draft', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath});
+  const dest = join(fx.dir, 'aligned-bundle');
+  const result = writeBundle(manifest, dest, {renderDurationSec: 8});
+  const stem = join(dest, result.manifest.narration.aligned_stem);
+  const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', stem], {encoding: 'utf8'});
+  assert.equal(probe.status, 0, probe.stderr);
+  assert.ok(Math.abs(Number(probe.stdout.trim()) - 8) < 0.01);
+  assert.equal(result.manifest.narration.timeline_end_sec, 8);
 });
 
 test('writeBundle refuses a non-empty existing destination without --replace', () => {

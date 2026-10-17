@@ -21,9 +21,10 @@
 // does not authorize publication, and the bundle is typed private evidence
 // until an operator says otherwise.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, lstatSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { basename, dirname, join, extname, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { dirname, join, extname, resolve } from 'node:path';
 import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
 
 export const BUNDLE_SCHEMA = 'kai.demo-edit-bundle/v1';
@@ -100,8 +101,10 @@ function loadAcceptedMusic(cuePath, acceptancePath) {
   if (acceptance.auditioned !== 'speech+music') {
     fail(`${acceptancePath} recorded a "${acceptance.auditioned}" audition, which cannot judge fit against the narration; it is not sufficient to include this track in an edit-ready bundle`);
   }
+  const trackHash = createHash('sha256').update(readFileSync(cue.path)).digest('hex');
+  if (acceptance.track_hash !== trackHash) fail('the music track bytes changed after acceptance; audition and accept the current file');
 
-  return { cue, cueText, cuePath, acceptance };
+  return { cue, cueText, cuePath, acceptancePath, acceptance };
 }
 
 // -------------------------------------------------------------------- manifest
@@ -135,7 +138,13 @@ export function buildBundleManifest({
     fail(`${narrationPlanPath} is a rejected narration plan (ok: false); a rejected placement is not ready to hand off. Resolve its rejections and re-place first.`);
   }
   if (!Array.isArray(plan.beats) || plan.beats.length === 0) fail(`${narrationPlanPath} places no narration beats`);
+  if (plan.schema !== 'kai.demo-narration-plan/v1') fail('the narration plan must use the canonical plan schema');
+  if (plan.take && plan.take !== take.take_id) fail('the narration plan and take identify different recordings');
+  const beatIds = new Set();
   for (const beat of plan.beats) {
+    if (!/^[a-z0-9][a-z0-9._-]*$/i.test(beat.beat ?? '') || beatIds.has(beat.beat)) fail('bundle narration beat IDs must be unique filename-safe identifiers');
+    beatIds.add(beat.beat);
+    if (!Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start) fail(`invalid measured timing for narration beat "${beat.beat}"`);
     if (!existsSync(beat.path)) fail(`the narration plan names clip "${beat.path}" for beat "${beat.beat}", which does not exist`);
   }
 
@@ -150,6 +159,14 @@ export function buildBundleManifest({
   }
 
   const timelineEnd = Math.max(...plan.beats.map((beat) => beat.end));
+  const recordingPath = resolve(dirname(takePath), take.recording);
+  const recording = existsSync(recordingPath) ? recordingPath : null;
+  if (!recording) missing.push({component: 'source-recording', reason: 'the source footage was not available; the take alone cannot reconstruct the recording'});
+  const rawRecordingPath = sourceTakePath
+    ? resolve(dirname(sourceTakePath), parseTake(readFileSync(sourceTakePath, 'utf8')).recording)
+    : null;
+  const rawRecording = rawRecordingPath && existsSync(rawRecordingPath) ? rawRecordingPath : null;
+  if (sourceTakePath && !rawRecording) missing.push({component: 'raw-recording', reason: 'the edited timeline source capture is unavailable'});
 
   return {
     schema: BUNDLE_SCHEMA,
@@ -168,6 +185,9 @@ export function buildBundleManifest({
       schema: takeSchema,
       take_id: take.take_id ?? null,
       source_take_id: sourceTakeId,
+      source_path: sourceTakePath,
+      recording_path: recording,
+      raw_recording_path: rawRecording,
     },
     narration: {
       role: 'aligned-narration',
@@ -191,6 +211,7 @@ export function buildBundleManifest({
       cue_hash: cueHash(music.cueText),
       accepted_by: music.acceptance.operator ?? null,
       accepted_at: music.acceptance.accepted_at ?? null,
+      acceptance_path: music.acceptancePath,
     } : null,
     missing,
   };
@@ -209,8 +230,9 @@ function assertEmptyOrReplace(destDir, replace) {
 // Copies every referenced file into a clearly-named, role-prefixed layout and
 // writes the manifest with bundle-relative paths, so the folder is coherent on
 // its own without the operator's original working directories.
-export function writeBundle(manifest, destDir, { replace = false } = {}) {
+export function writeBundle(manifest, destDir, { replace = false, renderDurationSec = null } = {}) {
   assertEmptyOrReplace(destDir, replace);
+  if (existsSync(destDir) && lstatSync(destDir).isSymbolicLink()) fail('bundle destination must not be a link');
   mkdirSync(destDir, { recursive: true });
   mkdirSync(join(destDir, 'source'), { recursive: true });
   mkdirSync(join(destDir, 'narration'), { recursive: true });
@@ -218,6 +240,13 @@ export function writeBundle(manifest, destDir, { replace = false } = {}) {
   const written = [];
   const copy = (src, relDest) => {
     const dest = join(destDir, relDest);
+    if (resolve(src) === resolve(dest)) fail('bundle destination aliases a source asset');
+    let parent = resolve(destDir);
+    for (const part of relDest.split('/').slice(0, -1)) {
+      parent = join(parent, part);
+      if (existsSync(parent) && lstatSync(parent).isSymbolicLink()) fail('bundle subdirectories must not be links');
+    }
+    if (existsSync(dest) && lstatSync(dest).isSymbolicLink()) fail('bundle files must not be links');
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(resolve(src), dest);
     written.push(relDest);
@@ -226,23 +255,62 @@ export function writeBundle(manifest, destDir, { replace = false } = {}) {
 
   const out = JSON.parse(JSON.stringify(manifest));
   out.render.path = copy(manifest.render.path, `render/final${extname(manifest.render.path) || '.mp4'}`);
-  out.screenplay.path = copy(manifest.screenplay.path, `source/${basename(manifest.screenplay.path)}`);
-  out.take.path = copy(manifest.take.path, `source/${basename(manifest.take.path)}`);
-  out.narration.plan_path = copy(manifest.narration.plan_path, `source/${basename(manifest.narration.plan_path)}`);
+  out.screenplay.path = copy(manifest.screenplay.path, 'source/screenplay.json');
+  out.take.path = copy(manifest.take.path, 'source/take.json');
+  if (manifest.take.source_path) out.take.source_path = copy(manifest.take.source_path, 'source/raw-take.json');
+  if (manifest.take.recording_path) out.take.recording_path = copy(manifest.take.recording_path, `source/recording${extname(manifest.take.recording_path)}`);
+  if (manifest.take.raw_recording_path) out.take.raw_recording_path = copy(manifest.take.raw_recording_path, `source/raw-recording${extname(manifest.take.raw_recording_path)}`);
+  out.narration.plan_path = copy(manifest.narration.plan_path, 'source/narration-plan.json');
   out.narration.beats = manifest.narration.beats.map((beat) => ({
     ...beat,
-    path: copy(beat.path, `narration/${beat.id}${extname(beat.path) || '.wav'}`),
+    path: copy(beat.path, `narration/clips/${beat.id}${extname(beat.path) || '.wav'}`),
   }));
   if (manifest.music) {
     mkdirSync(join(destDir, 'music'), { recursive: true });
-    out.music.cue_path = copy(manifest.music.cue_path, `music/${basename(manifest.music.cue_path)}`);
-    out.music.track_path = copy(manifest.music.track_path, `music/${basename(manifest.music.track_path)}`);
+    out.music.cue_path = copy(manifest.music.cue_path, 'music/cue.json');
+    out.music.acceptance_path = copy(manifest.music.acceptance_path, 'music/acceptance.json');
+    out.music.track_path = copy(manifest.music.track_path, `music/track${extname(manifest.music.track_path)}`);
+  }
+  if (renderDurationSec !== null) {
+    const stemPath = join(destDir, 'narration', 'voice-aligned.wav');
+    const result = spawnSync('ffmpeg', buildNarrationStemArgs(manifest, stemPath, renderDurationSec, replace), {encoding: 'utf8'});
+    if (result.error || result.status !== 0) fail(`aligned narration export failed: ${result.error?.message ?? result.stderr}`);
+    out.narration.aligned_stem = 'narration/voice-aligned.wav';
+    out.narration.timeline_end_sec = renderDurationSec;
+    written.push(out.narration.aligned_stem);
+  } else {
+    out.missing.push({component: 'aligned-narration-stem', reason: 'only timed source clips were packaged; no measured render duration was supplied for a full-length stem'});
   }
 
   const manifestPath = join(destDir, 'manifest.json');
   writeFileSync(manifestPath, JSON.stringify(out, null, 2));
   written.push('manifest.json');
   return { destDir, written, manifest: out };
+}
+
+export function buildNarrationStemArgs(manifest, out, durationSec, replace = false) {
+  if (!Number.isFinite(durationSec) || durationSec < manifest.narration.timeline_end_sec) fail('measured render duration must cover every narration beat');
+  const outputStat = existsSync(out) ? statSync(out) : null;
+  for (const beat of manifest.narration.beats) {
+    const inputStat = outputStat && existsSync(beat.path) ? statSync(beat.path) : null;
+    if (resolve(beat.path) === resolve(out)
+      || (inputStat && inputStat.dev === outputStat.dev && inputStat.ino === outputStat.ino)) {
+      fail('aligned stem output must be distinct from every source clip');
+    }
+  }
+  const inputs = manifest.narration.beats.flatMap((beat) => ['-i', beat.path]);
+  const delays = manifest.narration.beats.map((beat, i) => `[${i}:a]adelay=${Math.round(beat.start * 1000)}:all=1[v${i}]`);
+  const voices = manifest.narration.beats.map((_, i) => `[v${i}]`).join('');
+  const chain = [...delays, `${voices}amix=inputs=${manifest.narration.beats.length}:normalize=0:dropout_transition=0,apad=whole_dur=${durationSec},atrim=duration=${durationSec}[voice]`].join(';');
+  return [replace ? '-y' : '-n', '-v', 'error', ...inputs, '-filter_complex', chain, '-map', '[voice]', '-c:a', 'pcm_s16le', out];
+}
+
+function renderDuration(path) {
+  const result = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', path], {encoding: 'utf8'});
+  if (result.error || result.status !== 0) fail(`cannot measure final render: ${result.error?.message ?? result.stderr}`);
+  const seconds = Number(result.stdout.trim());
+  if (!Number.isFinite(seconds) || seconds <= 0) fail('final render has no measurable positive duration');
+  return seconds;
 }
 
 // -------------------------------------------------------------------- cli
@@ -259,6 +327,9 @@ function usage() {
       unaccepted or changed music cue, and an existing non-empty destination
       unless replacement is explicitly authorized. Does not produce a native
       editor project export.
+
+  --inspect (same inputs, without --out)
+      Validate and print the asset manifest without copying files or exporting media.
 `);
 }
 
@@ -268,7 +339,7 @@ function flag(argv, name, fallback = null) {
 }
 
 function main(argv) {
-  if (argv.includes('--build')) {
+  if (argv.includes('--build') || argv.includes('--inspect')) {
     const screenplayPath = flag(argv, '--screenplay') ?? fail('--build needs --screenplay <screenplay.json>');
     const takePath = flag(argv, '--take') ?? fail('--build needs --take <take.json>');
     const sourceTakePath = flag(argv, '--source-take');
@@ -277,12 +348,19 @@ function main(argv) {
     const musicCuePath = flag(argv, '--music');
     const musicAcceptancePath = flag(argv, '--music-accept');
     const variant = flag(argv, '--variant') ?? fail('--build needs --variant draft|accepted');
-    const out = flag(argv, '--out') ?? fail('--build needs --out <bundle-dir>');
 
     const manifest = buildBundleManifest({
       variant, screenplayPath, takePath, sourceTakePath, narrationPlanPath, renderPath, musicCuePath, musicAcceptancePath,
     });
-    const result = writeBundle(manifest, out, { replace: argv.includes('--replace') });
+    if (argv.includes('--inspect')) {
+      console.log(JSON.stringify(manifest, null, 2));
+      return 0;
+    }
+    const out = flag(argv, '--out') ?? fail('--build needs --out <bundle-dir>');
+    const result = writeBundle(manifest, out, {
+      replace: argv.includes('--replace'),
+      renderDurationSec: renderDuration(renderPath),
+    });
     console.log(JSON.stringify(result.manifest, null, 2));
     console.log(`\nwrote ${result.written.length} file(s) to ${result.destDir}`);
     if (result.manifest.missing.length > 0) {
