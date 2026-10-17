@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   CUE_SCHEMA,
   ACCEPTANCE_SCHEMA,
@@ -13,9 +16,13 @@ import {
   assertSafeOutput,
 } from '../src/creative/demo-music.mjs';
 
+const fixtureDir = mkdtempSync(join(tmpdir(), 'demo-music-test-'));
+after(() => rmSync(fixtureDir, { recursive: true, force: true }));
+const trackPath = join(fixtureDir, 'candidate.wav');
+writeFileSync(trackPath, 'candidate-track-bytes');
 const cueJson = {
   schema: CUE_SCHEMA,
-  path: 'candidate.wav',
+  path: trackPath,
   title: 'Quiet build',
   source: 'licensed',
   rights: 'Licensed under Acme Library terms #4821, cleared for product demos.',
@@ -75,7 +82,7 @@ test('audition sample mixes narration and music and is not silently overwritable
   const cue = parseMusicCue(cueText);
   const args = buildAuditionArgs(plan, cue, {video: 'render.mp4', out: 'sample.mp4'});
   assert.equal(args[0], '-n');
-  assert.ok(args.includes('candidate.wav'));
+  assert.ok(args.includes(trackPath));
   assert.ok(args.includes('n-1.wav'));
   assert.ok(args.includes('n-2.wav'));
   const filterArg = args[args.indexOf('-filter_complex') + 1];
@@ -86,9 +93,19 @@ test('audition sample mixes narration and music and is not silently overwritable
 test('audition refuses an output that aliases an input', () => {
   const cue = parseMusicCue(cueText);
   assert.throws(
-    () => buildAuditionArgs(plan, cue, {video: 'render.mp4', out: 'candidate.wav'}),
+    () => buildAuditionArgs(plan, cue, {video: 'render.mp4', out: trackPath}),
     /is the same as the music candidate/,
   );
+});
+
+test('replacing audio at the same cue path invalidates acceptance', () => {
+  const acceptance = acceptCue(cueText, {operator: 'operator'});
+  try {
+    writeFileSync(trackPath, 'different-track-bytes');
+    assert.throws(() => requireAcceptance(cueText, acceptance), /track bytes changed/);
+  } finally {
+    writeFileSync(trackPath, 'candidate-track-bytes');
+  }
 });
 
 test('assertSafeOutput refuses an existing destination without --replace', () => {
