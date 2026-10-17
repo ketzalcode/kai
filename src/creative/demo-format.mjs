@@ -126,6 +126,18 @@ export function checkProvenance(screenplay, take) {
   return pass('provenance', `${take.steps.length} steps, all ok, matching the screenplay`);
 }
 
+// Is the capture mode this screenplay carries actually an agreed, labelled
+// choice, or just whatever got built? "recorded" needs no justification
+// because it is what direction means by default; "replay" and "illustration"
+// are deliberate substitutes for an actual recording, so the screenplay must
+// say why -- that is the agreement this check surfaces, not invents.
+export function checkCaptureMode(screenplay) {
+  if (screenplay.capture_mode === 'recorded') {
+    return pass('capture-mode', 'declared as an actual recorded interaction');
+  }
+  return warn('capture-mode', `declared as "${screenplay.capture_mode}", not an actual recorded interaction: ${screenplay.capture_mode_note}. Any produced output must carry this label visibly and never be presented as a recording of the live interaction.`);
+}
+
 // Before a single paid call, is the script even the right size for the slot?
 //
 // This forecasts; it does not validate. Word counts at an assumed pace hide two
@@ -408,6 +420,7 @@ function defaultProbe(path) {
 export function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null, narrationPlan = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
+    checkCaptureMode(screenplay),
     checkWordBudget(screenplay, { wpm }),
     checkDuration(screenplay, render),
     checkTail(take, render),
