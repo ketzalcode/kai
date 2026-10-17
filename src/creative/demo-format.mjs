@@ -33,6 +33,7 @@
 
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
 
 // Placement profiles.
@@ -294,16 +295,20 @@ export function parseCaptionReview(text) {
   }
   if (typeof raw.reviewer !== 'string' || raw.reviewer.trim() === '') fail('reviewer must be a non-empty string');
   if (!CAPTION_REVIEW_METHODS.has(raw.method)) fail(`method must be one of ${[...CAPTION_REVIEW_METHODS].join(', ')}, got ${JSON.stringify(raw.method ?? null)}`);
-  for (const field of ['captions_present', 'captions_readable', 'opening_identifies_outcome']) {
+  if (!/^[a-f0-9]{64}$/.test(raw.render_sha256 ?? '')) fail('render_sha256 must name the reviewed render SHA-256');
+  for (const field of ['captions_present', 'captions_readable', 'captions_clipped', 'captions_accurate', 'captions_cover_narration', 'opening_identifies_outcome']) {
     if (typeof raw[field] !== 'boolean') fail(`${field} must be a boolean (what was actually observed), got ${JSON.stringify(raw[field] ?? null)}`);
   }
   return {
     schema: CAPTION_REVIEW_SCHEMA,
     reviewer: raw.reviewer,
     method: raw.method,
+    render_sha256: raw.render_sha256,
     captions_present: raw.captions_present,
     captions_readable: raw.captions_readable,
     captions_clipped: raw.captions_clipped === true,
+    captions_accurate: raw.captions_accurate,
+    captions_cover_narration: raw.captions_cover_narration,
     opening_identifies_outcome: raw.opening_identifies_outcome,
     // Named gaps the reviewer did not look at — e.g. a reviewer who only
     // sampled a contact sheet should say so rather than implying full coverage.
@@ -317,7 +322,7 @@ export function parseCaptionReview(text) {
 // the rendered file actually shows legible captions or a silent-comprehensible
 // opening; those are review questions this function will not answer on its
 // own. It only reports "verified" once a caption review record says so.
-export function checkMutedComprehension(screenplay, { captionReview = null } = {}) {
+export function checkMutedComprehension(screenplay, { captionReview = null, render = null } = {}) {
   const profile = profileFor(screenplay);
   if (!profile.muted) return na('sound-off', `${placementLabel(screenplay)} does not autoplay muted`);
   const beats = screenplay.narration ?? [];
@@ -333,6 +338,12 @@ export function checkMutedComprehension(screenplay, { captionReview = null } = {
   if (!captionReview) {
     return warn('sound-off', `captions declared (${declared}), but that is a screenplay declaration, not inspected rendered proof: it ${profile.note}. Supply a caption review (contact sheet, full watch, or subtitle metadata) confirming captions are actually present, readable, uncut, and that the silent opening identifies the task or outcome.`);
   }
+  if (!render?.sha256 || captionReview.render_sha256 !== render.sha256) {
+    return warn('sound-off', 'the caption review is not bound to this exact rendered file; inspect the current render before claiming verified captions');
+  }
+  if (!captionReview.captions_accurate || !captionReview.captions_cover_narration) {
+    return bad('sound-off', 'the reviewed captions are inaccurate or do not cover the narration; a declaration does not establish sound-off comprehension');
+  }
 
   if (!captionReview.captions_present) {
     return bad('sound-off', `captions were declared (${declared}), but the review (${captionReview.reviewer}, ${captionReview.method}) found them absent from the rendered file. A declaration is not proof; the render does not carry what it ${profile.note} requires.`);
@@ -346,6 +357,9 @@ export function checkMutedComprehension(screenplay, { captionReview = null } = {
   }
   if (captionReview.uninspected.length > 0) {
     return warn('sound-off', `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening identifies the outcome without audio; left uninspected: ${captionReview.uninspected.join(', ')}.`);
+  }
+  if (captionReview.method === 'subtitle-metadata') {
+    return warn('sound-off', 'subtitle metadata cannot establish rendered readability, clipping, or the visible opening; visual inspection is still required');
   }
   return pass('sound-off', `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening frames identify the task/outcome without audio.`);
 }
@@ -376,6 +390,7 @@ export function probeRender(path, run = defaultProbe) {
     height: Number.isFinite(height) ? height : null,
     seconds: Number.isFinite(duration) ? duration : null,
     bytes: statSync(path).size,
+    sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
   };
 }
 
@@ -394,7 +409,7 @@ export function checkAll(screenplay, { take = null, render = null, wpm = WPM.def
     checkTail(take, render),
     checkArrival(screenplay, take, render),
     checkSize(screenplay, render),
-    checkMutedComprehension(screenplay, { captionReview }),
+    checkMutedComprehension(screenplay, { captionReview, render }),
     checkFraming(screenplay, render),
   ];
   const skipped = checks.filter((c) => c.status === 'skipped');

@@ -80,9 +80,12 @@ computer-vision approval) and write a review record:
   "schema": "kai.demo-caption-review/v1",
   "reviewer": "<who actually watched it>",
   "method": "contact-sheet",
+  "render_sha256": "<SHA-256 of the exact reviewed video bytes>",
   "captions_present": true,
   "captions_readable": true,
   "captions_clipped": false,
+  "captions_accurate": true,
+  "captions_cover_narration": true,
   "opening_identifies_outcome": true,
   "uninspected": []
 }
@@ -91,6 +94,9 @@ computer-vision approval) and write a review record:
 List anything the review did not actually cover in `uninspected` (for example
 `"last 5 seconds"`) rather than implying full coverage; that still reports
 `warn`, naming the specific gap.
+The hash must match the current render. Subtitle metadata alone cannot prove
+rendered legibility, clipping, or the opening; it remains a warning until
+visual inspection supplies that evidence.
 
 The five named placements (`--placements` lists them) are supported sugar
 over four underlying values: an editorial duration target/cap, a destination
