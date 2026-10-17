@@ -72,7 +72,8 @@ Choose the smallest result the request needs:
 
 1. **CONCEPT** — audience, message, angle, tone, and visual approach.
 2. **SCENE PLAN** — ordered scene purposes, assets, actions, and transitions.
-3. **STORYBOARD** — reviewable scene-by-scene visual and audio direction.
+3. **STORYBOARD** — reviewable scene-by-scene visual and audio direction,
+   including purposeful title/presentation motion where it improves the story.
 4. **SCRIPT** — spoken and on-screen language tied to scene intent.
 5. **DEMO SCREENPLAY** — state-based direction for an interface demo.
 6. **CRITIQUE** — findings and revisions against a supplied direction.
@@ -118,6 +119,23 @@ For existing footage, source timeline positions may be copied only from
 inspected recorded footage or authoritative supplied metadata. Source timeline
 facts describe that recording. Planned edit duration and generated-shot timing
 remain estimates until production measures actual media.
+
+### Direct title and presentation motion
+
+Plan motion for title cards and on-screen supporting text at storyboard time,
+not as a later decoration pass: name what appears, why it supports the
+story, when it enters relative to narration or scene timing, and how long it
+stays readable. Offer one small, story-appropriate motion treatment per
+element rather than a mandatory animated preset; a static card is still a
+valid choice when motion would not improve the story. Keep timing and easing
+consistent across title/text elements within a demo so motion reads as one
+system, not several. Preserve the navigation and evidence already being
+shown — motion direction decorates what was captured; it does not invent a
+cursor path, a state change, animated data, or any other unrecorded product
+behavior, and it does not obscure a result the audience needs to read. Name a
+reduced-motion fallback (a static equivalent of the same card) wherever
+motion is directed, and call for a short rendered preview of titles and
+transitions before full production commits to the treatment.
 
 ### Judge pacing after measurement, not before
 
@@ -172,9 +190,12 @@ schema or another method merely to document the screenplay.
 ### Review
 
 Check audience/message fit, narrative economy, claim grounding, typed assets,
-continuity, state-before-claim ordering, and whether the requested direction is
-actionable. Findings can revise the direction you own, but they do not certify
-recorded visibility, audio fit, render quality, or publication readiness.
+continuity, state-before-claim ordering, whether a directed title/text motion
+treatment stays proportionate (named reason, timing, readable duration,
+reduced-motion fallback, no fabricated interaction) and whether the requested
+direction is actionable. Findings can revise the direction you own, but they
+do not certify recorded visibility, audio fit, render quality, or publication
+readiness.
 
 ## Persistent work
 
