@@ -64,6 +64,7 @@ Run the existing format helper directly:
 ```text
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json>
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <take.json> --video <final.mp4>
+node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <edited_take.json> --source-take <raw_take.json> --video <final.mp4>
 node "<kai-creative-provider>/scripts/demo-format.mjs" --placements
 ```
 
@@ -78,6 +79,15 @@ Restate supplied inputs, approved direction revision, requested deliverables,
 allowed paid operations, output paths, and operations that are intentionally
 omitted. Zoom and narration are optional. A silent demo skips narration; clear
 footage skips zoom.
+
+Production's own canonical artifacts — the `kai.demo-screenplay/v1` direction
+and its `kai.demo-take/v1` capture take (or a `kai.demo-edited-take/v1` cut
+from one, carrying `source_take_id`) — are required production outputs, not an
+adapter built later to satisfy a helper. If direction arrived as Markdown or a
+custom editorial plan, obtain or project the canonical screenplay and take
+before running format or narration checks; do not hand-build a plan the
+helpers were never given to validate, and do not relabel edited timing as the
+original capture measurement or the reverse.
 
 Do not turn production into a fixed capture → zoom → speech chain. There is no
 worker-per-stage dispatch, mandatory zoom, mandatory speech, or automatic
