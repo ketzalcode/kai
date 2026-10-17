@@ -149,6 +149,16 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     beats: [{path: 'clip.wav', start: 0}],
   }));
   writeFileSync(narrationVideo, '');
+  const musicCue = join(consumerRoot, 'music-cue.json');
+  const musicAcceptance = join(consumerRoot, 'music-acceptance.json');
+  writeFileSync(musicCue, JSON.stringify({
+    schema: 'kai.demo-music-cue/v1',
+    path: 'candidate.wav',
+    title: 'Smoke candidate',
+    source: 'supplied',
+    rights: 'Smoke-test fixture, not a real licensed track.',
+    duration_sec: 30,
+  }));
   const invocations = new Map([
     ['kai-core/scripts/activity.mjs', ['--help']],
     ['kai-core/scripts/coordinate.mjs', ['direct']],
@@ -162,6 +172,10 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
       ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
     ],
     ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+    [
+      'kai-creative/scripts/demo-music.mjs',
+      ['--accept', musicCue, '--operator', 'smoke-test', '--out', musicAcceptance],
+    ],
   ]);
   let executed = 0;
   for (const pack of packs) {

@@ -104,8 +104,40 @@ node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --mix "<placement-plan>" -
 The printed command is not an executed mix. Review its paths and arguments
 before separately authorized execution; do not blindly evaluate tool stdout.
 The existing mixer copies video and uses the placed clips as its audio track.
-It does not preserve another audio track or mix music. If that is required,
-report the unsupported composition rather than silently dropping that audio.
+It does not preserve another audio track or mix music into the render.
+
+## Background music: audition and acceptance gate
+
+A requested background track needs a human-judged quality gate before it is
+ever trusted, not only a technical check. Use
+`scripts/demo-music.mjs` for a candidate music track:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --audition "<placement-plan>" --music "<music-cue>" --video "<compatible-video>" --out "<sample.mp4>"
+```
+
+The cue (`kai.demo-music-cue/v1`) names an operator-supplied track, its
+declared rights/provenance, and its measured duration; never invent a track or
+treat a quick oscillator-based sketch as a polished default soundtrack. The
+printed command renders a short speech-plus-music sample, not a technical
+waveform check alone -- the operator has to actually hear narration and music
+together to judge fit, balance, and whether the track suits the story.
+
+Record the operator's judgment before anything downstream relies on it:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-music.mjs" --accept "<music-cue>" --operator "<name>" --auditioned speech+music --out "<music-acceptance>"
+```
+
+An acceptance is keyed to the exact cue content (`cue_hash`); editing the cue
+after acceptance, or substituting a different candidate, invalidates it. A
+`music-only` audition is recorded as such and is not sufficient acceptance: it
+did not judge the track against the actual narration. If no candidate is
+acceptable, say so and offer a supplied track or a music-free result rather
+than defaulting to an unreviewed composition.
+
+No full-length music mix exists yet in this helper; report that gap rather
+than silently dropping or inventing a composed soundtrack.
 
 Load `kai-core-workspace-paths` before persistent output, and Load
 `creative-workspace-publication` when retaining durable plans or reports. Raw
