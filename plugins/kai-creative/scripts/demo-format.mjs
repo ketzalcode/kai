@@ -120,6 +120,28 @@ function checkArrival(screenplay, take, render) {
   }
   return problems.length > 0 ? warn("arrival", `${problems.join("; ")}. Move the setup later, cut it, or trim the tail.`) : pass("arrival", `${declared.map((s) => `${s.intends_to_show} "${s.id}"`).join(", ")} begin early enough. Arrival time only \u2014 that it was readable and unobscured is a review question, not a measurement.`);
 }
+var PACING_HOLD_WARN = 6;
+function checkPacingHolds(plan, render) {
+  if (!plan || !Array.isArray(plan.beats) || plan.beats.length === 0) {
+    return skip("pacing", "a narration placement plan (demo-narrate --place output) with at least one placed beat");
+  }
+  if (!render?.seconds) return skip("pacing", "a rendered video (gaps are measured against the render, not the take)");
+  if (plan.ok !== true || plan.beats.some((beat) => !Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start || beat.end > render.seconds + 0.1)) {
+    return bad("pacing", "the narration plan is rejected or its measured beats do not fit this render; no pacing verification is possible");
+  }
+  const beats = [...plan.beats].sort((a, b) => a.start - b.start);
+  const holds = [];
+  for (let i = 1; i < beats.length; i++) {
+    const gap = beats[i].start - beats[i - 1].end;
+    if (gap > PACING_HOLD_WARN) {
+      holds.push(`${round(gap)}s between "${beats[i - 1].beat}" (ends ${round(beats[i - 1].end)}s) and "${beats[i].beat}" (starts ${round(beats[i].start)}s)`);
+    }
+  }
+  if (holds.length === 0) {
+    return pass("pacing", `no narration-free stretch between placed beats exceeds ${PACING_HOLD_WARN}s`);
+  }
+  return warn("pacing", `${holds.length} narration-free hold(s) past ${PACING_HOLD_WARN}s: ${holds.join("; ")}. These are measured gaps outside narration clips, not proof every second was unnecessary -- judge each against the interaction or reading work it actually carries, then shorten or cut what is left over.`);
+}
 function checkSize(screenplay, render) {
   const profile = profileFor(screenplay);
   if (!profile.maxBytes) return na("size", `${screenplay.placement} has no published upload limit to check against`);
@@ -234,13 +256,14 @@ function defaultProbe(path) {
   const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
   return r.status === 0 ? r.stdout : null;
 }
-function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null } = {}) {
+function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null, narrationPlan = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
     checkWordBudget(screenplay, { wpm }),
     checkDuration(screenplay, render),
     checkTail(take, render),
     checkArrival(screenplay, take, render),
+    (screenplay.narration ?? []).length > 0 ? checkPacingHolds(narrationPlan, render) : na("pacing", "this demo has no narration, so there are no narration gaps to measure"),
     checkSize(screenplay, render),
     checkMutedComprehension(screenplay, { captionReview, render }),
     checkFraming(screenplay, render)
@@ -299,22 +322,24 @@ function main(argv) {
     console.log("\nEvidence-informed product defaults, not scientific optima. Only max_seconds, which you declare, can fail a demo on runtime.");
     return 0;
   }
-  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--source-take", "--caption-review"]);
+  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--source-take", "--caption-review", "--narration-plan"]);
   const screenplayPath = argv.find((a, i) => !a.startsWith("-") && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log("demo-format \u2014 does this demo meet the format its placement demands?\n");
-    console.log("  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]");
+    console.log("  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json] [--narration-plan plan.json]");
     console.log("  demo-format --placements");
     return 2;
   }
   const screenplay = parseScreenplay(readFileSync(screenplayPath, "utf8"));
   const takePath = flag(argv, "--take");
   const captionReviewPath = flag(argv, "--caption-review");
+  const planPath = flag(argv, "--narration-plan");
   const result = checkAll(screenplay, {
     take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, "--video")),
     wpm: Number(flag(argv, "--wpm", WPM.default)),
-    captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null
+    captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null,
+    narrationPlan: planPath ? JSON.parse(readFileSync(planPath, "utf8")) : null
   });
   console.log(formatReport(result));
   return result.ok ? 0 : 1;
@@ -330,6 +355,7 @@ if (process.argv[1]?.endsWith("demo-format.mjs")) {
 export {
   CAPTION_REVIEW_SCHEMA,
   HOLD_RESERVE,
+  PACING_HOLD_WARN,
   PLACEMENTS,
   TAIL_WARN,
   WPM,
@@ -338,6 +364,7 @@ export {
   checkDuration,
   checkFraming,
   checkMutedComprehension,
+  checkPacingHolds,
   checkProvenance,
   checkSize,
   checkTail,
