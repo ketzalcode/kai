@@ -181,9 +181,41 @@ node "<kai-creative-plugin>/scripts/demo-music.mjs" --check-levels "<rendered-fi
 Report the printed peak-check command as a pending verification step, not as
 a completed one, unless it was actually run and its output inspected.
 
+## Edit-ready handoff bundle
+
+A render alone forces last-minute edits to be reverse-engineered from a
+flattened video. When a handoff is requested, assemble an editor-neutral
+bundle with `scripts/demo-bundle.mjs`:
+
+```text
+node "<kai-creative-plugin>/scripts/demo-bundle.mjs" --build --screenplay "<screenplay>" --take "<measured-or-edited-take>" [--source-take "<raw-take>"] --plan "<placement-plan>" --render "<final-render>" [--music "<music-cue>" --music-accept "<music-acceptance>"] --variant draft|accepted --out "<bundle-dir>"
+```
+
+This actually copies the referenced render, screenplay, take, narration
+plan, narration stems, and any accepted music into a role-named folder
+(`render/`, `source/`, `narration/`, `music/`) alongside a `manifest.json`
+naming each file's role and provenance. It refuses a rejected placement plan,
+a missing clip, a music cue with no matching acceptance (or one that changed
+since acceptance), and writing into a non-empty destination without
+`--replace`. State explicitly in the manifest's `missing` list when no music
+was supplied; never silently omit that disclosure. Distinguish an `accepted`
+variant (ready for handoff) from a `draft` one (still subject to change) by
+the `--variant` the operator actually supplied -- never default or infer it.
+The CLI measures the render and exports a full-length aligned voice WAV,
+including silence after the last beat. It retains source footage when
+available, the raw take for an edited timeline, and the music acceptance.
+Missing source footage or an unexported aligned stem is disclosed explicitly;
+timed source clips alone are not called a full-length stem.
+
+This bundle does not produce or claim a native editor project (for example a
+Premiere or Final Cut project) export; it is a folder of aligned source files
+and a manifest an editor-neutral tool can open. Report that distinction
+rather than implying broader editor support exists.
+
 Load `kai-core-workspace-paths` before persistent output, and Load
 `creative-workspace-publication` when retaining durable plans or reports. Raw
-clips, recordings, and renders remain typed private evidence.
+clips, recordings, and renders remain typed private evidence, and packaging
+them into a bundle does not authorize publishing it.
 
 ## Outcome and stop
 
