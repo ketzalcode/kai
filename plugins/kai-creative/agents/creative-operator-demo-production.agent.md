@@ -79,6 +79,16 @@ allowed paid operations, output paths, and operations that are intentionally
 omitted. Zoom and narration are optional. A silent demo skips narration; clear
 footage skips zoom.
 
+Read the screenplay's `capture_mode` before building anything. A recording is
+the default and needs no extra step. If the screenplay declares `"replay"` or
+`"illustration"`, confirm the `capture_mode_note` actually explains an agreed
+substitution rather than treating its presence alone as sufficient; if
+`capture_mode` is absent or `"recorded"` but what is being built is actually a
+replay or illustration, stop and return that mismatch rather than building an
+unapproved substitution. Any produced replay or illustration output must carry
+that label visibly and must never be presented, captioned, or described as an
+actual recording of the live interaction.
+
 Do not turn production into a fixed capture → zoom → speech chain. There is no
 worker-per-stage dispatch, mandatory zoom, mandatory speech, or automatic
 director call.

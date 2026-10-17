@@ -50,6 +50,12 @@ function checkProvenance(screenplay, take) {
   }
   return pass("provenance", `${take.steps.length} steps, all ok, matching the screenplay`);
 }
+function checkCaptureMode(screenplay) {
+  if (screenplay.capture_mode === "recorded") {
+    return pass("capture-mode", "declared as an actual recorded interaction");
+  }
+  return warn("capture-mode", `declared as "${screenplay.capture_mode}", not an actual recorded interaction: ${screenplay.capture_mode_note}. Any produced output must carry this label visibly and never be presented as a recording of the live interaction.`);
+}
 function checkWordBudget(screenplay, { wpm = WPM.default } = {}) {
   const beats = screenplay.narration ?? [];
   if (beats.length === 0) return na("word-budget", "this demo has no narration, so there is no script to budget");
@@ -168,6 +174,7 @@ function defaultProbe(path) {
 function checkAll(screenplay, { take = null, render = null, wpm = WPM.default } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
+    checkCaptureMode(screenplay),
     checkWordBudget(screenplay, { wpm }),
     checkDuration(screenplay, render),
     checkTail(take, render),
@@ -246,6 +253,7 @@ export {
   WPM,
   checkAll,
   checkArrival,
+  checkCaptureMode,
   checkDuration,
   checkFraming,
   checkMutedComprehension,

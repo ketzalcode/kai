@@ -61,6 +61,44 @@ test('target validation names the unresolved target', () => {
   assert.throws(() => parseRect([10, 10, 5, 20], 'target'), /x1 > x0/);
 });
 
+test('screenplay defaults to a recorded capture mode', () => {
+  const parsed = parseScreenplay(JSON.stringify(screenplay));
+  assert.equal(parsed.capture_mode, 'recorded');
+  assert.equal(parsed.capture_mode_note, null);
+});
+
+test('a non-recorded capture mode requires a justifying note', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({
+    ...screenplay,
+    capture_mode: 'replay',
+  })), /capture_mode_note/);
+});
+
+test('an explained replay or illustration capture mode parses and keeps the note', () => {
+  const replay = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    capture_mode: 'replay',
+    capture_mode_note: 'live recording unavailable; operator approved a labelled replay of the real response',
+  }));
+  assert.equal(replay.capture_mode, 'replay');
+  assert.match(replay.capture_mode_note, /operator approved/);
+
+  const illustration = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    capture_mode: 'illustration',
+    capture_mode_note: 'conceptual mockup, no live product behind it',
+  }));
+  assert.equal(illustration.capture_mode, 'illustration');
+});
+
+test('screenplay rejects an unknown capture mode', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({
+    ...screenplay,
+    capture_mode: 'staged',
+    capture_mode_note: 'whatever',
+  })), /capture_mode must be one of/);
+});
+
 test('take parsing preserves measured timing and normalized pointer telemetry', () => {
   const take = parseTake(JSON.stringify({
     schema: TAKE_SCHEMA,

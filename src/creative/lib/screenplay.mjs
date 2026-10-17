@@ -31,13 +31,22 @@ const MAX_STEPS = 200;
 // editorial policy and live in demo-format, which pins this list in its own
 // self-test so the two cannot drift apart.
 const PLACEMENTS_NAMES = new Set(['social-teaser', 'landing-hero', 'readme', 'walkthrough', 'deep-walkthrough']);
+// How the visuals this screenplay describes actually came to exist. Agreed
+// before production, not discovered after: a recorded interaction and a
+// truthfully labelled replay of real evidence serve different presentation
+// goals, and a technically valid substitute for one can still miss the
+// requested experience. "recorded" is the default because it is what most
+// direction means by default; the other two are explicit opt-ins that must
+// say why, so the choice is visible in the artifact and not just in someone's
+// memory of a conversation.
+const CAPTURE_MODES = new Set(['recorded', 'replay', 'illustration']);
 // What a step is *meant* to show. Intent, which the director genuinely has while
 // writing -- deliberately not named shows, because that would assert the thing
 // was observed. Whether it was actually visible, readable and unobscured is a
 // different question and not one a screenplay can answer.
 const INTENDS = new Set(['intended-outcome', 'primary-action']);
 
-export { SCREENPLAY_SCHEMA, TAKE_SCHEMA };
+export { SCREENPLAY_SCHEMA, TAKE_SCHEMA, CAPTURE_MODES };
 
 function fail(message) {
   throw new Error(message);
@@ -121,6 +130,19 @@ export function parseScreenplay(text) {
   const region = parseRegion(capture.region ?? fail('capture.region is required: the driver has to know what rectangle of the screen it is recording'));
   const fps = num(capture.fps ?? 30, 'capture.fps', { min: 1, max: 240 });
 
+  // Declared once, next to the recording geometry it travels with, so the two
+  // cannot describe different footage by accident.
+  const captureMode = raw.capture_mode === undefined || raw.capture_mode === null ? 'recorded' : raw.capture_mode;
+  if (!CAPTURE_MODES.has(captureMode)) {
+    fail(`capture_mode must be one of ${[...CAPTURE_MODES].join(', ')}, got ${JSON.stringify(raw.capture_mode)}`);
+  }
+  // An explicit opt-in that leaves no justification is as silent as not
+  // declaring the mode at all; the note is what makes the substitution an
+  // agreed decision rather than a found-out-later one.
+  const captureModeNote = captureMode === 'recorded'
+    ? null
+    : str(raw.capture_mode_note, 'capture_mode_note (required to explain a replay or illustration, since it is not an actual recording)');
+
   if (!Array.isArray(raw.steps) || raw.steps.length === 0) fail('steps must be a non-empty array');
   if (raw.steps.length > MAX_STEPS) fail(`a screenplay of ${raw.steps.length} steps is past the ${MAX_STEPS} this tool will drive; split the demo`);
 
@@ -201,6 +223,8 @@ export function parseScreenplay(text) {
     max_seconds: maxSeconds,
     captions,
     capture: { region, fps },
+    capture_mode: captureMode,
+    capture_mode_note: captureModeNote,
     steps,
     narration: parseNarrationBeats(raw.narration, steps),
   };
