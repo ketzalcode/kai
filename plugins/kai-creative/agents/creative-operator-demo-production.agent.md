@@ -64,8 +64,33 @@ Run the existing format helper directly:
 ```text
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json>
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <take.json> --video <final.mp4>
+node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --video <final.mp4> --caption-review <review.json>
 node "<kai-creative-provider>/scripts/demo-format.mjs" --placements
 ```
+
+For a muted-autoplay placement, `captions: true` on the screenplay is a
+declared intent, not inspected rendered proof. Without `--caption-review`, the
+sound-off check reports `warn`, not `pass` — it names the gap instead of
+claiming unverified proof. To report `pass`, inspect the actual rendered file
+(a contact sheet, a full watch, or the subtitle track's metadata — never
+computer-vision approval) and write a review record:
+
+```json
+{
+  "schema": "kai.demo-caption-review/v1",
+  "reviewer": "<who actually watched it>",
+  "method": "contact-sheet",
+  "captions_present": true,
+  "captions_readable": true,
+  "captions_clipped": false,
+  "opening_identifies_outcome": true,
+  "uninspected": []
+}
+```
+
+List anything the review did not actually cover in `uninspected` (for example
+`"last 5 seconds"`) rather than implying full coverage; that still reports
+`warn`, naming the specific gap.
 
 Keep screenplay, take, clips, source footage, and output paths explicit and
 outside plugin files.
@@ -98,7 +123,11 @@ Preserve all known helper limitations:
 
 - step-ID sets and step statuses are checked, but matching IDs do not bind
   screenplay edits or rendered file bytes to the same exact revision;
-- captions are declared, not inspected for presence, accuracy, or readability;
+- without a `--caption-review` record, captions are only a screenplay
+  declaration (`warn`), not inspected rendered proof; a review confirms
+  presence, readability, uncut composition, and a silent-comprehensible
+  opening manually (contact sheet, full watch, or subtitle metadata), never by
+  computer-vision approval;
 - the word budget is a forecast, not measured speech fit, and can fail policy
   before narration is supplied;
 - exit zero can accompany `INCOMPLETE` because `ok` means no known failures,

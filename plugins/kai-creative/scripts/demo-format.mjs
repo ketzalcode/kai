@@ -128,15 +128,65 @@ function checkSize(screenplay, render) {
   }
   return pass("size", `${mb(size)}, inside the ${mb(profile.maxBytes)} limit (${profile.note})`);
 }
-function checkMutedComprehension(screenplay) {
+var CAPTION_REVIEW_SCHEMA = "kai.demo-caption-review/v1";
+var CAPTION_REVIEW_METHODS = /* @__PURE__ */ new Set(["contact-sheet", "full-video", "subtitle-metadata"]);
+function parseCaptionReview(text) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`the caption review is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema !== CAPTION_REVIEW_SCHEMA) {
+    fail(`the caption review must declare "schema": "${CAPTION_REVIEW_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  }
+  if (typeof raw.reviewer !== "string" || raw.reviewer.trim() === "") fail("reviewer must be a non-empty string");
+  if (!CAPTION_REVIEW_METHODS.has(raw.method)) fail(`method must be one of ${[...CAPTION_REVIEW_METHODS].join(", ")}, got ${JSON.stringify(raw.method ?? null)}`);
+  for (const field of ["captions_present", "captions_readable", "opening_identifies_outcome"]) {
+    if (typeof raw[field] !== "boolean") fail(`${field} must be a boolean (what was actually observed), got ${JSON.stringify(raw[field] ?? null)}`);
+  }
+  return {
+    schema: CAPTION_REVIEW_SCHEMA,
+    reviewer: raw.reviewer,
+    method: raw.method,
+    captions_present: raw.captions_present,
+    captions_readable: raw.captions_readable,
+    captions_clipped: raw.captions_clipped === true,
+    opening_identifies_outcome: raw.opening_identifies_outcome,
+    // Named gaps the reviewer did not look at — e.g. a reviewer who only
+    // sampled a contact sheet should say so rather than implying full coverage.
+    uninspected: Array.isArray(raw.uninspected) ? raw.uninspected.filter((v) => typeof v === "string" && v.trim() !== "") : [],
+    note: typeof raw.note === "string" ? raw.note : ""
+  };
+}
+function checkMutedComprehension(screenplay, { captionReview = null } = {}) {
   const profile = profileFor(screenplay);
   if (!profile.muted) return na("sound-off", `${screenplay.placement} does not autoplay muted`);
   const beats = screenplay.narration ?? [];
-  if (screenplay.captions) return pass("sound-off", `captions declared (${typeof screenplay.captions === "string" ? screenplay.captions : "burned in"}), so the demo survives that it ${profile.note}`);
-  if (beats.length > 0) {
-    return bad("sound-off", `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+  if (!screenplay.captions) {
+    if (beats.length > 0) {
+      return bad("sound-off", `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+    }
+    return warn("sound-off", `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually \u2014 check that what is on screen tells the story alone.`);
   }
-  return warn("sound-off", `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually \u2014 check that what is on screen tells the story alone.`);
+  const declared = typeof screenplay.captions === "string" ? screenplay.captions : "burned in";
+  if (!captionReview) {
+    return warn("sound-off", `captions declared (${declared}), but that is a screenplay declaration, not inspected rendered proof: it ${profile.note}. Supply a caption review (contact sheet, full watch, or subtitle metadata) confirming captions are actually present, readable, uncut, and that the silent opening identifies the task or outcome.`);
+  }
+  if (!captionReview.captions_present) {
+    return bad("sound-off", `captions were declared (${declared}), but the review (${captionReview.reviewer}, ${captionReview.method}) found them absent from the rendered file. A declaration is not proof; the render does not carry what it ${profile.note} requires.`);
+  }
+  if (!captionReview.captions_readable || captionReview.captions_clipped) {
+    const defect = captionReview.captions_clipped ? "clipped or hidden by composition" : "present but not readable at the target placement";
+    return bad("sound-off", `the review (${captionReview.reviewer}, ${captionReview.method}) found captions ${defect}; it ${profile.note} and an unreadable caption does not satisfy that.`);
+  }
+  if (!captionReview.opening_identifies_outcome) {
+    return bad("sound-off", `the review (${captionReview.reviewer}, ${captionReview.method}) found the opening frames do not identify the task or outcome without audio; a viewer landing muted would not know what they are looking at before any caption appears.`);
+  }
+  if (captionReview.uninspected.length > 0) {
+    return warn("sound-off", `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening identifies the outcome without audio; left uninspected: ${captionReview.uninspected.join(", ")}.`);
+  }
+  return pass("sound-off", `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening frames identify the task/outcome without audio.`);
 }
 function checkFraming(screenplay, render) {
   if (!render?.width) return skip("framing", "a rendered video");
@@ -165,7 +215,7 @@ function defaultProbe(path) {
   const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
   return r.status === 0 ? r.stdout : null;
 }
-function checkAll(screenplay, { take = null, render = null, wpm = WPM.default } = {}) {
+function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
     checkWordBudget(screenplay, { wpm }),
@@ -173,7 +223,7 @@ function checkAll(screenplay, { take = null, render = null, wpm = WPM.default } 
     checkTail(take, render),
     checkArrival(screenplay, take, render),
     checkSize(screenplay, render),
-    checkMutedComprehension(screenplay),
+    checkMutedComprehension(screenplay, { captionReview }),
     checkFraming(screenplay, render)
   ];
   const skipped = checks.filter((c) => c.status === "skipped");
@@ -213,20 +263,22 @@ function main(argv) {
     console.log("\nEvidence-informed product defaults, not scientific optima. Only max_seconds, which you declare, can fail a demo on runtime.");
     return 0;
   }
-  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm"]);
+  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--caption-review"]);
   const screenplayPath = argv.find((a, i) => !a.startsWith("-") && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log("demo-format \u2014 does this demo meet the format its placement demands?\n");
-    console.log("  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120]");
+    console.log("  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]");
     console.log("  demo-format --placements");
     return 2;
   }
   const screenplay = parseScreenplay(readFileSync(screenplayPath, "utf8"));
   const takePath = flag(argv, "--take");
+  const captionReviewPath = flag(argv, "--caption-review");
   const result = checkAll(screenplay, {
     take: takePath ? parseTake(readFileSync(takePath, "utf8")) : null,
     render: probeRender(flag(argv, "--video")),
-    wpm: Number(flag(argv, "--wpm", WPM.default))
+    wpm: Number(flag(argv, "--wpm", WPM.default)),
+    captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null
   });
   console.log(formatReport(result));
   return result.ok ? 0 : 1;
@@ -240,6 +292,7 @@ if (process.argv[1]?.endsWith("demo-format.mjs")) {
   }
 }
 export {
+  CAPTION_REVIEW_SCHEMA,
   HOLD_RESERVE,
   PLACEMENTS,
   TAIL_WARN,
@@ -254,6 +307,7 @@ export {
   checkTail,
   checkWordBudget,
   formatReport,
+  parseCaptionReview,
   probeRender,
   profileFor
 };
