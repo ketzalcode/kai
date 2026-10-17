@@ -23,6 +23,13 @@
 
 const SCREENPLAY_SCHEMA = 'kai.demo-screenplay/v1';
 const TAKE_SCHEMA = 'kai.demo-take/v1';
+// A capture-action take measures when the recorder actually saw a state; an
+// edited take measures when that same state lands in a cut timeline after
+// trims, reorders, or removals. Both describe the same steps, but only the
+// second is honest about what a viewer of the edited render will see. Giving
+// the edited timeline its own schema keeps an editor from relabelling a cut
+// as the original measurement, or the reverse.
+const EDITED_TAKE_SCHEMA = 'kai.demo-edited-take/v1';
 const ACTIONS = new Set(['hold', 'click', 'type', 'key', 'navigate']);
 const ANCHORS = new Set(['center', 'leading', 'trailing', 'pointer']);
 const TAKE_STATUSES = new Set(['ok', 'failed', 'unsettled']);
@@ -37,7 +44,7 @@ const PLACEMENTS_NAMES = new Set(['social-teaser', 'landing-hero', 'readme', 'wa
 // different question and not one a screenplay can answer.
 const INTENDS = new Set(['intended-outcome', 'primary-action']);
 
-export { SCREENPLAY_SCHEMA, TAKE_SCHEMA };
+export { SCREENPLAY_SCHEMA, TAKE_SCHEMA, EDITED_TAKE_SCHEMA };
 
 function fail(message) {
   throw new Error(message);
@@ -274,11 +281,35 @@ export function parseNarrationBeats(raw, steps) {
       }
     }
 
+    // `start_after` gates *when* a beat may begin; it does not say *what* the
+    // words are actually about. A span covering states A and B, with timing
+    // that gates on neither, still passes every existing check even when the
+    // line names B's result specifically -- that is the gap this issue
+    // reports. `references_step` names the one state the beat's text is
+    // actually a claim about, distinct from scenery the beat merely passes
+    // through on its way there. Declaring it is optional: a setup line that
+    // describes an action happening, rather than a result already proven,
+    // legitimately references nothing yet. But a beat that does name a
+    // reference must also gate on it (or later), or the claim could play
+    // before its own evidence exists on screen.
+    let referencesStep = null;
+    if (beat.references_step !== undefined && beat.references_step !== null) {
+      referencesStep = str(beat.references_step, `${where}.references_step`);
+      if (!order.has(referencesStep)) fail(`${where}.references_step names "${referencesStep}", which is not a step in this screenplay`);
+      if (order.get(referencesStep) < order.get(from) || order.get(referencesStep) > order.get(through)) {
+        fail(`${where}.references_step names "${referencesStep}", which is outside the beat's own visual span; a beat cannot claim evidence it does not cover`);
+      }
+      if (startAfter === null || order.get(startAfter) < order.get(referencesStep)) {
+        fail(`${where}.references_step names "${referencesStep}" as the evidence this beat is about, but start_after is ${startAfter ? `"${startAfter}"` : 'unset'}, which does not gate on it; the line could begin before that evidence is on screen. Set start_after to "${referencesStep}" or a later step in the span.`);
+      }
+    }
+
     return {
       id,
       text,
       visual_span: { from_step: from, through_step: through },
       start_after: startAfter,
+      references_step: referencesStep,
       voice: typeof beat.voice === 'string' && beat.voice.trim() !== '' ? beat.voice : null,
     };
   }).map((beat, i, all) => {
@@ -380,6 +411,97 @@ export function parseTake(text) {
     recording_zero_spread: Number.isFinite(Number(raw.recording_zero_spread)) ? Number(raw.recording_zero_spread) : null,
     capture: { region, fps },
     steps,
+    pointer: parsePointer(raw.pointer, region),
+  };
+}
+
+// An edited take describes the same steps as a raw capture take, but after a
+// cut: trims, reorders, or removed footage change *when* a step's result lands
+// in the timeline a viewer will actually watch. It is not a second way to
+// measure a step; it is the same step, re-timed by an edit decision, and it
+// must say so.
+//
+// Requiring the source take's own parsed steps -- not just its id -- is the
+// load-bearing check. Without it, an editor could carry forward a status of
+// "ok" for a step the recorder actually saw fail, which launders a defect
+// through the edit instead of fixing it. A step's status is a measurement; an
+// edit can move it or drop it, but it cannot improve it.
+export function parseEditedTake(text, sourceTake) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`the edited take is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema !== EDITED_TAKE_SCHEMA) {
+    fail(`the edited take must declare "schema": "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  }
+  if (!sourceTake || sourceTake.schema !== TAKE_SCHEMA) {
+    fail('an edited take must be validated against its parsed source capture take (kai.demo-take/v1); provenance cannot be assumed');
+  }
+  if (str(raw.source_take_id, 'source_take_id') !== sourceTake.take_id) {
+    fail(`source_take_id "${raw.source_take_id}" does not match the supplied source take's take_id "${sourceTake.take_id}"; this edited take was not cut from that recording`);
+  }
+
+  const region = parseRegion(raw.capture?.region ?? fail('capture.region is required in an edited take'));
+  const fps = num(raw.capture?.fps ?? 30, 'capture.fps', { min: 1, max: 240 });
+  if (!Array.isArray(raw.steps) || raw.steps.length === 0) fail('an edited take must record at least one step');
+
+  const sourceSteps = new Map(sourceTake.steps.map((step) => [step.id, step]));
+  const seen = new Set();
+  const steps = raw.steps.map((step, i) => {
+    const where = `steps[${i}]`;
+    const id = str(step.id, `${where}.id`);
+    if (seen.has(id)) fail(`${where}.id "${id}" is used twice; an edited take is keyed by step id`);
+    seen.add(id);
+
+    const source = sourceSteps.get(id);
+    if (!source) fail(`${where}.id "${id}" does not appear in the source take; an edit can trim or reorder a measured step, it cannot invent one`);
+
+    const start = num(step.start, `${where}.start`, { min: 0 });
+    const end = num(step.end, `${where}.end`, { min: 0 });
+    if (end < start) fail(`${where} ends before it starts`);
+
+    // The status an edit carries forward has to be the status the recorder
+    // actually measured. Re-timing a step is an edit decision; upgrading
+    // "failed" or "unsettled" to "ok" is relabelling a defect as evidence.
+    const status = step.status === undefined ? source.status : step.status;
+    if (!TAKE_STATUSES.has(status)) {
+      fail(`${where}.status must be one of ${[...TAKE_STATUSES].join(', ')}, got ${JSON.stringify(status)}`);
+    }
+    if (status !== source.status) {
+      fail(`${where}.status is "${status}", but the source take measured "${id}" as "${source.status}"; an edited take may re-time or drop a step, it may not change what the recorder saw`);
+    }
+
+    return {
+      id,
+      start,
+      end,
+      status,
+      rect: step.rect ? parseRect(step.rect, `${where}.rect`) : source.rect,
+      pointer: Array.isArray(step.pointer)
+        ? { x: num(step.pointer[0], `${where}.pointer[0]`), y: num(step.pointer[1], `${where}.pointer[1]`) }
+        : source.pointer,
+    };
+  });
+
+  const droppedSteps = sourceTake.steps.map((step) => step.id).filter((id) => !seen.has(id));
+
+  return {
+    schema: EDITED_TAKE_SCHEMA,
+    take_id: str(raw.take_id, 'take_id'),
+    source_take_id: sourceTake.take_id,
+    // The file this timeline actually describes: an assembled/rendered cut,
+    // not the raw capture. It may equal the source recording when the edit
+    // only reorders or trims within the same single file.
+    recording: str(raw.recording, 'recording'),
+    screenplay: typeof raw.screenplay === 'string' ? raw.screenplay : sourceTake.screenplay,
+    capture: { region, fps },
+    steps,
+    // Steps present in the source recording but cut from this timeline. A
+    // narration beat spanning a dropped step has nothing left to place
+    // against, and callers need this list to say why, not to guess.
+    dropped_steps: droppedSteps,
     pointer: parsePointer(raw.pointer, region),
   };
 }

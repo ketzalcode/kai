@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  EDITED_TAKE_SCHEMA,
+  TAKE_SCHEMA,
+  parseEditedTake,
   parseScreenplay,
   parseTake
 } from "./runtime-creative.mjs";
@@ -8,6 +11,7 @@ import {
 // src/creative/demo-format.mjs
 import { readFileSync, statSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 var PLACEMENTS = {
   "social-teaser": { target: 25, cap: 45, maxBytes: null, muted: true, note: "autoplays muted in a feed" },
   "landing-hero": { target: 40, cap: 60, maxBytes: null, muted: true, note: "often autoplays, usually muted" },
@@ -39,7 +43,8 @@ function checkProvenance(screenplay, take) {
   if (!take) return skip("provenance", "a take manifest");
   const authored = new Set(screenplay.steps.map((s) => s.id));
   const recorded = new Set(take.steps.map((s) => s.id));
-  const missing = [...authored].filter((id) => !recorded.has(id));
+  const dropped = new Set(take.schema === EDITED_TAKE_SCHEMA ? take.dropped_steps : []);
+  const missing = [...authored].filter((id) => !recorded.has(id) && !dropped.has(id));
   const extra = [...recorded].filter((id) => !authored.has(id));
   if (missing.length || extra.length) {
     return bad("provenance", `the screenplay and the take are not the same revision${missing.length ? `; never recorded: ${missing.join(", ")}` : ""}${extra.length ? `; recorded but not authored: ${extra.join(", ")}` : ""}. Every number derived from them would describe a demo that does not exist.`);
@@ -115,6 +120,28 @@ function checkArrival(screenplay, take, render) {
   }
   return problems.length > 0 ? warn("arrival", `${problems.join("; ")}. Move the setup later, cut it, or trim the tail.`) : pass("arrival", `${declared.map((s) => `${s.intends_to_show} "${s.id}"`).join(", ")} begin early enough. Arrival time only \u2014 that it was readable and unobscured is a review question, not a measurement.`);
 }
+var PACING_HOLD_WARN = 6;
+function checkPacingHolds(plan, render) {
+  if (!plan || !Array.isArray(plan.beats) || plan.beats.length === 0) {
+    return skip("pacing", "a narration placement plan (demo-narrate --place output) with at least one placed beat");
+  }
+  if (!render?.seconds) return skip("pacing", "a rendered video (gaps are measured against the render, not the take)");
+  if (plan.ok !== true || plan.beats.some((beat) => !Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start || beat.end > render.seconds + 0.1)) {
+    return bad("pacing", "the narration plan is rejected or its measured beats do not fit this render; no pacing verification is possible");
+  }
+  const beats = [...plan.beats].sort((a, b) => a.start - b.start);
+  const holds = [];
+  for (let i = 1; i < beats.length; i++) {
+    const gap = beats[i].start - beats[i - 1].end;
+    if (gap > PACING_HOLD_WARN) {
+      holds.push(`${round(gap)}s between "${beats[i - 1].beat}" (ends ${round(beats[i - 1].end)}s) and "${beats[i].beat}" (starts ${round(beats[i].start)}s)`);
+    }
+  }
+  if (holds.length === 0) {
+    return pass("pacing", `no narration-free stretch between placed beats exceeds ${PACING_HOLD_WARN}s`);
+  }
+  return warn("pacing", `${holds.length} narration-free hold(s) past ${PACING_HOLD_WARN}s: ${holds.join("; ")}. These are measured gaps outside narration clips, not proof every second was unnecessary -- judge each against the interaction or reading work it actually carries, then shorten or cut what is left over.`);
+}
 function checkSize(screenplay, render) {
   const profile = profileFor(screenplay);
   if (!profile.maxBytes) return na("size", `${screenplay.placement} has no published upload limit to check against`);
@@ -128,15 +155,78 @@ function checkSize(screenplay, render) {
   }
   return pass("size", `${mb(size)}, inside the ${mb(profile.maxBytes)} limit (${profile.note})`);
 }
-function checkMutedComprehension(screenplay) {
+var CAPTION_REVIEW_SCHEMA = "kai.demo-caption-review/v1";
+var CAPTION_REVIEW_METHODS = /* @__PURE__ */ new Set(["contact-sheet", "full-video", "subtitle-metadata"]);
+function parseCaptionReview(text) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`the caption review is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema !== CAPTION_REVIEW_SCHEMA) {
+    fail(`the caption review must declare "schema": "${CAPTION_REVIEW_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  }
+  if (typeof raw.reviewer !== "string" || raw.reviewer.trim() === "") fail("reviewer must be a non-empty string");
+  if (!CAPTION_REVIEW_METHODS.has(raw.method)) fail(`method must be one of ${[...CAPTION_REVIEW_METHODS].join(", ")}, got ${JSON.stringify(raw.method ?? null)}`);
+  if (!/^[a-f0-9]{64}$/.test(raw.render_sha256 ?? "")) fail("render_sha256 must name the reviewed render SHA-256");
+  for (const field of ["captions_present", "captions_readable", "captions_clipped", "captions_accurate", "captions_cover_narration", "opening_identifies_outcome"]) {
+    if (typeof raw[field] !== "boolean") fail(`${field} must be a boolean (what was actually observed), got ${JSON.stringify(raw[field] ?? null)}`);
+  }
+  return {
+    schema: CAPTION_REVIEW_SCHEMA,
+    reviewer: raw.reviewer,
+    method: raw.method,
+    render_sha256: raw.render_sha256,
+    captions_present: raw.captions_present,
+    captions_readable: raw.captions_readable,
+    captions_clipped: raw.captions_clipped === true,
+    captions_accurate: raw.captions_accurate,
+    captions_cover_narration: raw.captions_cover_narration,
+    opening_identifies_outcome: raw.opening_identifies_outcome,
+    // Named gaps the reviewer did not look at — e.g. a reviewer who only
+    // sampled a contact sheet should say so rather than implying full coverage.
+    uninspected: Array.isArray(raw.uninspected) ? raw.uninspected.filter((v) => typeof v === "string" && v.trim() !== "") : [],
+    note: typeof raw.note === "string" ? raw.note : ""
+  };
+}
+function checkMutedComprehension(screenplay, { captionReview = null, render = null } = {}) {
   const profile = profileFor(screenplay);
   if (!profile.muted) return na("sound-off", `${screenplay.placement} does not autoplay muted`);
   const beats = screenplay.narration ?? [];
-  if (screenplay.captions) return pass("sound-off", `captions declared (${typeof screenplay.captions === "string" ? screenplay.captions : "burned in"}), so the demo survives that it ${profile.note}`);
-  if (beats.length > 0) {
-    return bad("sound-off", `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+  if (!screenplay.captions) {
+    if (beats.length > 0) {
+      return bad("sound-off", `this demo carries ${beats.length} narration beat(s) and no captions, but it ${profile.note}. Most viewers would be shown a silent film of exactly the parts you chose to explain out loud.`);
+    }
+    return warn("sound-off", `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually \u2014 check that what is on screen tells the story alone.`);
   }
-  return warn("sound-off", `no narration and no captions, and it ${profile.note}. The demo has to carry itself visually \u2014 check that what is on screen tells the story alone.`);
+  const declared = typeof screenplay.captions === "string" ? screenplay.captions : "burned in";
+  if (!captionReview) {
+    return warn("sound-off", `captions declared (${declared}), but that is a screenplay declaration, not inspected rendered proof: it ${profile.note}. Supply a caption review (contact sheet, full watch, or subtitle metadata) confirming captions are actually present, readable, uncut, and that the silent opening identifies the task or outcome.`);
+  }
+  if (!render?.sha256 || captionReview.render_sha256 !== render.sha256) {
+    return warn("sound-off", "the caption review is not bound to this exact rendered file; inspect the current render before claiming verified captions");
+  }
+  if (!captionReview.captions_accurate || !captionReview.captions_cover_narration) {
+    return bad("sound-off", "the reviewed captions are inaccurate or do not cover the narration; a declaration does not establish sound-off comprehension");
+  }
+  if (!captionReview.captions_present) {
+    return bad("sound-off", `captions were declared (${declared}), but the review (${captionReview.reviewer}, ${captionReview.method}) found them absent from the rendered file. A declaration is not proof; the render does not carry what it ${profile.note} requires.`);
+  }
+  if (!captionReview.captions_readable || captionReview.captions_clipped) {
+    const defect = captionReview.captions_clipped ? "clipped or hidden by composition" : "present but not readable at the target placement";
+    return bad("sound-off", `the review (${captionReview.reviewer}, ${captionReview.method}) found captions ${defect}; it ${profile.note} and an unreadable caption does not satisfy that.`);
+  }
+  if (!captionReview.opening_identifies_outcome) {
+    return bad("sound-off", `the review (${captionReview.reviewer}, ${captionReview.method}) found the opening frames do not identify the task or outcome without audio; a viewer landing muted would not know what they are looking at before any caption appears.`);
+  }
+  if (captionReview.uninspected.length > 0) {
+    return warn("sound-off", `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening identifies the outcome without audio; left uninspected: ${captionReview.uninspected.join(", ")}.`);
+  }
+  if (captionReview.method === "subtitle-metadata") {
+    return warn("sound-off", "subtitle metadata cannot establish rendered readability, clipping, or the visible opening; visual inspection is still required");
+  }
+  return pass("sound-off", `captions verified present, readable, and uncut by ${captionReview.reviewer} (${captionReview.method}), and the opening frames identify the task/outcome without audio.`);
 }
 function checkFraming(screenplay, render) {
   if (!render?.width) return skip("framing", "a rendered video");
@@ -158,22 +248,24 @@ function probeRender(path, run = defaultProbe) {
     width: Number.isFinite(width) ? width : null,
     height: Number.isFinite(height) ? height : null,
     seconds: Number.isFinite(duration) ? duration : null,
-    bytes: statSync(path).size
+    bytes: statSync(path).size,
+    sha256: createHash("sha256").update(readFileSync(path)).digest("hex")
   };
 }
 function defaultProbe(path) {
   const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
   return r.status === 0 ? r.stdout : null;
 }
-function checkAll(screenplay, { take = null, render = null, wpm = WPM.default } = {}) {
+function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null, narrationPlan = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
     checkWordBudget(screenplay, { wpm }),
     checkDuration(screenplay, render),
     checkTail(take, render),
     checkArrival(screenplay, take, render),
+    (screenplay.narration ?? []).length > 0 ? checkPacingHolds(narrationPlan, render) : na("pacing", "this demo has no narration, so there are no narration gaps to measure"),
     checkSize(screenplay, render),
-    checkMutedComprehension(screenplay),
+    checkMutedComprehension(screenplay, { captionReview, render }),
     checkFraming(screenplay, render)
   ];
   const skipped = checks.filter((c) => c.status === "skipped");
@@ -205,6 +297,23 @@ function flag(argv, name, fallback = null) {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, "utf8");
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, "--source-take");
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); supply --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, "utf8"));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
 function main(argv) {
   if (argv.includes("--placements")) {
     for (const [name, p] of Object.entries(PLACEMENTS)) {
@@ -213,20 +322,24 @@ function main(argv) {
     console.log("\nEvidence-informed product defaults, not scientific optima. Only max_seconds, which you declare, can fail a demo on runtime.");
     return 0;
   }
-  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm"]);
+  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--source-take", "--caption-review", "--narration-plan"]);
   const screenplayPath = argv.find((a, i) => !a.startsWith("-") && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log("demo-format \u2014 does this demo meet the format its placement demands?\n");
-    console.log("  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120]");
+    console.log("  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json] [--narration-plan plan.json]");
     console.log("  demo-format --placements");
     return 2;
   }
   const screenplay = parseScreenplay(readFileSync(screenplayPath, "utf8"));
   const takePath = flag(argv, "--take");
+  const planPath = flag(argv, "--narration-plan");
+  const captionReviewPath = flag(argv, "--caption-review");
   const result = checkAll(screenplay, {
-    take: takePath ? parseTake(readFileSync(takePath, "utf8")) : null,
+    take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, "--video")),
-    wpm: Number(flag(argv, "--wpm", WPM.default))
+    wpm: Number(flag(argv, "--wpm", WPM.default)),
+    narrationPlan: planPath ? JSON.parse(readFileSync(planPath, "utf8")) : null,
+    captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null
   });
   console.log(formatReport(result));
   return result.ok ? 0 : 1;
@@ -240,7 +353,9 @@ if (process.argv[1]?.endsWith("demo-format.mjs")) {
   }
 }
 export {
+  CAPTION_REVIEW_SCHEMA,
   HOLD_RESERVE,
+  PACING_HOLD_WARN,
   PLACEMENTS,
   TAIL_WARN,
   WPM,
@@ -249,11 +364,13 @@ export {
   checkDuration,
   checkFraming,
   checkMutedComprehension,
+  checkPacingHolds,
   checkProvenance,
   checkSize,
   checkTail,
   checkWordBudget,
   formatReport,
+  parseCaptionReview,
   probeRender,
   profileFor
 };
