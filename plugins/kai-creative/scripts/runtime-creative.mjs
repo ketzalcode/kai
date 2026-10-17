@@ -3,6 +3,7 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 // src/creative/lib/screenplay.mjs
 var SCREENPLAY_SCHEMA = "kai.demo-screenplay/v1";
 var TAKE_SCHEMA = "kai.demo-take/v1";
+var EDITED_TAKE_SCHEMA = "kai.demo-edited-take/v1";
 var ACTIONS = /* @__PURE__ */ new Set(["hold", "click", "type", "key", "navigate"]);
 var ANCHORS = /* @__PURE__ */ new Set(["center", "leading", "trailing", "pointer"]);
 var TAKE_STATUSES = /* @__PURE__ */ new Set(["ok", "failed", "unsettled"]);
@@ -171,11 +172,23 @@ function parseNarrationBeats(raw, steps) {
         fail(`${where} covers only "${from}" and also waits for it to finish, leaving no time in which to speak. Extend through_step past "${from}", or drop start_after if the line describes the step happening rather than its result.`);
       }
     }
+    let referencesStep = null;
+    if (beat.references_step !== void 0 && beat.references_step !== null) {
+      referencesStep = str(beat.references_step, `${where}.references_step`);
+      if (!order.has(referencesStep)) fail(`${where}.references_step names "${referencesStep}", which is not a step in this screenplay`);
+      if (order.get(referencesStep) < order.get(from) || order.get(referencesStep) > order.get(through)) {
+        fail(`${where}.references_step names "${referencesStep}", which is outside the beat's own visual span; a beat cannot claim evidence it does not cover`);
+      }
+      if (startAfter === null || order.get(startAfter) < order.get(referencesStep)) {
+        fail(`${where}.references_step names "${referencesStep}" as the evidence this beat is about, but start_after is ${startAfter ? `"${startAfter}"` : "unset"}, which does not gate on it; the line could begin before that evidence is on screen. Set start_after to "${referencesStep}" or a later step in the span.`);
+      }
+    }
     return {
       id,
       text,
       visual_span: { from_step: from, through_step: through },
       start_after: startAfter,
+      references_step: referencesStep,
       voice: typeof beat.voice === "string" && beat.voice.trim() !== "" ? beat.voice : null
     };
   }).map((beat, i, all) => {
@@ -223,6 +236,72 @@ function parseTake(text) {
     recording_zero_spread: Number.isFinite(Number(raw.recording_zero_spread)) ? Number(raw.recording_zero_spread) : null,
     capture: { region, fps },
     steps,
+    pointer: parsePointer(raw.pointer, region)
+  };
+}
+function parseEditedTake(text, sourceTake) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`the edited take is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema !== EDITED_TAKE_SCHEMA) {
+    fail(`the edited take must declare "schema": "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  }
+  if (!sourceTake || sourceTake.schema !== TAKE_SCHEMA) {
+    fail("an edited take must be validated against its parsed source capture take (kai.demo-take/v1); provenance cannot be assumed");
+  }
+  if (str(raw.source_take_id, "source_take_id") !== sourceTake.take_id) {
+    fail(`source_take_id "${raw.source_take_id}" does not match the supplied source take's take_id "${sourceTake.take_id}"; this edited take was not cut from that recording`);
+  }
+  const region = parseRegion(raw.capture?.region ?? fail("capture.region is required in an edited take"));
+  const fps = num(raw.capture?.fps ?? 30, "capture.fps", { min: 1, max: 240 });
+  if (!Array.isArray(raw.steps) || raw.steps.length === 0) fail("an edited take must record at least one step");
+  const sourceSteps = new Map(sourceTake.steps.map((step) => [step.id, step]));
+  const seen = /* @__PURE__ */ new Set();
+  const steps = raw.steps.map((step, i) => {
+    const where = `steps[${i}]`;
+    const id = str(step.id, `${where}.id`);
+    if (seen.has(id)) fail(`${where}.id "${id}" is used twice; an edited take is keyed by step id`);
+    seen.add(id);
+    const source = sourceSteps.get(id);
+    if (!source) fail(`${where}.id "${id}" does not appear in the source take; an edit can trim or reorder a measured step, it cannot invent one`);
+    const start = num(step.start, `${where}.start`, { min: 0 });
+    const end = num(step.end, `${where}.end`, { min: 0 });
+    if (end < start) fail(`${where} ends before it starts`);
+    const status = step.status === void 0 ? source.status : step.status;
+    if (!TAKE_STATUSES.has(status)) {
+      fail(`${where}.status must be one of ${[...TAKE_STATUSES].join(", ")}, got ${JSON.stringify(status)}`);
+    }
+    if (status !== source.status) {
+      fail(`${where}.status is "${status}", but the source take measured "${id}" as "${source.status}"; an edited take may re-time or drop a step, it may not change what the recorder saw`);
+    }
+    return {
+      id,
+      start,
+      end,
+      status,
+      rect: step.rect ? parseRect(step.rect, `${where}.rect`) : source.rect,
+      pointer: Array.isArray(step.pointer) ? { x: num(step.pointer[0], `${where}.pointer[0]`), y: num(step.pointer[1], `${where}.pointer[1]`) } : source.pointer
+    };
+  });
+  const droppedSteps = sourceTake.steps.map((step) => step.id).filter((id) => !seen.has(id));
+  return {
+    schema: EDITED_TAKE_SCHEMA,
+    take_id: str(raw.take_id, "take_id"),
+    source_take_id: sourceTake.take_id,
+    // The file this timeline actually describes: an assembled/rendered cut,
+    // not the raw capture. It may equal the source recording when the edit
+    // only reorders or trims within the same single file.
+    recording: str(raw.recording, "recording"),
+    screenplay: typeof raw.screenplay === "string" ? raw.screenplay : sourceTake.screenplay,
+    capture: { region, fps },
+    steps,
+    // Steps present in the source recording but cut from this timeline. A
+    // narration beat spanning a dropped step has nothing left to place
+    // against, and callers need this list to say why, not to guess.
+    dropped_steps: droppedSteps,
     pointer: parsePointer(raw.pointer, region)
   };
 }
@@ -324,6 +403,9 @@ function cursorPng(scale = 2) {
 
 export {
   cursorPng,
+  TAKE_SCHEMA,
+  EDITED_TAKE_SCHEMA,
   parseScreenplay,
-  parseTake
+  parseTake,
+  parseEditedTake
 };

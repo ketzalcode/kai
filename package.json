@@ -13,13 +13,18 @@
     "release-readiness": "node tools/release-readiness.mjs",
     "release-notes": "node tools/release-notes.mjs",
     "consumer-install:self-test": "node test/consumer-install-self-test.mjs",
-    "test": "npm run validate && node --test test/repository-instructions-self-test.mjs test/release-automation-self-test.mjs test/workspace-current-self-test.mjs test/workspace-insights-self-test.mjs test/coordination-schema-self-test.mjs test/coordination-core-self-test.mjs test/project-management-self-test.mjs test/pr-lifecycle-self-test.mjs test/nightshift-self-test.mjs test/agentic-repository-maintenance-self-test.mjs test/skill-authoring-self-test.mjs test/kai-feedback-self-test.mjs test/publication-contract-self-test.mjs test/package-build-self-test.mjs test/consumer-install-self-test.mjs test/creative-screenplay-self-test.mjs test/creative-pacing-self-test.mjs",
+    "test": "npm run validate && node --test test/repository-instructions-self-test.mjs test/release-automation-self-test.mjs test/workspace-current-self-test.mjs test/workspace-insights-self-test.mjs test/coordination-schema-self-test.mjs test/coordination-core-self-test.mjs test/project-management-self-test.mjs test/pr-lifecycle-self-test.mjs test/nightshift-self-test.mjs test/agentic-repository-maintenance-self-test.mjs test/skill-authoring-self-test.mjs test/kai-feedback-self-test.mjs test/publication-contract-self-test.mjs test/package-build-self-test.mjs test/consumer-install-self-test.mjs test/creative-screenplay-self-test.mjs test/creative-pacing-self-test.mjs test/creative-format-self-test.mjs test/creative-status-self-test.mjs test/creative-bundle-self-test.mjs test/creative-music-self-test.mjs",
     "status": "node src/core/work-status.mjs",
     "activity": "node src/core/activity.mjs",
     "demo-zoom": "node src/creative/demo-zoom.mjs",
     "demo-zoom:verify": "node src/creative/demo-zoom.mjs --verify",
     "creative-screenplay:self-test": "node test/creative-screenplay-self-test.mjs",
-    "creative-pacing:self-test": "node test/creative-pacing-self-test.mjs"
+    "creative-pacing:self-test": "node test/creative-pacing-self-test.mjs",
+    "demo-format": "node src/creative/demo-format.mjs",
+    "creative-format:self-test": "node test/creative-format-self-test.mjs",
+    "creative-status:self-test": "node test/creative-status-self-test.mjs",
+    "creative-bundle:self-test": "node test/creative-bundle-self-test.mjs",
+    "creative-music:self-test": "node test/creative-music-self-test.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  EDITED_TAKE_SCHEMA,
+  TAKE_SCHEMA,
+  parseEditedTake,
   parseScreenplay,
   parseTake
 } from "./runtime-creative.mjs";
 
 // src/creative/demo-narrate.mjs
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-var TAKE_SCHEMA = "kai.demo-narration-take/v1";
+var TAKE_SCHEMA2 = "kai.demo-narration-take/v1";
 var PLAN_SCHEMA = "kai.demo-narration-plan/v1";
 var PLUGIN_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 var MIN_GAP = 0.25;
@@ -39,8 +42,8 @@ function parseNarrationTake(text) {
   } catch (error) {
     fail(`the narration take is not valid JSON: ${error.message}`);
   }
-  if (raw.schema !== TAKE_SCHEMA) {
-    fail(`the narration take must declare "schema": "${TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+  if (raw.schema !== TAKE_SCHEMA2) {
+    fail(`the narration take must declare "schema": "${TAKE_SCHEMA2}", got ${JSON.stringify(raw.schema ?? null)}`);
   }
   if (!Array.isArray(raw.clips) || raw.clips.length === 0) fail("a narration take must record at least one clip");
   const clips = /* @__PURE__ */ new Map();
@@ -62,7 +65,7 @@ function parseNarrationTake(text) {
     });
   }
   return {
-    schema: TAKE_SCHEMA,
+    schema: TAKE_SCHEMA2,
     provider: typeof raw.provider === "string" ? raw.provider : null,
     voice: typeof raw.voice === "string" ? raw.voice : null,
     region: typeof raw.region === "string" ? raw.region : null,
@@ -84,11 +87,9 @@ function place(screenplay, take, narrationTake) {
     ).map((step) => step.id);
     const missing = spanStepIds.filter((id) => !measured.has(id));
     if (missing.length > 0) {
-      rejections.push({
-        beat: beat.id,
-        reason: "unrecorded-step",
-        detail: `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(", ")}, which this take does not contain; the screenplay and the take are not from the same demo`
-      });
+      const dropped = Array.isArray(take.dropped_steps) ? missing.filter((id) => take.dropped_steps.includes(id)) : [];
+      const detail = dropped.length === missing.length ? `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(", ")}, which this edited take cut from the timeline; narrate against the remaining steps or restore the cut` : `beat "${beat.id}" references ${missing.map((id) => `"${id}"`).join(", ")}, which this take does not contain; the screenplay and the take are not from the same demo`;
+      rejections.push({ beat: beat.id, reason: "unrecorded-step", detail });
       continue;
     }
     const relevantSteps = spanStepIds.map((id) => measured.get(id));
@@ -175,11 +176,28 @@ function place(screenplay, take, narrationTake) {
     ok: rejections.length === 0
   };
 }
-function buildMixArgs(plan, { video, out }) {
+function buildMixArgs(plan, { video, out, replace = false }) {
   if (!plan.ok) fail("this narration plan was rejected, so there is nothing to mix; fix the rejections first");
   if (plan.beats.length === 0) fail("this narration plan places no beats");
   for (const label of [video, out]) {
     if (label.startsWith("-")) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
+  }
+  const pathIdentity = (path) => {
+    const absolute = resolve(path);
+    const identity = existsSync(absolute) ? realpathSync(absolute) : absolute;
+    return process.platform === "win32" ? identity.toLowerCase() : identity;
+  };
+  const outputIdentity = pathIdentity(out);
+  const sources = [
+    { role: "video input", path: video },
+    ...plan.beats.map((beat) => ({ role: `narration clip "${beat.beat}"`, path: beat.path }))
+  ];
+  const inputCollision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
+  if (inputCollision) {
+    fail(`output path "${out}" is the same as the ${inputCollision.role}; mixing must write a distinct file`);
+  }
+  if (existsSync(out) && !replace) {
+    fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);
   }
   const inputs = [];
   const chain = [];
@@ -191,7 +209,7 @@ function buildMixArgs(plan, { video, out }) {
   });
   chain.push(`${labels.join("")}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0[mix]`);
   return [
-    "-y",
+    replace ? "-y" : "-n",
     "-hide_banner",
     "-v",
     "error",
@@ -229,18 +247,40 @@ function usage() {
   console.log(`demo-narrate \u2014 place measured speech against a measured recording
 
   --place      <screenplay.json> <take.json> <narration_take.json> [--out plan.json]
+               [--source-take <raw_take.json>]
       Lay the beats against the measured recording, or refuse and say why.
+      <take.json> may be a raw capture take (kai.demo-take/v1) or an edited
+      take (kai.demo-edited-take/v1). An edited take requires --source-take,
+      the raw capture take it was cut from, to prove provenance.
 
-  --mix        <plan.json> --video <render.mp4> --out <narrated.mp4>
+  --mix        <plan.json> --video <render.mp4> --out <narrated.mp4> [--replace]
       Print the ffmpeg command that lays the placed clips onto the finished video.
+      Existing outputs are refused unless replacement is explicitly authorized.
 `);
 }
 function flag(argv, name, fallback = null) {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, "utf8");
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, "--source-take");
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); place needs --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, "utf8"));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
 function main(argv) {
-  const positional = argv.filter((a, i) => !a.startsWith("-") && !argv[i - 1]?.startsWith("--out") && !argv[i - 1]?.startsWith("--video"));
+  const positional = argv.filter((a, i) => !a.startsWith("-") && !argv[i - 1]?.startsWith("--out") && !argv[i - 1]?.startsWith("--video") && !argv[i - 1]?.startsWith("--source-take"));
   if (argv.includes("--place")) {
     const [screenplayPath, takePath, narrPath] = positional;
     if (!screenplayPath || !takePath || !narrPath) {
@@ -249,7 +289,7 @@ function main(argv) {
     }
     const plan = place(
       parseScreenplay(readFileSync(screenplayPath, "utf8")),
-      parseTake(readFileSync(takePath, "utf8")),
+      loadTake(takePath, argv),
       parseNarrationTake(readFileSync(narrPath, "utf8"))
     );
     console.log(formatReport(plan));
@@ -267,7 +307,7 @@ wrote ${out}`);
     const video = flag(argv, "--video") ?? fail("--mix needs --video <render.mp4>");
     const out = flag(argv, "--out") ?? fail("--mix needs --out <narrated.mp4>");
     if (!existsSync(video)) fail(`${video} does not exist; mix the narration onto a render that was already made`);
-    console.log(["ffmpeg", ...buildMixArgs(plan, { video, out })].map((a) => /[\s;'"\[\]]/.test(a) ? `"${a}"` : a).join(" "));
+    console.log(["ffmpeg", ...buildMixArgs(plan, { video, out, replace: argv.includes("--replace") })].map((a) => /[\s;'"\[\]]/.test(a) ? `"${a}"` : a).join(" "));
     return 0;
   }
   usage();
@@ -283,7 +323,7 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
 }
 export {
   MIN_GAP,
-  TAKE_SCHEMA,
+  TAKE_SCHEMA2 as TAKE_SCHEMA,
   buildMixArgs,
   formatReport,
   parseNarrationTake,

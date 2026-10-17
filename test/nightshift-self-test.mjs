@@ -392,6 +392,32 @@ test('Copilot launch is bounded and leaves agent model ownership intact', async 
   assert.equal(args.includes('--yolo'), false);
 });
 
+test('uncapped credits require explicit admission and omit the CLI ceiling', async () => {
+  const {validatePlan, buildCopilotArgs, renderMorningReport} = await runner();
+  const approved = plan({limits: {...plan().limits, maxAiCredits: null}});
+  assert.equal(validatePlan(approved).limits.maxAiCredits, null);
+  for (const maxAiCredits of [undefined, 0, -1, Infinity, 'unlimited']) {
+    assert.throws(() => validatePlan(plan({
+      limits: {...plan().limits, maxAiCredits},
+    })), /maxAiCredits/);
+  }
+  const args = buildCopilotArgs({
+    plan: approved,
+    profile: 'eng-builder-backend',
+    prompt: 'Execute the approved slice.',
+    aiCredits: null,
+  });
+  assert.equal(args.includes('--max-ai-credits'), false);
+  assert.ok(args.includes('--max-autopilot-continues'));
+  assert.throws(() => buildCopilotArgs({
+    plan: plan(),
+    profile: 'eng-builder-backend',
+    prompt: 'Execute the approved slice.',
+    aiCredits: null,
+  }), /credit/i);
+  assert.match(renderMorningReport(approved, []), /no credit ceiling approved/);
+});
+
 test('approved secret references are redacted and undeclared routing stays absent', async () => {
   const {buildCopilotArgs, redactSecrets} = await runner();
   const withSecret = plan({
@@ -519,6 +545,25 @@ test('run paths stay inside the typed private Nightshift route', async () => {
   assert.ok(paths.report.endsWith(join('drafts', 'report.md')));
 });
 
+test('worktrees stay in the project ignored worktree directory', async () => {
+  const {worktreePath} = await runner();
+  const fixture = workspaceFixture();
+  try {
+    writeFileSync(join(fixture.workspace, '.gitignore'), '/.kai/\n/.worktrees/\n');
+    assert.equal(
+      worktreePath(fixture.workspace, 'night-2026-10-10', 'api-contract'),
+      join(fixture.workspace, '.worktrees', 'nightshift', 'night-2026-10-10', 'api-contract'),
+    );
+    writeFileSync(join(fixture.workspace, '.gitignore'), '/.kai/\n');
+    assert.throws(
+      () => worktreePath(fixture.workspace, 'night-2026-10-10', 'api-contract'),
+      /ignored/i,
+    );
+  } finally {
+    rmSync(fixture.workspace, {recursive: true, force: true});
+  }
+});
+
 test('prepare is idempotent and report regeneration replaces the same draft', async () => {
   const {prepareRun, reportRun} = await runner();
   const fixture = workspaceFixture();
@@ -614,6 +659,44 @@ test('serial execution continues independent work after a blocker', async () => 
     assert.equal(removed.length, 1);
     assert.match(readFileSync(result.paths.report, 'utf8'), /completed-with-blockers/);
     assert.ok(result.events.every((entry, index) => entry.sequence === index + 1));
+  } finally {
+    rmSync(fixture.workspace, {recursive: true, force: true});
+  }
+});
+
+test('uncapped execution propagates no ceiling and still stops at the PR limit', async () => {
+  const {executeRun, prepareRun} = await runner();
+  const fixture = workspaceFixture();
+  try {
+    const approved = plan({
+      deadline: '2099-10-11T06:00:00.000Z',
+      base: {...plan().base, sha: fixture.head},
+      limits: {...plan().limits, maxAiCredits: null, maxPullRequests: 1},
+    });
+    prepareRun({root: fixture.workspace, plan: approved});
+    const credits = [];
+    const result = executeRun({
+      root: fixture.workspace,
+      runId: approved.runId,
+      now: () => new Date('2026-10-10T22:00:00.000Z'),
+      decideNext: ({aiCredits}) => {
+        credits.push(aiCredits);
+        return nightshiftSliceDecision({slice: slice({baseHead: fixture.head})});
+      },
+      runSlice: ({aiCredits}) => {
+        credits.push(aiCredits);
+        return {
+          worktree: join(fixture.workspace, '.delivered-api'),
+          actualHead: '2'.repeat(40),
+          clean: true,
+          result: delivered(),
+        };
+      },
+      removeWorktree: () => {},
+    });
+    assert.deepEqual(credits, [null, null]);
+    assert.equal(result.state.slices.length, 1);
+    assert.equal(result.state.terminalReason, 'pull-request/launch limit reached');
   } finally {
     rmSync(fixture.workspace, {recursive: true, force: true});
   }
