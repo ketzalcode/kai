@@ -112,9 +112,23 @@ export function parseScreenplay(text) {
   // The names live here because they are schema; the profiles behind them are
   // editorial policy and live in `demo-format`, which pins the two together in
   // its own self-test so they cannot drift.
+  //
+  // A named placement is supported sugar over a fixed bundle of dimensions
+  // (duration target/cap, upload byte limit, muted-autoplay behavior). Not
+  // every real destination is one of the five bundles, so an explicit object
+  // is also accepted here, unvalidated: it is the same shape demo-format
+  // already uses internally for named presets, and demo-format — which owns
+  // the editorial/destination policy, not this schema layer — validates its
+  // fields and reports which of them is a destination fact, a playback
+  // behavior, or editorial guidance. This is deliberately not a new named
+  // dimension vocabulary (purpose/destination/orientation enums and similar
+  // remain an open, unapproved design question); it only lets a declaration
+  // name values a preset cannot combine.
   const placement = raw.placement === undefined || raw.placement === null
     ? null
-    : (PLACEMENTS_NAMES.has(raw.placement) ? raw.placement : fail(`placement must be one of ${[...PLACEMENTS_NAMES].join(', ')}, got ${JSON.stringify(raw.placement)}`));
+    : (typeof raw.placement === 'object' && !Array.isArray(raw.placement))
+      ? raw.placement
+      : (PLACEMENTS_NAMES.has(raw.placement) ? raw.placement : fail(`placement must be one of ${[...PLACEMENTS_NAMES].join(', ')}, or an explicit dimension object, got ${JSON.stringify(raw.placement)}`));
 
   // An operator-declared hard limit, as opposed to an editorial default. This is
   // the only runtime number that may fail a demo outright, because it is the

@@ -56,6 +56,23 @@ test('screenplay rejects duplicate step identities', () => {
   })), /used twice/);
 });
 
+test('screenplay accepts a named placement, unchanged (issue #125 presets stay valid)', () => {
+  const parsed = parseScreenplay(JSON.stringify({ ...screenplay, placement: 'readme' }));
+  assert.equal(parsed.placement, 'readme');
+});
+
+test('screenplay rejects an unrecognized placement name', () => {
+  assert.throws(() => parseScreenplay(JSON.stringify({ ...screenplay, placement: 'tiktok-vertical' })), /placement must be one of/);
+});
+
+test('screenplay passes through an explicit placement dimension object unvalidated (demo-format owns the field rules)', () => {
+  const parsed = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    placement: { target: 20, cap: 30, maxBytes: null, muted: true, note: 'custom' },
+  }));
+  assert.deepEqual(parsed.placement, { target: 20, cap: 30, maxBytes: null, muted: true, note: 'custom' });
+});
+
 test('target validation names the unresolved target', () => {
   const parsed = parseScreenplay(JSON.stringify(screenplay));
   const targets = parseTargets(JSON.stringify({

@@ -100,8 +100,44 @@ const skip = (id, needs) => ({ id, status: 'skipped', detail: `needs ${needs}` }
 const na = (id, why) => ({ id, status: 'n/a', detail: why });
 
 export function profileFor(screenplay) {
-  if (!screenplay.placement) fail(`this screenplay declares no placement, so there is no format to check it against. Add "placement": one of ${Object.keys(PLACEMENTS).join(', ')}`);
-  return PLACEMENTS[screenplay.placement];
+  const placement = screenplay.placement;
+  if (!placement) fail(`this screenplay declares no placement, so there is no format to check it against. Add "placement": one of ${Object.keys(PLACEMENTS).join(', ')}, or an explicit dimension object.`);
+  if (typeof placement === 'string') return { ...PLACEMENTS[placement], label: placement };
+  return parseDimensionProfile(placement);
+}
+
+// Every named placement above is really four values a destination forces or an
+// editor chooses: a byte limit, a mute/autoplay fact, and a duration
+// target/cap. That is the whole vocabulary this function accepts directly —
+// it adds no new dimension names (purpose, destination, orientation and
+// similar remain an open, unapproved design question for a later issue). It
+// only lets a screenplay declare a combination none of the five presets
+// bundle, using the exact fields the presets already resolve to.
+function parseDimensionProfile(raw) {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    fail('placement must be a named placement string or an explicit dimension object');
+  }
+  if (typeof raw.target !== 'number' || !(raw.target > 0)) {
+    fail('placement.target must be a positive number of seconds — the editorial duration target a preset would otherwise supply');
+  }
+  if (typeof raw.cap !== 'number' || !(raw.cap >= raw.target)) {
+    fail('placement.cap must be a number of seconds at or past placement.target — the editorial duration cap a preset would otherwise supply');
+  }
+  if (raw.maxBytes !== null && raw.maxBytes !== undefined && !(typeof raw.maxBytes === 'number' && raw.maxBytes > 0)) {
+    fail('placement.maxBytes must be a positive number of bytes (the destination\'s published upload limit, a fact) or null if the destination publishes none');
+  }
+  if (typeof raw.muted !== 'boolean') {
+    fail('placement.muted must be a boolean — whether the destination is observed to autoplay without sound, a playback-behavior fact, not an editorial choice');
+  }
+  const note = typeof raw.note === 'string' && raw.note.trim() !== '' ? raw.note : 'is an explicit placement (no named preset), so this note only restates the declared values';
+  return { target: raw.target, cap: raw.cap, maxBytes: raw.maxBytes ?? null, muted: raw.muted, note, label: 'this explicit placement' };
+}
+
+// What a finding should call the placement in prose: the declared preset name
+// where there is one, or a neutral label for an explicit dimension object that
+// has no name to show.
+function placementLabel(screenplay) {
+  return typeof screenplay.placement === 'string' ? screenplay.placement : 'this explicit placement';
 }
 
 // ------------------------------------------------------------------- checks
@@ -146,7 +182,7 @@ export function checkWordBudget(screenplay, { wpm = WPM.default } = {}) {
   const speakable = planned * (1 - HOLD_RESERVE);
   const budget = Math.floor((speakable / 60) * wpm);
 
-  const detail = `${words} words against a ${budget}-word guideline for a ${planned}s ${screenplay.placement}, at ${wpm} wpm with ${Math.round(HOLD_RESERVE * 100)}% reserved for action`;
+  const detail = `${words} words against a ${budget}-word guideline for a ${planned}s ${placementLabel(screenplay)}, at ${wpm} wpm with ${Math.round(HOLD_RESERVE * 100)}% reserved for action`;
   if (words > budget * 1.15) {
     return bad('word-budget', `${detail}. That is past what a pace estimate can be wrong by: cut about ${words - budget} words, or choose a longer placement. Feasibility is still unknown until synthesis measures it.`);
   }
@@ -169,12 +205,12 @@ export function checkDuration(screenplay, render) {
     return bad('duration', `${round(seconds)}s is over the ${screenplay.max_seconds}s this screenplay declares as its own limit`);
   }
   if (seconds > profile.cap) {
-    return warn('duration', `${round(seconds)}s is past the ${profile.cap}s editorial cap for ${screenplay.placement}. That cap is a product default, not a platform fact — accept it deliberately, declare a longer placement, or set max_seconds to make the limit real.`);
+    return warn('duration', `${round(seconds)}s is past the ${profile.cap}s editorial cap for ${placementLabel(screenplay)}. That cap is a product default, not a platform fact — accept it deliberately, declare a longer placement, or set max_seconds to make the limit real.`);
   }
   if (seconds > profile.target) {
-    return warn('duration', `${round(seconds)}s is over the ${profile.target}s target for ${screenplay.placement}, inside its ${profile.cap}s cap. The evidence supports the trade-off, not this exact number.`);
+    return warn('duration', `${round(seconds)}s is over the ${profile.target}s target for ${placementLabel(screenplay)}, inside its ${profile.cap}s cap. The evidence supports the trade-off, not this exact number.`);
   }
-  return pass('duration', `${round(seconds)}s, inside the ${profile.target}s target for ${screenplay.placement}`);
+  return pass('duration', `${round(seconds)}s, inside the ${profile.target}s target for ${placementLabel(screenplay)}`);
 }
 
 // A render that keeps playing after the demo has visibly finished reads as a
@@ -227,7 +263,7 @@ export function checkArrival(screenplay, take, render) {
 // Not advice: a file over the limit does not upload at all.
 export function checkSize(screenplay, render) {
   const profile = profileFor(screenplay);
-  if (!profile.maxBytes) return na('size', `${screenplay.placement} has no published upload limit to check against`);
+  if (!profile.maxBytes) return na('size', `${placementLabel(screenplay)} has no published upload limit to check against`);
   if (!render?.bytes) return skip('size', 'a rendered video');
   const size = render.bytes;
   if (size > profile.maxBytes) {
@@ -289,7 +325,7 @@ export function parseCaptionReview(text) {
 // own. It only reports "verified" once a caption review record says so.
 export function checkMutedComprehension(screenplay, { captionReview = null, render = null } = {}) {
   const profile = profileFor(screenplay);
-  if (!profile.muted) return na('sound-off', `${screenplay.placement} does not autoplay muted`);
+  if (!profile.muted) return na('sound-off', `${placementLabel(screenplay)} does not autoplay muted`);
   const beats = screenplay.narration ?? [];
 
   if (!screenplay.captions) {
@@ -405,8 +441,9 @@ export function formatReport(result) {
   const mark = { pass: 'ok  ', warn: 'warn', fail: 'FAIL', skipped: '--  ', 'n/a': 'n/a ' };
   const lines = result.checks.map((c) => `  ${mark[c.status]} ${c.id.padEnd(11)} ${c.detail}`);
   const skipped = result.checks.filter((c) => c.status === 'skipped');
+  const placementText = typeof result.placement === 'string' ? result.placement : 'an explicit dimension object (no named preset)';
   lines.push('');
-  lines.push(`${result.status} — placement "${result.placement}", ${result.ran}/${result.total} checks ran${skipped.length ? `, ${skipped.length} could not (${skipped.map((c) => c.id).join(', ')})` : ''}.`);
+  lines.push(`${result.status} — placement "${placementText}", ${result.ran}/${result.total} checks ran${skipped.length ? `, ${skipped.length} could not (${skipped.map((c) => c.id).join(', ')})` : ''}.`);
   if (result.status === 'INCOMPLETE') lines.push('Missing evidence is not a pass. Supply the take and the render to check the rest.');
   if (result.status.startsWith('PASS')) lines.push('This says the demo fits its slot. It does not say the demo is good, or that what it points at was readable.');
   return lines.join('\n');

@@ -3,8 +3,12 @@ import test from 'node:test';
 import { SCREENPLAY_SCHEMA, parseScreenplay } from '../src/creative/lib/screenplay.mjs';
 import {
   CAPTION_REVIEW_SCHEMA,
+  PLACEMENTS,
+  checkDuration,
   checkMutedComprehension as inspectMutedComprehension,
+  checkSize,
   parseCaptionReview,
+  profileFor,
 } from '../src/creative/demo-format.mjs';
 
 const renderHash = 'a'.repeat(64);
@@ -109,6 +113,79 @@ test('parseCaptionReview rejects missing boolean fields', () => {
 test('parseCaptionReview keeps uninspected list and drops junk entries', () => {
   const parsed = parseCaptionReview(JSON.stringify(review({ uninspected: ['tail', '', 42, '  '] })));
   assert.deepEqual(parsed.uninspected, ['tail']);
+});
+
+// --- issue #125: composable placement dimensions -------------------------
+
+test('named presets remain valid and unchanged', () => {
+  const screenplay = parseScreenplay(JSON.stringify(base));
+  const profile = profileFor(screenplay);
+  assert.equal(profile.target, PLACEMENTS['landing-hero'].target);
+  assert.equal(profile.cap, PLACEMENTS['landing-hero'].cap);
+  assert.equal(profile.muted, PLACEMENTS['landing-hero'].muted);
+  assert.equal(profile.label, 'landing-hero');
+});
+
+test('an explicit dimension object represents a combination no preset bundles', () => {
+  // A short teaser bound for a destination with a byte cap: no preset
+  // combines a social-teaser's short target with a readme's upload limit.
+  const screenplay = parseScreenplay(JSON.stringify({
+    ...base,
+    placement: { target: 20, cap: 30, maxBytes: 5 * 1024 * 1024, muted: true, note: 'short teaser embedded in a byte-capped doc' },
+  }));
+  const profile = profileFor(screenplay);
+  assert.equal(profile.target, 20);
+  assert.equal(profile.cap, 30);
+  assert.equal(profile.maxBytes, 5 * 1024 * 1024);
+  assert.equal(profile.muted, true);
+});
+
+test('explicit dimension object flows through checkDuration and checkSize using its own values', () => {
+  const screenplay = parseScreenplay(JSON.stringify({
+    ...base,
+    placement: { target: 20, cap: 30, maxBytes: 5 * 1024 * 1024, muted: true, note: 'short teaser embedded in a byte-capped doc' },
+  }));
+  const duration = checkDuration(screenplay, { seconds: 35 });
+  assert.equal(duration.status, 'warn');
+  assert.match(duration.detail, /30s editorial cap/);
+  const size = checkSize(screenplay, { bytes: 6 * 1024 * 1024 });
+  assert.equal(size.status, 'fail');
+  assert.match(size.detail, /5 MB limit/);
+});
+
+test('explicit dimension object rejects a missing target with a source-labeled refusal', () => {
+  assert.throws(
+    () => profileFor({ placement: { cap: 30, maxBytes: null, muted: true } }),
+    /placement\.target must be a positive number of seconds — the editorial duration target/,
+  );
+});
+
+test('explicit dimension object rejects a cap under its own target', () => {
+  assert.throws(
+    () => profileFor({ placement: { target: 40, cap: 30, maxBytes: null, muted: true } }),
+    /placement\.cap must be a number of seconds at or past placement\.target/,
+  );
+});
+
+test('explicit dimension object rejects a non-boolean muted flag, naming it a playback fact', () => {
+  assert.throws(
+    () => profileFor({ placement: { target: 20, cap: 30, maxBytes: null, muted: 'sometimes' } }),
+    /playback-behavior fact/,
+  );
+});
+
+test('explicit dimension object rejects a negative maxBytes, naming it a destination fact', () => {
+  assert.throws(
+    () => profileFor({ placement: { target: 20, cap: 30, maxBytes: -1, muted: false } }),
+    /destination's published upload limit, a fact/,
+  );
+});
+
+test('screenplay parsing still rejects an unknown placement name', () => {
+  assert.throws(
+    () => parseScreenplay(JSON.stringify({ ...base, placement: 'not-a-real-placement' })),
+    /placement must be one of/,
+  );
 });
 
 test('a caption review for different render bytes never establishes verification', () => {
