@@ -15,10 +15,10 @@ approved design.
 
 **Primary profile:** judgment
 
-Direct work may return only inline or repository-native output. It must not
-register a durable Kai artifact. Any durable Kai report or publication requires
-an existing standalone Task, its current version, an authorized
-artifact target, current acting authority, and named acceptance authority. If
+Direct work may return inline or requested repository files, including
+canonical project knowledge, without Kai state. Registering a coordinated
+artifact requires an existing standalone Task, its current version, an
+authorized artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
@@ -160,9 +160,11 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before the final
 handoff for stop. Never grant work or dispatch another role.
 
-The owning Creative publication contract decides any disposition. Record an
-authorized transition through Core `asset.transition`. A team-facing design
-remains provisional until the PM/steward accepts its exact revision. Identity
+The owning Creative publication contract distinguishes repository knowledge
+from private media. Knowledge acceptance binds its exact Git revision without
+a publication move; non-Git assets use authorized Core `asset.transition`
+when applicable. A design remains proposed until its named independent
+completion authority accepts the exact revision. Identity
 adoption still belongs to the operator, and implementation still requires
 independent QA.
 

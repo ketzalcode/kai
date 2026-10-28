@@ -6,15 +6,48 @@ tools: [read, execute, search]
 
 # Workspace paths
 
-Schema 6 has one private operational root and one project publication root:
+Schema 6 has one private operational root and a default project knowledge root:
 
 ```text
-.kai/       private, ignored, untracked
-docs/kai/   committed accepted knowledge
+.kai/       private runtime, agent memory, evidence, working material
+docs/kai/   canonical project knowledge, proposed or accepted
 ```
 
 Directories appear only on the first valid write. Installing a pack creates no
 pack directory.
+
+## Project knowledge from creation
+
+Write Git-suitable feature knowledge, designs, decisions, documentation, and
+report narratives at one canonical repository path from the first edit. Reuse
+an established documentation home; otherwise use the owning package's
+`publicForm` under the configured publication root. Do not create a second
+`docs/kai/` copy when a repository-native authority already exists.
+
+Author proposals and revisions on a branch at that same path. Approval changes
+the accepted revision, not the file's location. Default-branch knowledge states
+current accepted direction unless the reviewed document or section explicitly
+labels itself Proposed. Obtain any required named-authority acceptance of the
+exact reviewed head before merging it as accepted content. A labelled proposal
+may land through repository review without becoming an accepted decision.
+Committing or merging alone does not establish semantic acceptance,
+implementation, shipping, or permission to publish externally.
+
+For coordinated acceptance, bind the exact Git base/head through
+`kai-core-work-acting` and retain the approved branch for as long as Core
+records reference it. Do not copy knowledge through a private draft and
+mirrored publication transition.
+
+Confirmed decisions update the canonical document without waiting for code
+completion. Keep instructions and stable navigation linked to committed
+knowledge. Private context may supplement it, never replace it.
+
+Check privacy before committing or pushing: a branch is visible to repository
+readers. Sensitive captures, evidence, credentials, personal material, and
+restricted binary work stay private. A private exception is not a competing
+project-knowledge authority; disclose unavailable or pending sanitized content.
+Project Management's private planning database remains authoritative for its
+records, and Creative's media custody rules still apply.
 
 ## Target binding
 
@@ -85,8 +118,8 @@ absolute paths; the project itself contains no `.kai/`.
 
 ## Typed artifact grammar
 
-Every durable private artifact path includes its owning pack, allowed type,
-stable ID, and active lifecycle:
+Private evidence and working paths include their owning pack, allowed type,
+stable ID, and permitted private lane:
 
 ```text
 .kai/<pack>/<type>/<id>/{drafts,evidence,scratch}/
@@ -95,8 +128,7 @@ stable ID, and active lifecycle:
 .kai/<pack>/archive/<type>/<subtype>/<id>/...
 ```
 
-Accepted publication mirrors the validated pack/type/subtype/ID route under
-the configured project:
+The default canonical knowledge route is under the configured project:
 
 ```text
 docs/kai/<pack>/<type>/<id>/...
@@ -104,8 +136,14 @@ docs/kai/<pack>/<type>/<subtype>/<id>/...
 ```
 
 The owning pack publication skill is the only source for allowed types,
-subtypes, formats, publication rules, and privacy rules. Core path grammar does not duplicate Project Management, Engineering, or
-Creative vocabularies.
+subtypes, formats, publication rules, and privacy rules. Core path grammar does
+not duplicate Project Management, Engineering, or Creative vocabularies.
+
+Knowledge types use `evidence` and `scratch` privately, not an authoring draft
+lane. `drafts` remains for explicitly private working outputs such as media
+and Nightshift execution reports; it is not the canonical home of project
+knowledge. A non-Git deliverable may still use the existing accepted-byte
+publication route.
 
 Refuse an unknown pack, type, subtype, ID, lifecycle, arbitrary root, path
 escape, link, junction, case alias, nested Git root, collision, or destination
@@ -126,9 +164,19 @@ For `repo-local`, the managed Git block ignores all of `/.kai/`; verify it is
 untracked before the first write. For `external`, the registered workspace is
 outside the project and the project contains no `.kai/`.
 
-Drafts, evidence, scratch, runtime state, host capabilities, activity, and
-observation data never enter Git. Accepted collaboration happens through the
-configured `docs/kai/` publication root.
+Private working outputs, evidence, scratch, runtime state, host capabilities,
+activity, agent memory, and observation data never enter Git. Project knowledge
+is authored in its canonical repository location, not promoted from `.kai/`.
+
+## Existing private knowledge
+
+Do not silently migrate a consumer workspace. With explicit authorization,
+reconcile old knowledge drafts into the canonical document on a branch,
+preserving accepted content and presenting unaccepted material as proposals.
+Keep sensitive evidence private. Registered source bytes are immutable
+evidence: do not move, edit, or delete them without reconciling their runtime
+references through authorized recovery. They are no longer the authoring
+authority. A current schema-6 workspace needs no schema reset for this change.
 
 ## Unsupported manifests
 

@@ -93,19 +93,18 @@ current request and target repository instructions outrank that profile. Never
 apply one project binding's profile to another, and never create insight state
 merely because a profile is absent.
 
-## Keep durable decisions aligned
+## Project knowledge
 
-When the operator confirms a lasting scope or design decision, locate the
-existing versioned feature/design documentation and prepare a focused revision.
-Follow its editing and acceptance rules; decision confirmation is not automatic
-acceptance of newly authored publication bytes. Do not wait for implementation
-completion to retain accepted knowledge.
-
-Keep repository instructions and stable navigation pointing to committed
-documentation, not ignored private drafts. Private context may supplement that
-authority, never replace it. If acceptance, authority, or the canonical location
-is missing, name the affected documentation and pending action instead of
-claiming it is aligned.
+Write Git-suitable project knowledge at its canonical repository path from the
+first edit, on a branch. Reuse the repository's documentation home; do not keep
+an authoritative copy in `.kai` or link committed navigation to private files.
+Update that same document when a lasting decision changes, without waiting for
+implementation completion. Committing does not grant acceptance, merge, or
+external publication authority; follow existing review and named-authority
+requirements before merging accepted content. Default-branch knowledge states
+accepted direction unless its reviewed text explicitly labels a proposal as
+Proposed. Keep runtime state, agent memory, sensitive evidence, and private
+working material in `.kai`, not in project documentation.
 
 ## Development profile: fast-ship
 

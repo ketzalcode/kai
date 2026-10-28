@@ -367,6 +367,12 @@ async function runFixture(fixtureName) {
     probeEntrypoints(installedRoot, fixture.packs, projectRoot);
     assertPathMutationParity({doctor, projectRoot});
 
+    const knowledge = parsePublicationContract(installedRoot, 'core');
+    const decision = selectRoute(knowledge, {pack: 'core', type: 'decisions'});
+    ok(decision && !decision['private form'].includes('drafts')
+      && decision['public form'].startsWith('docs/kai/core/decisions/'),
+    'installed knowledge has a canonical repository home, not a private authoring lane');
+
     const contract = parsePublicationContract(installedRoot, fixture.artifact.pack);
     const row = selectRoute(contract, fixture.artifact);
     if (!ok(Boolean(row), 'installed pack exposes the fixture publication route')) return;

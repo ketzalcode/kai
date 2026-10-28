@@ -92,7 +92,7 @@ Own Direction, Epic, Feature, Requirement, priority, holds, dependencies, closur
 | [`project-management-create-epic`](../../plugins/kai-project-management/skills/project-management-create-epic/SKILL.md) | `kai-project-management` | Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Core Task planning. |
 | [`project-management-work-hierarchy`](../../plugins/kai-project-management/skills/project-management-work-hierarchy/SKILL.md) | `kai-project-management` | Use when reading, proposing, validating, or handing off Direction, Epic, Feature, and Requirement scope. |
 | [`project-management-work-stewardship`](../../plugins/kai-project-management/skills/project-management-work-stewardship/SKILL.md) | `kai-project-management` | Use when a named authority creates, activates, prioritizes, holds, releases, or closes Project Management scope. |
-| [`project-management-workspace-publication`](../../plugins/kai-project-management/skills/project-management-workspace-publication/SKILL.md) | `kai-project-management` | Use when accepted Direction or planning knowledge may be published from Project Management. |
+| [`project-management-workspace-publication`](../../plugins/kai-project-management/skills/project-management-workspace-publication/SKILL.md) | `kai-project-management` | Use when authoring durable Direction or planning knowledge and recording its acceptance. |
 
 ### Pack publication
 
