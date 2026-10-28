@@ -21,8 +21,9 @@ sections. Read the canonical code, contracts, accepted decisions, applicable
 repository instructions, and current authoritative status. Distinguish the
 complete effort from current implementation progress.
 
-Apply `research-before-coding` only when unresolved evidence could change the
-design. Do not turn ordinary source reading into a separate investigation.
+Apply `engineering-investigation` only when substantial unresolved evidence
+could change the design. Do not turn ordinary source reading into a separate
+investigation.
 
 ## Include only justified content
 

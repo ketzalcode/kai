@@ -58,8 +58,9 @@ the document describes. Verify load-bearing command names, options, schemas,
 examples and version constraints against source or current authoritative docs.
 Distinguish observed, owner-confirmed, inferred and unknown claims.
 
-Apply `research-before-coding` when a bounded behavior or API question must be
-resolved before documenting it. Apply `onboard-to-codebase` only when the user
+Apply `engineering-investigation` when a substantial behavior or API question
+needs investigation before documenting it; ordinary source verification needs
+no separate method. Apply `onboard-to-codebase` only when the user
 explicitly requests repository or subsystem orientation, not for every README
 edit. Use external research only when local/supplied evidence cannot settle the
 question and the task authorizes it.

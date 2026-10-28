@@ -16,11 +16,17 @@ review, PR delivery, and bounded Nightshift execution.
 | `eng-nightshift` | Approved serial unattended delivery |
 
 Methods include `software-development`, shared/frontend/backend coding
-standards, repository onboarding, research, PR sizing, review, review comments,
+standards, repository onboarding, pre-implementation research, standalone
+engineering investigation, PR sizing, review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
 diagrams, development-design documents and readable Word projections,
 `nightshift-run`, and the manual `my-insights`, `team-insights`, and
 `refine-insights` workspace-learning commands.
+
+Use `research-before-coding` to decide whether evidence supports a proposed code
+change. Use `engineering-investigation` for standalone questions or substantial
+unresolved research; it does not require an intention to code. Neither requires
+a plan, saved report, or automatic delivery workflow.
 
 ## Install
 

@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **43 skills**.
+The repository ships **9 agents** and **44 skills**.
 
-The default marketplace supplies **9 agents** and **43 skills** through core, optional project management, engineering, and creative (22 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **44 skills** through core, optional project management, engineering, and creative (23 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -125,7 +125,7 @@ Optional feedback and lean Kai agent/skill authoring guidance.
 
 ### Engineering craft
 
-Lean development, shared and domain coding standards, bounded evidence, explicit delivery, and useful visuals.
+Lean development, shared and domain coding standards, implementation readiness, standalone investigation, explicit delivery, and useful visuals.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
@@ -134,7 +134,8 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`frontend-coding-standards`](../../plugins/kai-engineering/skills/frontend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring frontend UI or client behavior. |
 | [`backend-coding-standards`](../../plugins/kai-engineering/skills/backend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring APIs, services, persistence, jobs, libraries, or server-side behavior. |
 | [`nightshift-run`](../../plugins/kai-engineering/skills/nightshift-run/SKILL.md) | `kai-engineering` | Use inside eng-nightshift for a bounded unattended engineering run whose Nightshift agent chooses one PR slice at a time and whose runner only persists, launches, and reports. |
-| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
+| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use before implementing a proposed code change when missing evidence could change whether or how to proceed. Not a general investigation entry point. |
+| [`engineering-investigation`](../../plugins/kai-engineering/skills/engineering-investigation/SKILL.md) | `kai-engineering` | Use for evidence-driven engineering investigations into behavior, architecture, integrations, capabilities, or unblocking options. No code change is required. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
 | [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |
 | [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |

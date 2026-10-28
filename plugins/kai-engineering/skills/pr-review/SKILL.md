@@ -38,8 +38,9 @@ Risk signals: only concrete triggers visible in this change
   assembled acceptance only when the brief contains a concrete trigger.
 - The general reviewer must report relevant defects directly. Do not dispatch
   another reviewer merely because a lens applies.
-- Use `research-before-coding` only for a bounded unresolved fact that could
-  change a finding.
+- Apply `engineering-investigation` only when a substantial unresolved question
+  could change a finding; ordinary targeted source reading needs no separate
+  method.
 
 ## Revision handling
 

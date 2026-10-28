@@ -201,6 +201,31 @@ test('the active agent and skill reference graph is acyclic', () => {
   assert.deepEqual(referenceCycleErrors(collectReferences(root)), []);
 });
 
+test('pre-implementation research composes a standalone Engineering investigation in one direction', () => {
+  const refs = collectReferences(root);
+  const research = 'plugins/kai-engineering/skills/research-before-coding/SKILL.md';
+  const investigation = 'plugins/kai-engineering/skills/engineering-investigation/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === research
+    && ref.kind === 'skill' && ref.target === 'engineering-investigation'
+    && ref.firing.includes('loaded')));
+  assert.ok(refs.some(ref => ref.from === investigation
+    && ref.fromPack === 'engineering' && ref.kind === 'skill'
+    && ref.target === 'engineering-investigation'
+    && ref.firing.includes('user-invoked')));
+  assert.deepEqual(refs.filter(ref => ref.from === investigation
+    && ['research-before-coding', 'software-development'].includes(ref.target)), []);
+  for (const from of [
+    'plugins/kai-engineering/skills/pr-review/SKILL.md',
+    'plugins/kai-engineering/skills/development-design-documents/SKILL.md',
+    'plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md',
+  ]) {
+    const targets = refs.filter(ref => ref.from === from && ref.kind === 'skill')
+      .map(ref => ref.target);
+    assert.ok(targets.includes('engineering-investigation'), from);
+    assert.ok(!targets.includes('research-before-coding'), from);
+  }
+});
+
 test('reference cycles report the complete caller-resource loop', () => {
   const refs = [
     {

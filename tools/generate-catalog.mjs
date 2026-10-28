@@ -117,12 +117,12 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Engineering craft',
-    blurb: 'Lean development, shared and domain coding standards, bounded evidence, explicit delivery, and useful visuals.',
+    blurb: 'Lean development, shared and domain coding standards, implementation readiness, standalone investigation, explicit delivery, and useful visuals.',
     members: [
       'software-development', 'coding-standards',
       'frontend-coding-standards', 'backend-coding-standards',
       'nightshift-run',
-      'research-before-coding',
+      'research-before-coding', 'engineering-investigation',
       'pr-sizing', 'pr-delivery', 'pr-review', 'pr-review-comments',
       'onboard-to-codebase', 'my-insights', 'team-insights', 'refine-insights',
       'build-diagrams', 'development-design-documents',
