@@ -67,13 +67,17 @@ it valid, and fix parser errors instead of pasting unverified source.
 
 ## Keep Markdown authoritative
 
-Edit the accepted or requested Markdown first. Generate DOCX, PDF, slides, or
-HTML as projections from that revision. Do not maintain two independently
-edited design authorities.
+Use the existing authoritative Markdown as the basis for revisions, not a
+competing private-only document. Prepare changes under its editing and
+acceptance rules. Generate DOCX, PDF, slides, or HTML as projections from that
+revision. Do not maintain two independently edited design authorities.
 
-When durable Kai publication is requested, apply
-`engineering-workspace-publication` immediately before choosing or writing the
-typed destination. Publication and enterprise upload are separate actions.
+When a lasting decision changes existing durable Engineering documentation,
+apply `engineering-workspace-publication` to reconcile the revision and its
+navigation. Also apply it immediately before choosing or writing a requested
+durable Kai publication's typed destination. Ordinary repository documentation
+remains at its native path and creates no Kai state. Publication and enterprise
+upload are separate actions.
 
 ## Produce readable Word documents
 

@@ -27,6 +27,37 @@ paths, formats, authority, and privacy rules.
 | `engineering` | `reports` | `releases` | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 <!-- <<< kai publication table <<< -->
 
+## Reconcile a lasting decision
+
+When an accepted scope or design decision affects existing durable Engineering
+knowledge, compare it with the current versioned feature/design bundle before
+treating private draft changes as sufficient.
+
+1. Locate the canonical document or bundle, its current revision, and the
+   repository entry points that lead to it. Reuse its ownership and location;
+   do not create a competing authority. If the location or authority is
+   ambiguous, report that gap rather than choosing an arbitrary destination.
+2. Prepare only the affected decision, scope, rationale, and references as a
+   focused revision. Distinguish accepted intent from implementation progress.
+   Keep captures, evidence, scratch, and unaccepted alternatives private; do
+   not promote the entire feature workspace.
+3. For a coordinated Kai publication, retain the proposed revision on its
+   typed private route and obtain the named completion authority's acceptance
+   of the exact revision and hash before updating the mirrored public target.
+   A confirmed decision does not accept newly authored bytes. Use the existing
+   registration and transition rules below; do not infer acceptance or create
+   a Task merely to edit ordinary repository documentation.
+4. Keep stable repository navigation linked to committed documentation. Update
+   affected links with the authorized documentation revision, never redirect
+   repository instructions to an ignored draft as the feature authority.
+   Private context may supplement, not replace, the committed source.
+
+Do not wait for implementation completion to retain accepted knowledge. If
+publication is pending, name the changed decision, stale versioned document,
+prepared revision, and missing acceptance or authority in the handoff. Do not
+claim documentation is current because its private draft is current.
+Unaccepted proposals remain proposals and cannot overwrite accepted scope.
+
 ## Validation and refusal
 
 Architecture is the only initial documentation subtype. Investigations and

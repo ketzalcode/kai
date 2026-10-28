@@ -14,6 +14,20 @@ current request and target repository instructions outrank that profile. Never
 apply one project binding's profile to another, and never create insight state
 merely because a profile is absent.
 
+## Keep durable decisions aligned
+
+When the operator confirms a lasting scope or design decision, locate the
+existing versioned feature/design documentation and prepare a focused revision.
+Follow its editing and acceptance rules; decision confirmation is not automatic
+acceptance of newly authored publication bytes. Do not wait for implementation
+completion to retain accepted knowledge.
+
+Keep repository instructions and stable navigation pointing to committed
+documentation, not ignored private drafts. Private context may supplement that
+authority, never replace it. If acceptance, authority, or the canonical location
+is missing, name the affected documentation and pending action instead of
+claiming it is aligned.
+
 ## Development profile: fast-ship
 
 Kai keeps direct work direct. Add coordination only when specialization,
