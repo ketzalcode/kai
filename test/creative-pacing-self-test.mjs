@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PACING_HOLD_WARN, checkPacingHolds, checkAll } from '../src/creative/demo-format.mjs';
+import { checkPacingHolds, checkAll } from '../src/creative/demo-format.mjs';
 import {parseScreenplay, SCREENPLAY_SCHEMA} from '../src/creative/lib/screenplay.mjs';
 
 const plan = (beats) => ({ schema: 'kai.demo-narration-plan/v1', beats, ok: true });
@@ -15,17 +15,14 @@ test('plan with no render: skipped', () => {
   assert.equal(result.status, 'skipped');
 });
 
-test('a single beat has no interior gap to flag: pass', () => {
-  const result = checkPacingHolds(plan([{ beat: 'a', start: 0, end: 2 }]), { seconds: 30 });
-  assert.equal(result.status, 'pass');
-});
-
-test('gaps between beats under the threshold: pass', () => {
-  const result = checkPacingHolds(plan([
-    { beat: 'a', start: 0, end: 2 },
-    { beat: 'b', start: 4, end: 6 },
-  ]), { seconds: 30 });
-  assert.equal(result.status, 'pass');
+test('only gaps exceeding the 6s threshold warn', () => {
+  for (const [gap, expected] of [[2, 'pass'], [6, 'pass'], [6.1, 'warn']]) {
+    const result = checkPacingHolds(plan([
+      { beat: 'a', start: 0, end: 2 },
+      { beat: 'b', start: 2 + gap, end: 4 + gap },
+    ]), { seconds: 30 });
+    assert.equal(result.status, expected, `gap: ${gap}s`);
+  }
 });
 
 test('a narration-free hold past the threshold: warn, names both beats and the measured gap', () => {
@@ -64,10 +61,6 @@ test('unordered beats are sorted by start before gaps are measured', () => {
   ]), { seconds: 30 });
   assert.equal(result.status, 'warn');
   assert.match(result.detail, /between "early" \(ends 2s\) and "late" \(starts 20s\)/);
-});
-
-test('PACING_HOLD_WARN is the documented 6s default', () => {
-  assert.equal(PACING_HOLD_WARN, 6);
 });
 
 test('a rejected or malformed plan cannot report verified pacing', () => {

@@ -3,29 +3,23 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import {
   EDITED_TAKE_SCHEMA,
   TAKE_SCHEMA,
+  cueHash,
   parseEditedTake,
+  parseMusicAcceptance,
+  parseMusicCue,
   parseScreenplay,
-  parseTake
+  parseTake,
+  requireAcceptance
 } from "./runtime-creative.mjs";
 
 // src/creative/demo-bundle.mjs
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, lstatSync, statSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { dirname, join, extname, resolve } from "node:path";
 var BUNDLE_SCHEMA = "kai.demo-edit-bundle/v1";
-var MUSIC_CUE_SCHEMA = "kai.demo-music-cue/v1";
-var MUSIC_ACCEPTANCE_SCHEMA = "kai.demo-music-acceptance/v1";
 var VARIANTS = /* @__PURE__ */ new Set(["draft", "accepted"]);
 function fail(message) {
   throw new Error(message);
-}
-function str(value, label) {
-  if (typeof value !== "string" || value.trim() === "") fail(`${label} must be a non-empty string`);
-  return value;
-}
-function cueHash(cueText) {
-  return createHash("sha256").update(cueText.trim(), "utf8").digest("hex").slice(0, 16);
 }
 function loadTake(takePath, sourceTakePath) {
   const text = readFileSync(takePath, "utf8");
@@ -46,33 +40,9 @@ function loadTake(takePath, sourceTakePath) {
 }
 function loadAcceptedMusic(cuePath, acceptancePath) {
   const cueText = readFileSync(cuePath, "utf8");
-  let cue;
-  try {
-    cue = JSON.parse(cueText);
-  } catch (error) {
-    fail(`${cuePath} is not valid JSON: ${error.message}`);
-  }
-  if (cue.schema !== MUSIC_CUE_SCHEMA) fail(`${cuePath} must declare "schema": "${MUSIC_CUE_SCHEMA}", got ${JSON.stringify(cue.schema ?? null)}`);
-  str(cue.path, `${cuePath}.path`);
-  str(cue.title, `${cuePath}.title`);
-  str(cue.rights, `${cuePath}.rights`);
-  const acceptanceText = readFileSync(acceptancePath, "utf8");
-  let acceptance;
-  try {
-    acceptance = JSON.parse(acceptanceText);
-  } catch (error) {
-    fail(`${acceptancePath} is not valid JSON: ${error.message}`);
-  }
-  if (acceptance.schema !== MUSIC_ACCEPTANCE_SCHEMA) fail(`${acceptancePath} must declare "schema": "${MUSIC_ACCEPTANCE_SCHEMA}", got ${JSON.stringify(acceptance.schema ?? null)}`);
-  const hash = cueHash(cueText);
-  if (acceptance.cue_hash !== hash) {
-    fail(`${acceptancePath} accepted a different cue (recorded hash ${acceptance.cue_hash}) than ${cuePath} now contains (${hash}); the cue changed since it was judged, so this acceptance does not cover it`);
-  }
-  if (acceptance.auditioned !== "speech+music") {
-    fail(`${acceptancePath} recorded a "${acceptance.auditioned}" audition, which cannot judge fit against the narration; it is not sufficient to include this track in an edit-ready bundle`);
-  }
-  const trackHash = createHash("sha256").update(readFileSync(cue.path)).digest("hex");
-  if (acceptance.track_hash !== trackHash) fail("the music track bytes changed after acceptance; audition and accept the current file");
+  const cue = parseMusicCue(cueText);
+  const acceptance = parseMusicAcceptance(readFileSync(acceptancePath, "utf8"));
+  requireAcceptance(cueText, acceptance);
   return { cue, cueText, cuePath, acceptancePath, acceptance };
 }
 function buildBundleManifest({

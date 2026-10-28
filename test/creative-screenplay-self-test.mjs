@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {mkdtempSync, writeFileSync, linkSync, rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {
   QUIET_CAP,
   SCREENPLAY_SCHEMA,
@@ -149,6 +152,40 @@ test('take parsing rejects missing and unknown step statuses', () => {
   assert.throws(() => parseTake(JSON.stringify(take)), /status must be one of ok, failed, unsettled, got null/);
   take.steps[0].status = 'unknown';
   assert.throws(() => parseTake(JSON.stringify(take)), /status must be one of ok, failed, unsettled, got "unknown"/);
+});
+
+test('narration placement respects measured gates and keeps successive clips apart', () => {
+  const parsedScreenplay = parseScreenplay(JSON.stringify({
+    ...screenplay,
+    narration: [
+      {id: 'intro', text: 'Watch this.', visual_span: {from_step: 'hold', through_step: 'type'}},
+      {id: 'result', text: 'The result is ready.', start_after: 'click', references_step: 'click', visual_span: {from_step: 'hold', through_step: 'type'}},
+    ],
+  }));
+  const take = parseTake(JSON.stringify({
+    schema: TAKE_SCHEMA, take_id: 'measured', recording: 'raw.mp4',
+    capture: {region: [0, 0, 1256, 784]},
+    steps: [
+      {id: 'hold', start: 0, end: 2, status: 'ok'},
+      {id: 'click', start: 2, end: 4, status: 'ok'},
+      {id: 'type', start: 4, end: 8, status: 'ok'},
+    ],
+  }));
+  const narrationTake = parseNarrationTake(JSON.stringify({
+    schema: NARRATION_TAKE_SCHEMA,
+    clips: [
+      {beat: 'intro', status: 'ok', path: 'intro.wav', durationSec: 5},
+      {beat: 'result', status: 'ok', path: 'result.wav', durationSec: 1},
+    ],
+  }));
+  const plan = place(parsedScreenplay, take, narrationTake);
+  assert.equal(plan.ok, true);
+  assert.deepEqual(plan.rejections, []);
+  assert.equal(plan.take_id, 'measured');
+  assert.deepEqual(plan.beats.map(({beat, start, end, deferred}) => ({beat, start, end, deferred})), [
+    {beat: 'intro', start: 0, end: 5, deferred: 0},
+    {beat: 'result', start: 5.25, end: 6.25, deferred: 1.25},
+  ]);
 });
 
 test('narration placement rejects failed or unsettled interior states', () => {
@@ -369,6 +406,17 @@ test('narration mix output is non-destructive by default', () => {
     out: import.meta.filename,
     replace: true,
   })[0], '-y');
+
+  const dir = mkdtempSync(join(tmpdir(), 'narration-output-test-'));
+  try {
+    const source = join(dir, 'source.mp4');
+    const alias = join(dir, 'alias.mp4');
+    writeFileSync(source, 'source-video-bytes');
+    linkSync(source, alias);
+    assert.throws(() => buildMixArgs(plan, {video: source, out: alias, replace: true}), /same as the video input/);
+  } finally {
+    rmSync(dir, {recursive: true, force: true});
+  }
 });
 
 test('a narration beat may declare which step its text is actually evidence for', () => {
