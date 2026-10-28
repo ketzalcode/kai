@@ -22,33 +22,16 @@
 // until an operator says otherwise.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, lstatSync, statSync } from 'node:fs';
-import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, extname, resolve } from 'node:path';
 import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
+import { cueHash, parseMusicCue, parseMusicAcceptance, requireAcceptance } from './lib/music.mjs';
 
 export const BUNDLE_SCHEMA = 'kai.demo-edit-bundle/v1';
-const MUSIC_CUE_SCHEMA = 'kai.demo-music-cue/v1';
-const MUSIC_ACCEPTANCE_SCHEMA = 'kai.demo-music-acceptance/v1';
 const VARIANTS = new Set(['draft', 'accepted']);
 
 function fail(message) {
   throw new Error(message);
-}
-
-function str(value, label) {
-  if (typeof value !== 'string' || value.trim() === '') fail(`${label} must be a non-empty string`);
-  return value;
-}
-
-// Same identity scheme as demo-music's cue hash: a stable fingerprint of the
-// exact bytes an operator judged, so an acceptance cannot be stretched to
-// cover a cue that was edited after the fact. Recomputed here rather than
-// imported so this tool stays usable before #287's audition gate lands on
-// the same base; the two must stay numerically identical, which the tests
-// below pin against #287's own fixtures.
-function cueHash(cueText) {
-  return createHash('sha256').update(cueText.trim(), 'utf8').digest('hex').slice(0, 16);
 }
 
 function loadTake(takePath, sourceTakePath) {
@@ -69,41 +52,11 @@ function loadTake(takePath, sourceTakePath) {
   fail(`${takePath} must declare "schema": "${RAW_TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
 }
 
-// A music candidate may only enter a handoff bundle already judged against the
-// actual narration, by the exact bytes an operator heard -- never a cue that
-// merely decodes and measures cleanly. This mirrors #287's acceptance gate
-// without depending on that branch's module.
 function loadAcceptedMusic(cuePath, acceptancePath) {
   const cueText = readFileSync(cuePath, 'utf8');
-  let cue;
-  try {
-    cue = JSON.parse(cueText);
-  } catch (error) {
-    fail(`${cuePath} is not valid JSON: ${error.message}`);
-  }
-  if (cue.schema !== MUSIC_CUE_SCHEMA) fail(`${cuePath} must declare "schema": "${MUSIC_CUE_SCHEMA}", got ${JSON.stringify(cue.schema ?? null)}`);
-  str(cue.path, `${cuePath}.path`);
-  str(cue.title, `${cuePath}.title`);
-  str(cue.rights, `${cuePath}.rights`);
-
-  const acceptanceText = readFileSync(acceptancePath, 'utf8');
-  let acceptance;
-  try {
-    acceptance = JSON.parse(acceptanceText);
-  } catch (error) {
-    fail(`${acceptancePath} is not valid JSON: ${error.message}`);
-  }
-  if (acceptance.schema !== MUSIC_ACCEPTANCE_SCHEMA) fail(`${acceptancePath} must declare "schema": "${MUSIC_ACCEPTANCE_SCHEMA}", got ${JSON.stringify(acceptance.schema ?? null)}`);
-  const hash = cueHash(cueText);
-  if (acceptance.cue_hash !== hash) {
-    fail(`${acceptancePath} accepted a different cue (recorded hash ${acceptance.cue_hash}) than ${cuePath} now contains (${hash}); the cue changed since it was judged, so this acceptance does not cover it`);
-  }
-  if (acceptance.auditioned !== 'speech+music') {
-    fail(`${acceptancePath} recorded a "${acceptance.auditioned}" audition, which cannot judge fit against the narration; it is not sufficient to include this track in an edit-ready bundle`);
-  }
-  const trackHash = createHash('sha256').update(readFileSync(cue.path)).digest('hex');
-  if (acceptance.track_hash !== trackHash) fail('the music track bytes changed after acceptance; audition and accept the current file');
-
+  const cue = parseMusicCue(cueText);
+  const acceptance = parseMusicAcceptance(readFileSync(acceptancePath, 'utf8'));
+  requireAcceptance(cueText, acceptance);
   return { cue, cueText, cuePath, acceptancePath, acceptance };
 }
 

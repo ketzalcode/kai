@@ -4,13 +4,9 @@ import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'no
 import {spawnSync} from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
 import { SCREENPLAY_SCHEMA, TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from '../src/creative/lib/screenplay.mjs';
 import { BUNDLE_SCHEMA, buildBundleManifest, writeBundle } from '../src/creative/demo-bundle.mjs';
-
-function cueHash(cueText) {
-  return createHash('sha256').update(cueText.trim(), 'utf8').digest('hex').slice(0, 16);
-}
+import { acceptCue, cueHash } from '../src/creative/demo-music.mjs';
 
 const fixtureDirs = [];
 after(() => fixtureDirs.forEach((dir) => rmSync(dir, {recursive: true, force: true})));
@@ -81,14 +77,10 @@ function makeMusic(dir) {
   const cueText = JSON.stringify(cueJson);
   writeFileSync(cuePath, cueText);
   const acceptancePath = join(dir, 'acceptance.json');
-  writeFileSync(acceptancePath, JSON.stringify({
-    schema: 'kai.demo-music-acceptance/v1',
-    cue_hash: cueHash(cueText),
-    track_hash: createHash('sha256').update(readFileSync(trackPath)).digest('hex'),
+  writeFileSync(acceptancePath, JSON.stringify(acceptCue(cueText, {
     operator: 'ruben',
-    auditioned: 'speech+music',
-    accepted_at: '2026-10-16T00:00:00Z',
-  }));
+    now: () => '2026-10-16T00:00:00Z',
+  })));
   return { cuePath, acceptancePath };
 }
 
@@ -142,38 +134,22 @@ test('bundle manifest refuses a music cue supplied without its acceptance', () =
   }), /cue with no recorded acceptance/);
 });
 
-test('bundle manifest refuses a music-only audition as insufficient for inclusion', () => {
+test('bundle applies the canonical music cue and acceptance parsers', () => {
   const fx = makeFixture();
   const { cuePath, acceptancePath } = makeMusic(fx.dir);
+  const cueText = readFileSync(cuePath, 'utf8');
   const acceptance = JSON.parse(readFileSync(acceptancePath, 'utf8'));
-  writeFileSync(acceptancePath, JSON.stringify({ ...acceptance, auditioned: 'music-only' }));
-  assert.throws(() => buildBundleManifest({
+  const options = {
     variant: 'draft', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath,
     musicCuePath: cuePath, musicAcceptancePath: acceptancePath,
-  }), /cannot judge fit against the narration/);
-});
-
-test('bundle manifest refuses an acceptance for a cue that changed afterward', () => {
-  const fx = makeFixture();
-  const { cuePath, acceptancePath } = makeMusic(fx.dir);
-  const cueJson = JSON.parse(readFileSync(cuePath, 'utf8'));
-  writeFileSync(cuePath, JSON.stringify({ ...cueJson, title: 'Quiet build (v2)' }));
-  assert.throws(() => buildBundleManifest({
-    variant: 'draft', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath,
-    musicCuePath: cuePath, musicAcceptancePath: acceptancePath,
-  }), /the cue changed since it was judged/);
-});
-
-test('bundle manifest includes an accepted music track with its provenance', () => {
-  const fx = makeFixture();
-  const { cuePath, acceptancePath } = makeMusic(fx.dir);
-  const manifest = buildBundleManifest({
-    variant: 'accepted', screenplayPath: fx.screenplayPath, takePath: fx.takePath, narrationPlanPath: fx.planPath, renderPath: fx.renderPath,
-    musicCuePath: cuePath, musicAcceptancePath: acceptancePath,
-  });
-  assert.equal(manifest.missing.length, 0);
-  assert.equal(manifest.music.title, 'Quiet build');
-  assert.equal(manifest.music.accepted_by, 'ruben');
+  };
+  const invalidCueText = JSON.stringify({...JSON.parse(cueText), source: 'downloaded'});
+  writeFileSync(cuePath, invalidCueText);
+  writeFileSync(acceptancePath, JSON.stringify({...acceptance, cue_hash: cueHash(invalidCueText)}));
+  assert.throws(() => buildBundleManifest(options), /source must be one of/);
+  writeFileSync(cuePath, cueText);
+  writeFileSync(acceptancePath, JSON.stringify({...acceptance, operator: ''}));
+  assert.throws(() => buildBundleManifest(options), /operator must be a non-empty string/);
 });
 
 test('writeBundle copies every file into a role-named layout and writes a self-contained manifest', () => {
@@ -193,6 +169,11 @@ test('writeBundle copies every file into a role-named layout and writes a self-c
   assert.ok(existsSync(join(destDir, 'music', 'acceptance.json')));
   assert.ok(existsSync(join(destDir, 'music', 'track.wav')));
   const written = JSON.parse(readFileSync(join(destDir, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.missing.length, 0);
+  assert.equal(written.music.title, 'Quiet build');
+  assert.equal(written.music.accepted_by, 'ruben');
+  assert.equal(written.music.accepted_at, '2026-10-16T00:00:00Z');
+  assert.equal(written.music.rights, 'Licensed under Acme Library terms #4821.');
   assert.equal(written.render.path, 'render/final.mp4');
   assert.equal(written.narration.beats[0].path, 'narration/clips/n-1.wav');
 });

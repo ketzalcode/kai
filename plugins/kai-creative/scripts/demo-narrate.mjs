@@ -3,15 +3,16 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import {
   EDITED_TAKE_SCHEMA,
   TAKE_SCHEMA,
+  assertSafeOutput,
   parseEditedTake,
   parseScreenplay,
   parseTake
 } from "./runtime-creative.mjs";
 
 // src/creative/demo-narrate.mjs
-import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { join, dirname, resolve } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 var TAKE_SCHEMA2 = "kai.demo-narration-take/v1";
 var PLAN_SCHEMA = "kai.demo-narration-plan/v1";
@@ -182,23 +183,10 @@ function buildMixArgs(plan, { video, out, replace = false }) {
   for (const label of [video, out]) {
     if (label.startsWith("-")) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
   }
-  const pathIdentity = (path) => {
-    const absolute = resolve(path);
-    const identity = existsSync(absolute) ? realpathSync(absolute) : absolute;
-    return process.platform === "win32" ? identity.toLowerCase() : identity;
-  };
-  const outputIdentity = pathIdentity(out);
-  const sources = [
+  assertSafeOutput([
     { role: "video input", path: video },
     ...plan.beats.map((beat) => ({ role: `narration clip "${beat.beat}"`, path: beat.path }))
-  ];
-  const inputCollision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
-  if (inputCollision) {
-    fail(`output path "${out}" is the same as the ${inputCollision.role}; mixing must write a distinct file`);
-  }
-  if (existsSync(out) && !replace) {
-    fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);
-  }
+  ], out, replace);
   const inputs = [];
   const chain = [];
   const labels = [];

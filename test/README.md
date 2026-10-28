@@ -14,6 +14,19 @@
 | `package-build-self-test.mjs` | Five active packages build in supported combinations with closed imports, stable filenames, and drift detection. |
 | `consumer-install-self-test.mjs` | Every installed public executable loads outside the checkout without repository dependencies. |
 | `creative-screenplay-self-test.mjs` | Screenplay and take parsing preserve the current executable media contract. |
+| `creative-capture-mode-self-test.mjs` | Recorded, replay, and illustration modes are reported honestly. |
+| `creative-pacing-self-test.mjs` | Measured narration gaps flag long holds without treating missing evidence as a pass. |
+| `creative-format-self-test.mjs` | Caption declarations do not substitute for inspection of the exact render. |
+| `creative-status-self-test.mjs` | Resume receipts distinguish complete, stale, failed, and unknown stages. |
+| `creative-bundle-self-test.mjs` | Editor-neutral bundles preserve provenance and export aligned narration. |
+| `creative-music-self-test.mjs` | Music acceptance, safe outputs, and full-length ducked mixing preserve source media. |
+
+Music owns cue parsing and acceptance checks; bundles reuse them rather than
+maintaining a second policy. Bundles therefore require the same source, measured
+duration, operator, and acceptance timestamp as the music command. Narration
+and music reuse one output guard, including input aliases even with `--replace`.
+Detailed rejection cases belong at the shared owner, with focused integration
+checks at its callers.
 
 The suite intentionally excludes historical migrations, prose-only assertions,
 browser/demo matrices, native-host permutations, and duplicate command-level
