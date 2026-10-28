@@ -31,11 +31,12 @@
 // a lie about how fast the product is. Those are script defects, and the fix is a
 // shorter line or a wider span -- both of which this tool computes for you.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScreenplay, parseTake, parseEditedTake, TAKE_SCHEMA as RAW_TAKE_SCHEMA, EDITED_TAKE_SCHEMA } from './lib/screenplay.mjs';
+import { assertSafeOutput } from './lib/media-output.mjs';
 
 export const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
 const PLAN_SCHEMA = 'kai.demo-narration-plan/v1';
@@ -277,23 +278,10 @@ export function buildMixArgs(plan, { video, out, replace = false }) {
     if (label.startsWith('-')) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
   }
 
-  const pathIdentity = (path) => {
-    const absolute = resolve(path);
-    const identity = existsSync(absolute) ? realpathSync(absolute) : absolute;
-    return process.platform === 'win32' ? identity.toLowerCase() : identity;
-  };
-  const outputIdentity = pathIdentity(out);
-  const sources = [
+  assertSafeOutput([
     { role: 'video input', path: video },
     ...plan.beats.map((beat) => ({ role: `narration clip "${beat.beat}"`, path: beat.path })),
-  ];
-  const inputCollision = sources.find((source) => pathIdentity(source.path) === outputIdentity);
-  if (inputCollision) {
-    fail(`output path "${out}" is the same as the ${inputCollision.role}; mixing must write a distinct file`);
-  }
-  if (existsSync(out) && !replace) {
-    fail(`output path "${out}" already exists; choose a new destination or pass --replace after authorizing replacement`);
-  }
+  ], out, replace);
 
   const inputs = [];
   const chain = [];

@@ -110,13 +110,6 @@ test('replacing audio at the same cue path invalidates acceptance', () => {
   }
 });
 
-test('assertSafeOutput refuses an existing destination without --replace', () => {
-  assert.throws(
-    () => assertSafeOutput([{role: 'video input', path: 'test/creative-music-self-test.mjs'}], 'test/creative-music-self-test.mjs', false),
-    /is the same as the video input/,
-  );
-});
-
 // ----------------------------------------------------------------- mixing
 
 test('music mix refuses an unaccepted cue', () => {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -71,14 +71,6 @@ test('an output file with no receipt is reported unknown, never complete', () =>
   assert.equal(status.status, 'unknown');
 });
 
-test('recordStage persists a receipt keyed to the exact output and input bytes', () => {
-  const fx = makeFixture();
-  const stored = recordStage(fx.receiptsPath, 'screenplay', { output: fx.screenplay, status: 'ok' });
-  assert.equal(stored.output_hash, hashFile(fx.screenplay));
-  const receipts = loadReceipts(fx.receiptsPath);
-  assert.ok(receipts.stages.screenplay);
-});
-
 test('recordStage refuses to record ok for an output that does not exist', () => {
   const fx = makeFixture();
   assert.throws(() => recordStage(fx.receiptsPath, 'ghost', { output: join(fx.dir, 'ghost.json'), status: 'ok' }), /does not exist/);
@@ -86,9 +78,12 @@ test('recordStage refuses to record ok for an output that does not exist', () =>
 
 test('a recorded, unchanged stage reports complete', () => {
   const fx = makeFixture();
-  recordStage(fx.receiptsPath, 'screenplay', { output: fx.screenplay, status: 'ok' });
+  const stored = recordStage(fx.receiptsPath, 'take', { output: fx.take, inputs: [fx.screenplay], status: 'ok' });
+  assert.equal(stored.output_hash, hashFile(fx.take));
+  assert.deepEqual(stored.input_hashes, {[fx.screenplay]: hashFile(fx.screenplay)});
   const receipts = loadReceipts(fx.receiptsPath);
-  const status = computeStageStatus(fx.descriptor.find((s) => s.stage === 'screenplay'), receipts);
+  assert.deepEqual(receipts.stages.take, stored);
+  const status = computeStageStatus(fx.descriptor.find((s) => s.stage === 'take'), receipts);
   assert.equal(status.status, 'complete');
 });
 
