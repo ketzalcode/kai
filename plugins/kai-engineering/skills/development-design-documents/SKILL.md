@@ -29,9 +29,12 @@ targeted source reading. If the evidence is sufficient, continue directly.
 
 When substantial missing facts could change the design, tell the user what is
 unknown, which decision it affects, and why broader investigation is needed.
-Apply `engineering-investigation` to those gaps within the authorized scope.
-Ask before expanding that scope, incurring cost, or requiring additional access;
-do not make every investigation a new approval loop.
+Ask whether they can supply guidance or existing evidence before proposing a
+bounded investigation. Get confirmation before moving from document work into
+that broader investigation, unless it was already explicitly authorized.
+Only after that authorization, apply `engineering-investigation` to the agreed
+gaps. Additional scope, cost, or access still needs its own authority. Sufficient
+evidence and ordinary targeted reading do not need a new approval loop.
 
 Consume the findings before settling the affected choices. If evidence remains
 insufficient, mark those choices provisional and name the smallest decisive

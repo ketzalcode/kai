@@ -4,6 +4,7 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
+  collectReferences,
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
@@ -206,25 +207,29 @@ test('pr delivery reads the shared description reference', () => {
   }
 });
 
-test('review requests route through the reviewer and internal review method', () => {
+test('fast and deep review are independent entry points selected by the reviewer', () => {
   const reviewer = readAgent('eng-reviewer-code');
-  assert.match(reviewer, /Apply `pr-review`/);
   assert.match(reviewer, /Apply `pr-review-comments`/);
   assert.match(reviewer, /Never edit the product, test expectations, manifests, history or state/);
   assert.match(reviewer, /not the reviewed product/);
 
-  const review = readSkill('pr-review');
-  assert.doesNotMatch(review, /^user-invocable:\s*true$/m);
-  assert.match(review, /Purpose:/);
-  assert.match(review, /Changed behavior:/);
-  assert.match(review, /Affected surfaces:/);
-  assert.match(review, /Risk signals:/);
-  assert.match(review, /report relevant defects directly/);
-  assert.doesNotMatch(
-    review,
-    /eng-reviewer-(security|privacy-compliance|reliability|quality)/,
-  );
   assert.match(reviewer, /Do not spawn another\s+reviewer/);
+  assert.equal(skills.has('pr-review'), false);
+
+  const refs = collectReferences(root);
+  const from = 'plugins/kai-engineering/agents/eng-reviewer-code.agent.md';
+  for (const id of ['fast-pr-review', 'deep-pr-review']) {
+    const path = `plugins/kai-engineering/skills/${id}/SKILL.md`;
+    assert.ok(refs.some(ref => ref.from === path && ref.target === id
+      && ref.firing.includes('user-invoked')), `${id} is directly invocable`);
+    assert.ok(refs.some(ref => ref.from === from && ref.kind === 'skill'
+      && ref.target === id && ref.firing.includes('loaded')), `${id} is routed by the reviewer`);
+    const otherMethods = ['pr-review', 'engineering-investigation',
+      'research-before-coding', 'fast-pr-review', 'deep-pr-review']
+      .filter(target => target !== id);
+    assert.deepEqual(refs.filter(ref => ref.from === path
+      && (ref.kind === 'agent' || otherMethods.includes(ref.target))), []);
+  }
 });
 
 test('operating rules keep the assessor write boundary without another skill', () => {
@@ -232,26 +237,6 @@ test('operating rules keep the assessor write boundary without another skill', (
   assert.match(operating, /An independent assessor reports findings and the smallest remediation/);
   assert.match(operating, /does\s+not create, edit, delete, format, regenerate/);
   assert.match(operating, /cannot independently accept or verify that\s+revision/);
-});
-
-test('pr-review skips docs and metadata-only changes', () => {
-  const review = readSkill('pr-review');
-  assert.match(review, /documentation or metadata-only changes skip code-only lenses/);
-});
-
-test('pr-review keeps relevant risk lenses in one general review', () => {
-  const review = readSkill('pr-review');
-  assert.match(
-    review,
-    /security, privacy, reliability, accessibility, localization, and\s+assembled acceptance/,
-  );
-  assert.doesNotMatch(review, /Route .* to .*owner/);
-});
-
-test('pr-review handles stacked PR parent revisions', () => {
-  const review = readSkill('pr-review');
-  assert.match(review, /review each slice against its real parent revision/);
-  assert.match(review, /A changed PR head invalidates prior review comments and verdicts tied to the old revision/);
 });
 
 test('review comments return structured finding records', () => {

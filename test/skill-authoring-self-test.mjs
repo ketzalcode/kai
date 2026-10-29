@@ -214,22 +214,17 @@ test('Engineering evidence skills keep independent entry points and one-way rese
     && ref.firing.includes('user-invoked')));
   assert.deepEqual(refs.filter(ref => ref.from === investigation
     && ['research-before-coding', 'software-development'].includes(ref.target)), []);
-  for (const from of [
-    'plugins/kai-engineering/skills/pr-review/SKILL.md',
-    'plugins/kai-engineering/skills/development-design-documents/SKILL.md',
-    'plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md',
-  ]) {
-    const targets = refs.filter(ref => ref.from === from && ref.kind === 'skill')
-      .map(ref => ref.target);
-    assert.ok(targets.includes('engineering-investigation'), from);
-    assert.ok(!targets.includes('research-before-coding'), from);
-  }
+  const design = 'plugins/kai-engineering/skills/development-design-documents/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === design
+    && ref.kind === 'skill' && ref.target === 'engineering-investigation'));
   const orientation = 'plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md';
   assert.ok(refs.some(ref => ref.from === orientation
     && ref.target === 'onboard-to-codebase' && ref.firing.includes('user-invoked')));
   assert.deepEqual(refs.filter(ref =>
     ref.from === 'plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md'
-    && ref.kind === 'skill' && ref.target === 'onboard-to-codebase'), []);
+    && ref.kind === 'skill'
+    && ['onboard-to-codebase', 'engineering-investigation', 'research-before-coding']
+      .includes(ref.target)), []);
 });
 
 test('reference cycles report the complete caller-resource loop', () => {

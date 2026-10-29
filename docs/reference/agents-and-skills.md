@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **44 skills**.
+The repository ships **9 agents** and **45 skills**.
 
-The default marketplace supplies **9 agents** and **44 skills** through core, optional project management, engineering, and creative (23 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **45 skills** through core, optional project management, engineering, and creative (25 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -55,7 +55,7 @@ Selective independent code review. Implementers retain ownership of their change
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact code change for requirements, correctness, contracts, regressions, risk, and test adequacy. Use explicitly for a diff, PR, or implementation review. Returns evidence-based findings and never repairs the code. |
+| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact diff or PR: fast by default, deep only when explicitly requested. Checks correctness, affected contracts, regressions, and test adequacy without repairing the code. |
 
 ## Skills
 
@@ -138,7 +138,8 @@ Lean development, shared and domain coding standards, implementation readiness, 
 | [`engineering-investigation`](../../plugins/kai-engineering/skills/engineering-investigation/SKILL.md) | `kai-engineering` | Use for evidence-driven engineering investigations into behavior, architecture, integrations, capabilities, or unblocking options. No code change is required. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
 | [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |
-| [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
+| [`fast-pr-review`](../../plugins/kai-engineering/skills/fast-pr-review/SKILL.md) | `kai-engineering` | Use for a focused review of a bounded diff or PR: local correctness, immediate contract effects, and relevant regression coverage. Does not automatically expand into deeper review or investigation. |
+| [`deep-pr-review`](../../plugins/kai-engineering/skills/deep-pr-review/SKILL.md) | `kai-engineering` | Use when a deeper PR or diff review is explicitly requested to assess affected contracts, consumers, state transitions, and cross-component consequences. Not a repository-wide audit or general investigation. |
 | [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
 | [`my-insights`](../../plugins/kai-engineering/skills/my-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
