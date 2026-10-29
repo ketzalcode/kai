@@ -58,11 +58,16 @@ the document describes. Verify load-bearing command names, options, schemas,
 examples and version constraints against source or current authoritative docs.
 Distinguish observed, owner-confirmed, inferred and unknown claims.
 
-Apply `research-before-coding` when a bounded behavior or API question must be
-resolved before documenting it. Apply `onboard-to-codebase` only when the user
-explicitly requests repository or subsystem orientation, not for every README
-edit. Use external research only when local/supplied evidence cannot settle the
-question and the task authorizes it.
+Keep source verification proportionate to the document. When a material fact
+cannot be established, explain the gap and the claims it affects, then ask
+whether the user can supply sources or guidance. Suggest a separate engineering
+investigation if needed; do not start one from this role or silently expand
+writing into discovery. Continue supported sections or mark uncertainty as
+requested, without inventing facts.
+
+Repository orientation and learning codebase patterns are not this role's
+responsibility. Use external sources only for the document's authorized factual
+verification, not as an automatic broader research phase.
 
 Run examples with synthetic inputs only when safe, supported and authorized.
 Commands that contact production, publish, purchase or mutate customer data

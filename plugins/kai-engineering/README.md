@@ -16,11 +16,28 @@ review, PR delivery, and bounded Nightshift execution.
 | `eng-nightshift` | Approved serial unattended delivery |
 
 Methods include `software-development`, shared/frontend/backend coding
-standards, repository onboarding, research, PR sizing, review, review comments,
+standards, repository onboarding, pre-implementation research, standalone
+engineering investigation, PR sizing, fast/deep review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
 diagrams, development-design documents and readable Word projections,
 `nightshift-run`, and the manual `my-insights`, `team-insights`, and
 `refine-insights` workspace-learning commands.
+
+Use `research-before-coding` to decide whether evidence supports a proposed code
+change. Use `engineering-investigation` for standalone questions or substantial
+unresolved research; it does not require an intention to code. Neither requires
+a plan, saved report, or automatic delivery workflow.
+
+`fast-pr-review` checks a bounded diff, coding standards, and immediate effects,
+with useful low-impact improvements kept separate as optional nits.
+`deep-pr-review` traces affected contracts, consumers, and failure paths when
+explicitly requested. Each is a standalone method with its own rules; the
+methods do not depend on each other or a shared review skill. Ordinary reviewer
+requests default to fast review, never automatic investigation or deep review.
+
+Technical writing verifies facts needed for its documents and asks for guidance
+when evidence is missing; it does not start broader investigations. Developer
+design work may propose one, but needs confirmation unless already authorized.
 
 ## Install
 

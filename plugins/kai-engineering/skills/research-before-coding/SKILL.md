@@ -1,84 +1,62 @@
 ---
 name: research-before-coding
-description: "Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs."
-tools: [read, search, execute]
+description: "Use before implementing a proposed code change when missing evidence could change whether or how to proceed. Not a general investigation entry point."
+tools: [read, search, execute, skill]
 user-invocable: true
-argument-hint: "optional task or area description"
+argument-hint: "proposed code change or implementation-readiness question"
 ---
 
 # Research Before Coding
 
-Answer a bounded question with evidence. Return findings that a user or caller
-can act on; do not turn research into implementation, sizing, or a new approval
-ceremony.
+Decide whether the available evidence is sufficient to implement the requested
+code change, and resolve only the gaps that could change that decision. This
+method does not implement, authorize a change, or add an approval ceremony.
 
 ## Activation
 
-- **Explicit user invocation:** investigate the stated question and return
-  useful findings, even when no implementation is requested.
-- **From a code-writing caller:** use this method only when unresolved,
-  decision-relevant evidence could change the approach.
-- Ordinary targeted reading, implementation, and regression work can continue
-  without this method when the relevant evidence is already established.
+- Use for a proposed code change with an unresolved implementation decision.
+- Small, clear tasks with established evidence can proceed with ordinary
+  targeted reading and validation; do not require deep investigation.
+- If explicitly invoked for a standalone investigation without a code change,
+  explain this boundary and apply `engineering-investigation` to the actual
+  question. Return that answer and stop without entering the readiness steps
+  below. Do not invent an implementation task or require an intention to code.
 
 ## Method
 
-### 1. Frame the question
+### 1. Identify the implementation decision
 
-State the **Question and scope**: what needs to be learned, which decision or
-handoff it informs, and what is outside the investigation.
+Identify the proposed change, the decision evidence must settle, and the
+consequential unknowns. Separate missing evidence from a missing requirement or
+authority; research cannot supply either on the operator's behalf.
 
-### 2. Gather relevant local evidence
+### 2. Reuse evidence before collecting more
 
-Collect only the **Relevant local facts** needed to answer the question:
+Consume existing investigation findings, supplied sources, and applicable
+repository context. Check that their scope, revision, environment, and
+assumptions still apply. Do not restart completed research merely because this
+method was invoked; revisit only a stale, conflicting, or consequential gap.
 
-- current behavior and applicable tests, contracts, history, and instructions;
-- existing implementations or utilities that may be reused;
-- callers and consumers whose behavior constrains the decision;
-- ownership or authorization evidence when it affects what may be changed.
+If the evidence already settles the decision, return readiness directly.
 
-Folder names are clues, not ownership or edit authority. Missing ownership
-metadata does not block read-only research; report the uncertainty without
-granting permission to modify anything.
+### 3. Resolve the smallest remaining gap
 
-### 3. Ground each claim
+For a small local uncertainty, inspect the affected implementation, callers,
+and relevant tests. Stop when the decision is supported.
 
-Cite repository paths, lines, commands and results, or supplied source material.
-Treat supplied sources as evidence; callers do not need new web or tool
-capabilities merely to consume them.
+When substantial unresolved behavior, integration, or capability questions
+remain, apply `engineering-investigation` to those questions with the current
+evidence and constraints. That method owns discovery and investigation; consume
+its findings here rather than maintaining a second research procedure.
 
-Use external research only when the actual question cannot be answered from
-available evidence and the task authorizes it. Prefer authoritative sources.
-If authoritative access is unavailable, report the gap and the consequence
-instead of inventing a fact.
+### 4. Return the readiness decision
 
-Run an experiment only when it is necessary to resolve the question and is
-authorized. Use a diagram only when relationships are materially clearer
-visually.
+State whether implementation is supported and the chosen approach when a
+choice was requested. Cite the evidence and constraints that matter to that
+conclusion.
+If not ready, name the unresolved decision and the smallest verification or
+operator input needed; do not manufacture confidence from incomplete evidence.
 
-### 4. Return a concise evidence handoff
-
-Default to a concise, scoped answer. Lead with the findings and attach domain
-evidence to each material finding. Include only consequential implications or
-unresolved gaps, and say how each affects the question or a later decision.
-These concerns need not be separate headings.
-
-Domain evidence supports claims about the system or external subject. Guidance
-about conducting research is not domain evidence; identify it as procedure or a
-constraint when relevant rather than presenting it as support for a system
-claim.
-
-Add a recommendation or implementation choice only when the user or caller
-requested a decision. Use a requested report format only when the user
-explicitly asks for it or an existing handoff contract requires it; otherwise
-return the compact answer directly.
-
-## Boundaries
-
-- Do not create a repository-wide map, classify every file, satisfy a reading
-  quota, or start an automatic sizing chain.
-- Do not edit production source as the output of this method.
-- Do not repeat research when current, grounded evidence already answers the
-  question.
-- The caller may continue its independently authorized work after consuming the
-  handoff. This method neither grants nor withdraws that authority.
+Return a concise handoff, not a mandatory plan, report file, sizing chain, or
+workflow. Stop at the decision. A caller may then continue independently
+authorized implementation; this method neither grants nor withdraws authority.
