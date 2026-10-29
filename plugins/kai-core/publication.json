@@ -5,7 +5,7 @@
     {
       "type": "decisions",
       "subtype": null,
-      "privateForm": ".kai/core/decisions/<id>/{drafts,evidence,scratch}",
+      "privateForm": ".kai/core/decisions/<id>/{evidence,scratch}",
       "publicForm": "docs/kai/core/decisions/<id>/",
       "formats": ["markdown", "bundle"],
       "authority": "completion",
@@ -14,7 +14,7 @@
     {
       "type": "reports",
       "subtype": null,
-      "privateForm": ".kai/core/reports/<id>/{drafts,evidence,scratch}",
+      "privateForm": ".kai/core/reports/<id>/{evidence,scratch}",
       "publicForm": "docs/kai/core/reports/<id>/",
       "formats": ["markdown", "json", "bundle"],
       "authority": "completion",

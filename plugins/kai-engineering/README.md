@@ -56,18 +56,22 @@ the compact approved profile when present.
 
 ## Durable assets
 
-| Asset | Private workspace | Accepted publication |
+| Asset | Private supporting material | Default canonical knowledge |
 | --- | --- | --- |
-| Feature | `.kai/engineering/features/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/features/<id>/` |
-| Architecture documentation | `.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` |
-| Decision | `.kai/engineering/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` |
-| Investigation report | `.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` |
+| Feature | `.kai/engineering/features/<id>/{evidence,scratch}` | `docs/kai/engineering/features/<id>/` |
+| Architecture documentation | `.kai/engineering/documentation/architecture/<id>/{evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` |
+| Decision | `.kai/engineering/decisions/<id>/{evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` |
+| Investigation report | `.kai/engineering/reports/investigations/<id>/{evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` |
 | Nightshift report | `.kai/engineering/reports/nightshift/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/nightshift/<id>/` |
-| Release report | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` |
+| Release report | `.kai/engineering/reports/releases/<id>/{evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` |
 
-Drafts, evidence, and scratch stay private. Publication requires the named
-completion authority to accept the exact artifact revision and hash. Ordinary
-source changes stay in their native repository paths.
+Write knowledge at its repository home from creation, including proposed
+revisions. Established native documentation takes precedence over these
+defaults; never keep both as authorities. Coordinated acceptance binds the
+exact Git revision. Evidence and scratch stay private. Nightshift's raw
+execution report and checkpoints remain private operational outputs; a
+project narrative is a separate sanitized document. Non-Git deliverables keep
+their exact-byte acceptance and authorized publication rules.
 
 ## Boundaries
 

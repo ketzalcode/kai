@@ -15,10 +15,10 @@ actual product rather than promising a roadmap.
 
 **Primary profile:** judgment
 
-Direct work may return only inline or repository-native output. It must not
-register a durable Kai artifact. Any durable Kai report or publication requires
-an existing standalone Task, its current version, an authorized
-artifact target, current acting authority, and named acceptance authority. If
+Direct work may return inline or requested repository files, including
+canonical project knowledge, without Kai state. Registering a coordinated
+artifact requires an existing standalone Task, its current version, an
+authorized artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 

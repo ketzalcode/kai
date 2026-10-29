@@ -43,14 +43,15 @@ Project Management or empty department directories.
 
 ## Durable assets
 
-Core creates a package-owned asset directory only on the first authorized
-write. Drafts, evidence, and scratch remain private. Only an accepted exact
-revision may be published.
+Core creates a directory only on the first authorized write. Write project
+knowledge at its canonical repository path from the first edit, on a branch.
+Use established documentation before these defaults. Review and named
+acceptance determine the accepted revision, not a private-to-public move.
 
-| Asset | Private workspace | Accepted publication |
+| Asset | Private evidence / scratch | Default canonical knowledge |
 | --- | --- | --- |
-| Decision | `.kai/core/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/core/decisions/<id>/` |
-| Report | `.kai/core/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/core/reports/<id>/` |
+| Decision | `.kai/core/decisions/<id>/{evidence,scratch}` | `docs/kai/core/decisions/<id>/` |
+| Report | `.kai/core/reports/<id>/{evidence,scratch}` | `docs/kai/core/reports/<id>/` |
 
 Private evidence never publishes. Source code, ordinary repository
 documentation, and direct answers remain in their repository-native location;

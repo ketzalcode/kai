@@ -16,9 +16,9 @@ Kai ships `kai-core`, optional `kai-contributor`, optional
 `kai-project-management`, `kai-engineering`, and `kai-creative`. Five other
 capability packages remain inactive under [`incubator/`](../incubator/README.md).
 
-`docs/kai/` demonstrates accepted project publication. Private drafts,
-evidence, scratch files, and coordination state belong under an ignored
-`.kai/` workspace and are never part of the documentation tree.
+`docs/kai/` demonstrates canonical project knowledge from creation. Private
+working material, evidence, scratch files, and coordination state belong under
+an ignored `.kai/` workspace and are never part of the documentation tree.
 
 Release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
 Implemented plans and superseded designs are intentionally absent. Git history

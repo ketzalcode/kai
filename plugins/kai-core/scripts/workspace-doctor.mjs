@@ -39,7 +39,9 @@ import { fileURLToPath } from "node:url";
 var README_CONTENT = [
   "# Kai",
   "",
-  "Accepted Kai knowledge belongs below this directory. Private runtime state stays in `.kai/`.",
+  "Use the existing repository documentation home, or this default root, for project knowledge from the first edit on a branch.",
+  "Review and named-authority requirements govern acceptance; documents do not move from private drafts.",
+  "Private runtime state, agent memory, evidence, and restricted working material stay in `.kai/`.",
   ""
 ].join("\n");
 var UNSUPPORTED_SCHEMA = "workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard";

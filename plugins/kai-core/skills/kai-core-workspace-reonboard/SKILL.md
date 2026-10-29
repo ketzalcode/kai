@@ -21,9 +21,12 @@ work, alter `.kai` state, or re-onboard. Tell the operator to install or update
 
 - Preserve every existing `docs/kai/` file byte-for-byte unless the operator
   separately approves a named public-path reshape.
-- Migrate durable knowledge and artifacts into current package-owned private or
-  public routes. Use each installed package's publication contract to validate
-  its type, subtype, ID, lifecycle, format, privacy, and destination.
+- Migrate durable knowledge and artifacts into their current canonical
+  repository home or private evidence/working routes. Prepare Git-suitable
+  knowledge on a branch at its final path; migration does not accept proposals
+  or authorize pushing sensitive material. Use each installed package's
+  publication contract to validate its type, subtype, ID, lifecycle, format,
+  privacy, and destination.
 - Preserve stable workspace/project IDs, placement, project bindings, and
   publication roots.
 - Rebuild current Core runtime state. Initialize Project Management only when
@@ -73,8 +76,9 @@ work, alter `.kai` state, or re-onboard. Tell the operator to install or update
      through Core; never discard it as runtime metadata;
    - map legacy initiative artifacts, decisions, briefs, and designs through
      the current owning package's publication contract;
-   - map durable private drafts/evidence and accepted knowledge to current
-     package publication routes;
+   - reconcile knowledge drafts into canonical repository documents on a
+     branch, distinguishing accepted content from proposed revisions; keep
+     evidence and restricted working material on private routes;
    - replace the old manifest with a current manifest preserving stable
      bindings;
    - rebuild Core and requested optional runtime databases instead of copying
