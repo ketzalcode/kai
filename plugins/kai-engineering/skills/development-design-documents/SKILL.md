@@ -21,9 +21,21 @@ sections. Read the canonical code, contracts, accepted decisions, applicable
 repository instructions, and current authoritative status. Distinguish the
 complete effort from current implementation progress.
 
-Apply `engineering-investigation` only when substantial unresolved evidence
-could change the design. Do not turn ordinary source reading into a separate
-investigation.
+## Check evidence sufficiency
+
+Check whether current evidence supports the consequential claims, constraints,
+and design choices. Reuse grounded findings and resolve small local gaps with
+targeted source reading. If the evidence is sufficient, continue directly.
+
+When substantial missing facts could change the design, tell the user what is
+unknown, which decision it affects, and why broader investigation is needed.
+Apply `engineering-investigation` to those gaps within the authorized scope.
+Ask before expanding that scope, incurring cost, or requiring additional access;
+do not make every investigation a new approval loop.
+
+Consume the findings before settling the affected choices. If evidence remains
+insufficient, mark those choices provisional and name the smallest decisive
+verification. Do not present an assumption as an established design fact.
 
 ## Include only justified content
 

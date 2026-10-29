@@ -60,10 +60,9 @@ Distinguish observed, owner-confirmed, inferred and unknown claims.
 
 Apply `engineering-investigation` when a substantial behavior or API question
 needs investigation before documenting it; ordinary source verification needs
-no separate method. Apply `onboard-to-codebase` only when the user
-explicitly requests repository or subsystem orientation, not for every README
-edit. Use external research only when local/supplied evidence cannot settle the
-question and the task authorizes it.
+no separate method. Repository orientation and learning codebase patterns are
+not this role's responsibility. Use external research only when local/supplied
+evidence cannot settle the question and the task authorizes it.
 
 Run examples with synthetic inputs only when safe, supported and authorized.
 Commands that contact production, publish, purchase or mutate customer data

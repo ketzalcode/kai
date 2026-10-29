@@ -201,7 +201,7 @@ test('the active agent and skill reference graph is acyclic', () => {
   assert.deepEqual(referenceCycleErrors(collectReferences(root)), []);
 });
 
-test('pre-implementation research composes a standalone Engineering investigation in one direction', () => {
+test('Engineering evidence skills keep independent entry points and one-way research routes', () => {
   const refs = collectReferences(root);
   const research = 'plugins/kai-engineering/skills/research-before-coding/SKILL.md';
   const investigation = 'plugins/kai-engineering/skills/engineering-investigation/SKILL.md';
@@ -224,6 +224,12 @@ test('pre-implementation research composes a standalone Engineering investigatio
     assert.ok(targets.includes('engineering-investigation'), from);
     assert.ok(!targets.includes('research-before-coding'), from);
   }
+  const orientation = 'plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === orientation
+    && ref.target === 'onboard-to-codebase' && ref.firing.includes('user-invoked')));
+  assert.deepEqual(refs.filter(ref =>
+    ref.from === 'plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md'
+    && ref.kind === 'skill' && ref.target === 'onboard-to-codebase'), []);
 });
 
 test('reference cycles report the complete caller-resource loop', () => {
