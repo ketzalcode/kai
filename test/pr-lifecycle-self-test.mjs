@@ -230,6 +230,10 @@ test('fast and deep review are independent entry points selected by the reviewer
     assert.deepEqual(refs.filter(ref => ref.from === path
       && (ref.kind === 'agent' || otherMethods.includes(ref.target))), []);
   }
+  assert.ok(refs.some(ref =>
+    ref.from === 'plugins/kai-engineering/skills/fast-pr-review/SKILL.md'
+    && ref.kind === 'skill' && ref.target === 'coding-standards'
+    && ref.firing.includes('loaded')));
 });
 
 test('operating rules keep the assessor write boundary without another skill', () => {

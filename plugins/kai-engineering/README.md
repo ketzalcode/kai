@@ -28,7 +28,8 @@ change. Use `engineering-investigation` for standalone questions or substantial
 unresolved research; it does not require an intention to code. Neither requires
 a plan, saved report, or automatic delivery workflow.
 
-`fast-pr-review` checks a bounded diff and its immediate effects.
+`fast-pr-review` checks a bounded diff, coding standards, and immediate effects,
+with useful low-impact improvements kept separate as optional nits.
 `deep-pr-review` traces affected contracts, consumers, and failure paths when
 explicitly requested. Each is a standalone method with its own rules; the
 methods do not depend on each other or a shared review skill. Ordinary reviewer

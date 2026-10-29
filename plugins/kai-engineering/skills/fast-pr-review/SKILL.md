@@ -1,7 +1,7 @@
 ---
 name: fast-pr-review
-description: "Use for a focused review of a bounded diff or PR: local correctness, immediate contract effects, and relevant regression coverage. Does not automatically expand into deeper review or investigation."
-tools: [read, search, execute]
+description: "Use for a focused diff or PR review: local correctness, coding standards, immediate contract effects, relevant tests, and optional nits. Does not automatically expand into deeper review or investigation."
+tools: [read, search, execute, skill]
 user-invocable: true
 argument-hint: "PR, diff, or base/head revisions; optional focus"
 ---
@@ -25,12 +25,15 @@ unaffected subsystems.
 
 ## Check the changed behavior
 
+For code changes, apply `coding-standards` as read-only review criteria alongside
+repository and task rules. Quickly check clarity, naming, cohesive
+responsibilities, reuse, unnecessary abstractions, and comments in the changed
+code. Do not expand this into unrelated cleanup or a broader audit.
+
 - Check intended behavior, local control flow, edge cases, and directly affected
   input, output, absence, and error contracts.
 - Check that changed-behavior tests exercise the material outcome, not only
   implementation details. Do not demand a new test matrix or coverage target.
-- Follow repository conventions. Report a complexity or consistency issue only
-  when it has a concrete consequence, not because another style is preferable.
 - For documentation or metadata-only changes, check accuracy and compatibility;
   skip code-only concerns.
 - Report any evidenced defect, including a security or data-loss issue. A small
@@ -58,6 +61,13 @@ For each material finding, give priority, file and lines, triggering condition,
 consequence, supporting evidence, and the smallest corrective direction.
 Use P0 for critical reachable loss/compromise, P1 for material blocking defects,
 and P2 for bounded nonblocking risks. Zero findings is valid.
+
+Useful low-impact readability, consistency, or simplification suggestions may
+appear separately as **Nits (optional)**. Tie them to the coding standards or
+repository patterns, not personal style. Keep them brief; do not fill a quota or
+request unrelated refactors. Nits alone do not justify Changes requested.
+Required repository-rule violations and concrete correctness or maintainability
+risks remain findings, not optional polish.
 
 State material coverage limits and checks actually performed. A pass is not
 system-wide assurance. Never edit the reviewed product or repair findings.
