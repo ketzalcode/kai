@@ -37,17 +37,21 @@ validated asset route needed by the accepted request.
 
 ## Durable assets
 
-| Asset | Private workspace | Accepted publication |
+| Asset | Private supporting material | Default knowledge / media destination |
 | --- | --- | --- |
-| Feature design | `.kai/creative/features/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/features/<id>/` |
-| Documentation | `.kai/creative/documentation/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/documentation/<id>/` |
-| Decision | `.kai/creative/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/decisions/<id>/` |
-| Report | `.kai/creative/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/reports/<id>/` |
+| Feature design | `.kai/creative/features/<id>/{evidence,scratch}` | `docs/kai/creative/features/<id>/` |
+| Documentation | `.kai/creative/documentation/<id>/{evidence,scratch}` | `docs/kai/creative/documentation/<id>/` |
+| Decision | `.kai/creative/decisions/<id>/{evidence,scratch}` | `docs/kai/creative/decisions/<id>/` |
+| Report | `.kai/creative/reports/<id>/{evidence,scratch}` | `docs/kai/creative/reports/<id>/` |
 | Media or destination record | `.kai/creative/media/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/media/<id>/` |
 
-Private evidence never publishes. Scratch can never be a publication source.
-Large media may publish as an approved destination record instead of copying a
-binary into Git.
+Designs and knowledge are authored at their canonical repository path from
+creation, on a branch. Reuse an established documentation home before these
+defaults, without a private authoring copy. Independent acceptance still binds
+the exact revision; a committed design does not authorize implementation.
+Private evidence never publishes. Media keeps its existing private custody,
+exact-byte acceptance, and approved destination flow. Large or restricted
+binaries do not enter Git merely to make them durable.
 
 ## Boundaries
 

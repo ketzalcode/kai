@@ -8,11 +8,42 @@ artifacts into current package-owned paths, but it rebuilds runtime state
 instead of importing historical coordination records.
 
 ```text
-.kai/       private, ignored, untracked
-docs/kai/   accepted, Git-suitable project knowledge
+.kai/       private runtime, agent memory, evidence, working material
+docs/kai/   default canonical home for Git-suitable project knowledge
 ```
 
 Installing a package creates no workspace. Direct work creates no Kai state.
+
+## One knowledge document from creation
+
+Feature knowledge, designs, decisions, documentation, and report narratives
+are authored at their canonical repository path from the first edit, on a
+branch. Use the repository's existing documentation home before the owning
+package's default `docs/kai/` route. Do not maintain a private authoring copy
+that must later be promoted or synchronized.
+
+A confirmed decision changes that same document and its stable navigation,
+even while implementation is pending. Default-branch documents state current
+accepted direction unless reviewed content explicitly labels a proposal as
+Proposed. Required named acceptance must precede merging content as accepted;
+landing a labelled proposal does not approve it. Committing or merging does
+not by itself approve scope, complete work, ship a product, or authorize
+external publication.
+
+Where Core acceptance is required, register the exact Git base/head and project
+ID rather than a mutable Markdown path. Git subjects keep no private snapshot:
+retain the approved branch and its ancestor base while Core records reference
+them, including in the durable remote for fresh-checkout recovery. A squash or
+rebase creates a different subject and does not transfer approval. Follow
+`kai-core-work-acting` for retention and missing-evidence handling.
+
+`.kai` holds A2A records, threads, runtime databases, agent memory, private
+evidence, acceptance snapshots, and restricted working material. Private
+execution reports are not project-knowledge authorities. A pushed branch is
+visible to repository readers: never commit sensitive or licensed material
+merely to make it durable. Keep it private and prepare a sanitized narrative
+only when authorized. Project Management's database and Creative's binary
+custody retain their existing authority.
 
 ## Manifest
 
@@ -111,7 +142,10 @@ binding used to isolate those files.
 .kai/<pack>/archive/<type>/<id>/...
 ```
 
-Each package's `publication.json` owns allowed vocabulary. Unknown paths,
+These lanes are not a knowledge-promotion lifecycle. Each package's
+`publication.json` owns the permitted lanes: knowledge uses private evidence
+and scratch, while media and private execution outputs may also use drafts.
+Non-Git deliverables retain the accepted-byte publication flow. Unknown paths,
 links, junctions, nested Git roots, aliases, collisions, and escapes are
 refused.
 
@@ -132,7 +166,8 @@ separate from artifact acceptance and publication.
 `kai-core-workspace-reonboard` performs an operator-controlled reshape:
 
 1. inventory every old private path and preserve existing `docs/kai/`;
-2. map durable knowledge and artifacts to current package-owned routes;
+2. map Git-suitable knowledge to its canonical repository path on a branch,
+   retaining proposals as proposals and evidence or restricted work privately;
 3. move the old private root to a temporary ignored staging path;
 4. initialize current Core and explicitly requested optional runtimes;
 5. apply and verify every approved durable-content move or transform; and
@@ -141,6 +176,12 @@ separate from artifact acceptance and publication.
 Historical leases, activity, approvals, messages, completed coordination
 events, and old runtime databases are not imported. A successful migration
 leaves no compatibility or legacy-backup directory.
+
+Existing schema-6 workspaces need no schema reset. Reshaping their old knowledge
+drafts is an explicitly approved content change, not automatic onboarding.
+Preserve accepted content, privacy, and immutable registered sources until
+their references have been reconciled; do not delete private bytes just
+because a sanitized canonical document now exists.
 
 ## Validate
 

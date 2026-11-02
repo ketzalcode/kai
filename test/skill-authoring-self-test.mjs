@@ -201,6 +201,32 @@ test('the active agent and skill reference graph is acyclic', () => {
   assert.deepEqual(referenceCycleErrors(collectReferences(root)), []);
 });
 
+test('Engineering evidence skills keep independent entry points and one-way research routes', () => {
+  const refs = collectReferences(root);
+  const research = 'plugins/kai-engineering/skills/research-before-coding/SKILL.md';
+  const investigation = 'plugins/kai-engineering/skills/engineering-investigation/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === research
+    && ref.kind === 'skill' && ref.target === 'engineering-investigation'
+    && ref.firing.includes('loaded')));
+  assert.ok(refs.some(ref => ref.from === investigation
+    && ref.fromPack === 'engineering' && ref.kind === 'skill'
+    && ref.target === 'engineering-investigation'
+    && ref.firing.includes('user-invoked')));
+  assert.deepEqual(refs.filter(ref => ref.from === investigation
+    && ['research-before-coding', 'software-development'].includes(ref.target)), []);
+  const design = 'plugins/kai-engineering/skills/development-design-documents/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === design
+    && ref.kind === 'skill' && ref.target === 'engineering-investigation'));
+  const orientation = 'plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md';
+  assert.ok(refs.some(ref => ref.from === orientation
+    && ref.target === 'onboard-to-codebase' && ref.firing.includes('user-invoked')));
+  assert.deepEqual(refs.filter(ref =>
+    ref.from === 'plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md'
+    && ref.kind === 'skill'
+    && ['onboard-to-codebase', 'engineering-investigation', 'research-before-coding']
+      .includes(ref.target)), []);
+});
+
 test('reference cycles report the complete caller-resource loop', () => {
   const refs = [
     {

@@ -31,6 +31,9 @@ The owning publication contract remains authoritative for valid types,
 subtypes, formats, privacy, and destinations. A planning Feature ID may join an
 artifact only through a deterministic matching package/type/stable ID. A title,
 Epic name, lifecycle, or display section is never part of the artifact ID.
+Project knowledge uses its canonical repository home from creation; the private
+lanes shown above are supporting evidence or working material, not another
+knowledge authority.
 
 ## Projection precedence
 

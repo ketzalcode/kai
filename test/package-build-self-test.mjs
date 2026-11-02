@@ -107,8 +107,6 @@ test('every installed package explains its workspace and durable asset surface',
       continue;
     }
 
-    assert.match(readme, /Private workspace/i);
-    assert.match(readme, /Accepted publication/i);
     const contract = JSON.parse(readFileSync(publicationPath, 'utf8'));
     for (const entry of contract.entries) {
       assert.match(readme, new RegExp(entry.privateForm

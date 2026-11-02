@@ -222,7 +222,7 @@ test('Core navigation convention keeps package paths stable and optional project
   const feature = engineering.entries.find(entry => entry.type === 'features');
   assert.equal(
     feature.privateForm,
-    '.kai/engineering/features/<id>/{drafts,evidence,scratch}',
+    '.kai/engineering/features/<id>/{evidence,scratch}',
   );
   assert.equal(
     feature.publicForm,

@@ -14,6 +14,19 @@ current request and target repository instructions outrank that profile. Never
 apply one project binding's profile to another, and never create insight state
 merely because a profile is absent.
 
+## Project knowledge
+
+Write Git-suitable project knowledge at its canonical repository path from the
+first edit, on a branch. Reuse the repository's documentation home; do not keep
+an authoritative copy in `.kai` or link committed navigation to private files.
+Update that same document when a lasting decision changes, without waiting for
+implementation completion. Committing does not grant acceptance, merge, or
+external publication authority; follow existing review and named-authority
+requirements before merging accepted content. Default-branch knowledge states
+accepted direction unless its reviewed text explicitly labels a proposal as
+Proposed. Keep runtime state, agent memory, sensitive evidence, and private
+working material in `.kai`, not in project documentation.
+
 ## Development profile: fast-ship
 
 Kai keeps direct work direct. Add coordination only when specialization,

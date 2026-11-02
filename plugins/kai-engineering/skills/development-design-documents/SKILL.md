@@ -21,8 +21,24 @@ sections. Read the canonical code, contracts, accepted decisions, applicable
 repository instructions, and current authoritative status. Distinguish the
 complete effort from current implementation progress.
 
-Apply `research-before-coding` only when unresolved evidence could change the
-design. Do not turn ordinary source reading into a separate investigation.
+## Check evidence sufficiency
+
+Check whether current evidence supports the consequential claims, constraints,
+and design choices. Reuse grounded findings and resolve small local gaps with
+targeted source reading. If the evidence is sufficient, continue directly.
+
+When substantial missing facts could change the design, tell the user what is
+unknown, which decision it affects, and why broader investigation is needed.
+Ask whether they can supply guidance or existing evidence before proposing a
+bounded investigation. Get confirmation before moving from document work into
+that broader investigation, unless it was already explicitly authorized.
+Only after that authorization, apply `engineering-investigation` to the agreed
+gaps. Additional scope, cost, or access still needs its own authority. Sufficient
+evidence and ordinary targeted reading do not need a new approval loop.
+
+Consume the findings before settling the affected choices. If evidence remains
+insufficient, mark those choices provisional and name the smallest decisive
+verification. Do not present an assumption as an established design fact.
 
 ## Include only justified content
 
@@ -67,13 +83,17 @@ it valid, and fix parser errors instead of pasting unverified source.
 
 ## Keep Markdown authoritative
 
-Edit the accepted or requested Markdown first. Generate DOCX, PDF, slides, or
-HTML as projections from that revision. Do not maintain two independently
-edited design authorities.
+Write the design at its canonical repository path from the first edit, on a
+branch. Revise that same Markdown when decisions change; do not author an
+independent `.kai` copy or wait for implementation to finish. Generate DOCX,
+PDF, slides, or HTML as projections from that revision.
 
-When durable Kai publication is requested, apply
-`engineering-workspace-publication` immediately before choosing or writing the
-typed destination. Publication and enterprise upload are separate actions.
+Apply `engineering-workspace-publication` when choosing a durable Engineering
+knowledge location or recording coordinated acceptance. Keep existing review
+and named-authority requirements; a committed proposal is not automatically
+accepted. Ordinary repository documentation stays at its native path and
+creates no Kai state. External publication and enterprise upload are separate
+actions.
 
 ## Produce readable Word documents
 

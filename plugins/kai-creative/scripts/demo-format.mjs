@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  EDITED_TAKE_SCHEMA,
+  TAKE_SCHEMA,
+  parseEditedTake,
   parseScreenplay,
   parseTake
 } from "./runtime-creative.mjs";
@@ -42,14 +45,14 @@ function parseDimensionProfile(raw) {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     fail("placement must be a named placement string or an explicit dimension object");
   }
-  if (typeof raw.target !== "number" || !(raw.target > 0)) {
+  if (!Number.isFinite(raw.target) || !(raw.target > 0)) {
     fail("placement.target must be a positive number of seconds \u2014 the editorial duration target a preset would otherwise supply");
   }
-  if (typeof raw.cap !== "number" || !(raw.cap >= raw.target)) {
+  if (!Number.isFinite(raw.cap) || !(raw.cap >= raw.target)) {
     fail("placement.cap must be a number of seconds at or past placement.target \u2014 the editorial duration cap a preset would otherwise supply");
   }
-  if (raw.maxBytes !== null && raw.maxBytes !== void 0 && !(typeof raw.maxBytes === "number" && raw.maxBytes > 0)) {
-    fail("placement.maxBytes must be a positive number of bytes (the destination's published upload limit, a fact) or null if the destination publishes none");
+  if (raw.maxBytes !== null && raw.maxBytes !== void 0 && !(Number.isFinite(raw.maxBytes) && raw.maxBytes > 0)) {
+    fail("placement.maxBytes must be a finite positive number of bytes (the declared destination upload limit) or null if no limit is declared");
   }
   if (typeof raw.muted !== "boolean") {
     fail("placement.muted must be a boolean \u2014 whether the destination is observed to autoplay without sound, a playback-behavior fact, not an editorial choice");
@@ -64,7 +67,8 @@ function checkProvenance(screenplay, take) {
   if (!take) return skip("provenance", "a take manifest");
   const authored = new Set(screenplay.steps.map((s) => s.id));
   const recorded = new Set(take.steps.map((s) => s.id));
-  const missing = [...authored].filter((id) => !recorded.has(id));
+  const dropped = new Set(take.schema === EDITED_TAKE_SCHEMA ? take.dropped_steps : []);
+  const missing = [...authored].filter((id) => !recorded.has(id) && !dropped.has(id));
   const extra = [...recorded].filter((id) => !authored.has(id));
   if (missing.length || extra.length) {
     return bad("provenance", `the screenplay and the take are not the same revision${missing.length ? `; never recorded: ${missing.join(", ")}` : ""}${extra.length ? `; recorded but not authored: ${extra.join(", ")}` : ""}. Every number derived from them would describe a demo that does not exist.`);
@@ -74,6 +78,12 @@ function checkProvenance(screenplay, take) {
     return bad("provenance", `the take recorded ${broken.map((s) => `"${s.id}" as ${s.status}`).join(", ")}. A demo built on a step that failed, or on a screen that never settled, is not a demo of the product working.`);
   }
   return pass("provenance", `${take.steps.length} steps, all ok, matching the screenplay`);
+}
+function checkCaptureMode(screenplay) {
+  if (screenplay.capture_mode === "recorded") {
+    return pass("capture-mode", "declared as an actual recorded interaction");
+  }
+  return warn("capture-mode", `declared as "${screenplay.capture_mode}", not an actual recorded interaction: ${screenplay.capture_mode_note}. Any produced output must carry this label visibly and never be presented as a recording of the live interaction.`);
 }
 function checkWordBudget(screenplay, { wpm = WPM.default } = {}) {
   const beats = screenplay.narration ?? [];
@@ -100,7 +110,8 @@ function checkDuration(screenplay, render) {
     return bad("duration", `${round(seconds)}s is over the ${screenplay.max_seconds}s this screenplay declares as its own limit`);
   }
   if (seconds > profile.cap) {
-    return warn("duration", `${round(seconds)}s is past the ${profile.cap}s editorial cap for ${placementLabel(screenplay)}. That cap is a product default, not a platform fact \u2014 accept it deliberately, declare a longer placement, or set max_seconds to make the limit real.`);
+    const source = typeof screenplay.placement === "string" ? "a product default" : "declared editorial guidance";
+    return warn("duration", `${round(seconds)}s is past the ${profile.cap}s editorial cap for ${placementLabel(screenplay)}. That cap is ${source}, not a platform fact \u2014 accept it deliberately, declare a longer placement, or set max_seconds to make the limit real.`);
   }
   if (seconds > profile.target) {
     return warn("duration", `${round(seconds)}s is over the ${profile.target}s target for ${placementLabel(screenplay)}, inside its ${profile.cap}s cap. The evidence supports the trade-off, not this exact number.`);
@@ -140,13 +151,37 @@ function checkArrival(screenplay, take, render) {
   }
   return problems.length > 0 ? warn("arrival", `${problems.join("; ")}. Move the setup later, cut it, or trim the tail.`) : pass("arrival", `${declared.map((s) => `${s.intends_to_show} "${s.id}"`).join(", ")} begin early enough. Arrival time only \u2014 that it was readable and unobscured is a review question, not a measurement.`);
 }
+var PACING_HOLD_WARN = 6;
+function checkPacingHolds(plan, render) {
+  if (!plan || !Array.isArray(plan.beats) || plan.beats.length === 0) {
+    return skip("pacing", "a narration placement plan (demo-narrate --place output) with at least one placed beat");
+  }
+  if (!render?.seconds) return skip("pacing", "a rendered video (gaps are measured against the render, not the take)");
+  if (plan.ok !== true || plan.beats.some((beat) => !Number.isFinite(beat.start) || !Number.isFinite(beat.end) || beat.start < 0 || beat.end <= beat.start || beat.end > render.seconds + 0.1)) {
+    return bad("pacing", "the narration plan is rejected or its measured beats do not fit this render; no pacing verification is possible");
+  }
+  const beats = [...plan.beats].sort((a, b) => a.start - b.start);
+  const holds = [];
+  for (let i = 1; i < beats.length; i++) {
+    const gap = beats[i].start - beats[i - 1].end;
+    if (gap > PACING_HOLD_WARN) {
+      holds.push(`${round(gap)}s between "${beats[i - 1].beat}" (ends ${round(beats[i - 1].end)}s) and "${beats[i].beat}" (starts ${round(beats[i].start)}s)`);
+    }
+  }
+  if (holds.length === 0) {
+    return pass("pacing", `no narration-free stretch between placed beats exceeds ${PACING_HOLD_WARN}s`);
+  }
+  return warn("pacing", `${holds.length} narration-free hold(s) past ${PACING_HOLD_WARN}s: ${holds.join("; ")}. These are measured gaps outside narration clips, not proof every second was unnecessary -- judge each against the interaction or reading work it actually carries, then shorten or cut what is left over.`);
+}
 function checkSize(screenplay, render) {
   const profile = profileFor(screenplay);
-  if (!profile.maxBytes) return na("size", `${placementLabel(screenplay)} has no published upload limit to check against`);
+  const explicit = typeof screenplay.placement !== "string";
+  if (!profile.maxBytes) return na("size", `${placementLabel(screenplay)} has ${explicit ? "no upload limit declared" : "no published upload limit"} to check against`);
   if (!render?.bytes) return skip("size", "a rendered video");
   const size = render.bytes;
   if (size > profile.maxBytes) {
-    return bad("size", `${mb(size)} is over the ${mb(profile.maxBytes)} limit (${profile.note}). The upload is refused, not merely discouraged.`);
+    const consequence = explicit ? "This exceeds the declared destination limit; the checker has not verified the destination or attempted an upload." : "The upload is refused, not merely discouraged.";
+    return bad("size", `${mb(size)} is over the ${mb(profile.maxBytes)} limit (${profile.note}). ${consequence}`);
   }
   if (size > profile.maxBytes * 0.8) {
     return warn("size", `${mb(size)} is within ${mb(profile.maxBytes)} but close to it (${profile.note}); a slightly longer take would not fit`);
@@ -254,13 +289,15 @@ function defaultProbe(path) {
   const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "csv=p=0", path], { encoding: "utf8" });
   return r.status === 0 ? r.stdout : null;
 }
-function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null } = {}) {
+function checkAll(screenplay, { take = null, render = null, wpm = WPM.default, captionReview = null, narrationPlan = null } = {}) {
   const checks = [
     checkProvenance(screenplay, take),
+    checkCaptureMode(screenplay),
     checkWordBudget(screenplay, { wpm }),
     checkDuration(screenplay, render),
     checkTail(take, render),
     checkArrival(screenplay, take, render),
+    (screenplay.narration ?? []).length > 0 ? checkPacingHolds(narrationPlan, render) : na("pacing", "this demo has no narration, so there are no narration gaps to measure"),
     checkSize(screenplay, render),
     checkMutedComprehension(screenplay, { captionReview, render }),
     checkFraming(screenplay, render)
@@ -295,6 +332,23 @@ function flag(argv, name, fallback = null) {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
+function loadTake(takePath, argv) {
+  const text = readFileSync(takePath, "utf8");
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    fail(`${takePath} is not valid JSON: ${error.message}`);
+  }
+  if (raw.schema === TAKE_SCHEMA) return parseTake(text);
+  if (raw.schema === EDITED_TAKE_SCHEMA) {
+    const sourcePath = flag(argv, "--source-take");
+    if (!sourcePath) fail(`${takePath} is an edited take (${EDITED_TAKE_SCHEMA}); supply --source-take <raw_take.json> to verify it was cut from an actual recording`);
+    const sourceTake = parseTake(readFileSync(sourcePath, "utf8"));
+    return parseEditedTake(text, sourceTake);
+  }
+  fail(`${takePath} must declare "schema": "${TAKE_SCHEMA}" or "${EDITED_TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
+}
 function main(argv) {
   if (argv.includes("--placements")) {
     for (const [name, p] of Object.entries(PLACEMENTS)) {
@@ -303,21 +357,23 @@ function main(argv) {
     console.log("\nEvidence-informed product defaults, not scientific optima. Only max_seconds, which you declare, can fail a demo on runtime.");
     return 0;
   }
-  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--caption-review"]);
+  const consumed = /* @__PURE__ */ new Set(["--take", "--video", "--wpm", "--source-take", "--caption-review", "--narration-plan"]);
   const screenplayPath = argv.find((a, i) => !a.startsWith("-") && !consumed.has(argv[i - 1]));
   if (!screenplayPath) {
     console.log("demo-format \u2014 does this demo meet the format its placement demands?\n");
-    console.log("  demo-format <screenplay.json> [--take take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json]");
+    console.log("  demo-format <screenplay.json> [--take take.json] [--source-take raw_take.json] [--video render.mp4] [--wpm 120] [--caption-review review.json] [--narration-plan plan.json]");
     console.log("  demo-format --placements");
     return 2;
   }
   const screenplay = parseScreenplay(readFileSync(screenplayPath, "utf8"));
   const takePath = flag(argv, "--take");
+  const planPath = flag(argv, "--narration-plan");
   const captionReviewPath = flag(argv, "--caption-review");
   const result = checkAll(screenplay, {
-    take: takePath ? parseTake(readFileSync(takePath, "utf8")) : null,
+    take: takePath ? loadTake(takePath, argv) : null,
     render: probeRender(flag(argv, "--video")),
     wpm: Number(flag(argv, "--wpm", WPM.default)),
+    narrationPlan: planPath ? JSON.parse(readFileSync(planPath, "utf8")) : null,
     captionReview: captionReviewPath ? parseCaptionReview(readFileSync(captionReviewPath, "utf8")) : null
   });
   console.log(formatReport(result));
@@ -334,14 +390,17 @@ if (process.argv[1]?.endsWith("demo-format.mjs")) {
 export {
   CAPTION_REVIEW_SCHEMA,
   HOLD_RESERVE,
+  PACING_HOLD_WARN,
   PLACEMENTS,
   TAIL_WARN,
   WPM,
   checkAll,
   checkArrival,
+  checkCaptureMode,
   checkDuration,
   checkFraming,
   checkMutedComprehension,
+  checkPacingHolds,
   checkProvenance,
   checkSize,
   checkTail,

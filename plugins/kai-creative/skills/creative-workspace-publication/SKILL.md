@@ -18,33 +18,50 @@ paths, formats, authority, and privacy rules.
 <!-- >>> kai publication table (generated) >>>
 | Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `creative` | `features` | `-` | `.kai/creative/features/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/features/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `creative` | `documentation` | `-` | `.kai/creative/documentation/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/documentation/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `creative` | `decisions` | `-` | `.kai/creative/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/decisions/<id>/` | Markdown, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `creative` | `reports` | `-` | `.kai/creative/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/reports/<id>/` | Markdown, JSON, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `features` | `-` | `.kai/creative/features/<id>/{evidence,scratch}` | `docs/kai/creative/features/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `documentation` | `-` | `.kai/creative/documentation/<id>/{evidence,scratch}` | `docs/kai/creative/documentation/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `decisions` | `-` | `.kai/creative/decisions/<id>/{evidence,scratch}` | `docs/kai/creative/decisions/<id>/` | Markdown, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `reports` | `-` | `.kai/creative/reports/<id>/{evidence,scratch}` | `docs/kai/creative/reports/<id>/` | Markdown, JSON, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 | `creative` | `media` | `-` | `.kai/creative/media/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/media/<id>/` | media, Markdown destination record | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
 <!-- <<< kai publication table <<< -->
+
+## Canonical knowledge
+
+Apply `kai-core-workspace-paths` when choosing a project-knowledge home.
+Feature designs, documentation, decisions, and report narratives live at their
+canonical repository location from the first edit, including proposed
+revisions. Use the repository's established home before the default
+`publicForm`; do not maintain a private authoring copy and a publication copy.
+Git-suitable HTML, diagrams, and approved small images may accompany that
+knowledge. A committed design is not automatically accepted and does not
+authorize implementation. Keep named design acceptance independent.
 
 ## Validation and refusal
 
 Media publication distinguishes a Git-suitable deliverable from a Markdown
 record that references an explicitly approved durable destination. The type
-does not make a binary safe to commit.
+does not make a binary safe to commit. Media, sensitive design evidence, and
+binary working material retain their private custody and acceptance flow.
 
 - Refuse an **unknown type or subtype**. Do not create a fallback lane.
 - **Scratch can never publish.**
-- **An unaccepted draft can never publish.**
+- **A committed knowledge proposal is not acceptance or external-publication
+  permission. An unaccepted private media draft can never publish.**
 - **Private evidence can never publish.**
 - **An arbitrary root can never publish.**
 - Refuse an **unsafe media destination**, including an unapproved external
   location, a sensitive or licensed binary, an oversized repository payload,
   or a destination that cannot preserve custody and provenance.
 - Refuse a pack/path mismatch, collision, link, junction, nested Git root, or
-  destination outside the configured project publication root.
+  typed destination outside the configured project publication root.
 
-Return the validated vocabulary choice to the caller. For coordinated assets,
-keep mutable bytes on the typed private route and Load `kai-core-work-acting`
-before `artifact.register` or `asset.transition`. The runtime validates the
-Task, pack, path, provenance, exact accepted hash, mirrored public target, and
-transition. A refusal stops publication. Direct repository files use their
-repository-native path and create no Kai asset state.
+For coordinated knowledge, Load `kai-core-work-acting` before registration,
+review, or approval of the exact Git base/head. No private-to-public transition
+is needed for repository knowledge.
+
+For private media and other non-Git deliverables, retain immutable source bytes
+on the authorized private route. Load `kai-core-work-acting` before
+`artifact.register` or `asset.transition`; publish only the independently
+accepted hash to its authorized destination. Never edit registered media in
+place. A refusal stops publication. Ordinary repository edits create no Kai
+asset state.

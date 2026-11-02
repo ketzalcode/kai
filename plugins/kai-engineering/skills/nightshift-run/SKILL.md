@@ -26,6 +26,11 @@ PREPARE fixes only what must remain stable for the night:
 - stacking permission; and
 - evidence expectations.
 
+Use a positive `limits.maxAiCredits` for a ceiling, or explicit `null` only
+when the operator authorizes no credit ceiling. Omission is not approval.
+Other limits still apply. Worktrees stay under the project's ignored
+`.worktrees/nightshift/<run-id>/` directory.
+
 Do not pre-author every PR, branch, route, or result shape. `eng-nightshift`
 chooses the next slice from current Core state after each checkpoint.
 

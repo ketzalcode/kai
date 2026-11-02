@@ -14,10 +14,10 @@ direction: a concept, scene plan, storyboard, script, screenplay, or critique.
 
 **Primary profile:** judgment
 
-Direct work may return only inline or repository-native output. It must not
-register a durable Kai artifact. Any durable Kai report or publication requires
-an existing standalone Task, its current version, an authorized
-artifact target, current acting authority, and named acceptance authority. If
+Direct work may return inline or requested repository files, including
+canonical project knowledge, without Kai state. Registering a coordinated
+artifact requires an existing standalone Task, its current version, an
+authorized artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
@@ -72,7 +72,8 @@ Choose the smallest result the request needs:
 
 1. **CONCEPT** — audience, message, angle, tone, and visual approach.
 2. **SCENE PLAN** — ordered scene purposes, assets, actions, and transitions.
-3. **STORYBOARD** — reviewable scene-by-scene visual and audio direction.
+3. **STORYBOARD** — reviewable scene-by-scene visual and audio direction,
+   including purposeful title/presentation motion where it improves the story.
 4. **SCRIPT** — spoken and on-screen language tied to scene intent.
 5. **DEMO SCREENPLAY** — state-based direction for an interface demo.
 6. **CRITIQUE** — findings and revisions against a supplied direction.
@@ -87,7 +88,9 @@ decision list, or a screenplay merely to make the package look complete.
 
 State audience, intended message, destination, desired duration, tone, supplied
 facts, available media, requested output, and material unknowns. Separate a
-creative assumption from a factual assertion.
+creative assumption from a factual assertion. A declared runtime is a ceiling
+on the edit, never a quota to fill with additional holds or footage; scenes
+earn their place by carrying the story, not by consuming the remaining budget.
 
 ### Shape the story
 
@@ -96,10 +99,54 @@ asset reference or missing-asset status, spoken/on-screen content, transition,
 and continuity need. Keep the opening, proof, and payoff legible to the target
 audience; remove scenes that repeat a job.
 
+Open on a recognizable user problem or an explicitly hypothetical scenario the
+audience would actually have, not a capability tour. Give the audience a
+reason to care before presenting features. Map each meaningful beat as
+problem → capability → shown proof → practical benefit, and let positive
+capability narration carry the story; keep necessary qualifications concise
+and proportionate rather than a catalogue of limitations.
+
+Close by resolving the opening problem: state what the demonstrated journey
+achieved or now enables, using only supplied, supported facts, and
+distinguish a demonstrated capability or result from unmeasured business
+impact. A call to action is secondary to that payoff, never a substitute for
+it — a feature list followed by a generic invitation is not a resolved
+narrative. When reviewing a draft, check the opening and closing together:
+can the audience name the original problem, the proved change, and the
+resulting benefit without reconstructing the middle themselves?
+
 For existing footage, source timeline positions may be copied only from
 inspected recorded footage or authoritative supplied metadata. Source timeline
 facts describe that recording. Planned edit duration and generated-shot timing
 remain estimates until production measures actual media.
+
+### Direct title and presentation motion
+
+Plan motion for title cards and on-screen supporting text at storyboard time,
+not as a later decoration pass: name what appears, why it supports the
+story, when it enters relative to narration or scene timing, and how long it
+stays readable. Offer one small, story-appropriate motion treatment per
+element rather than a mandatory animated preset; a static card is still a
+valid choice when motion would not improve the story. Keep timing and easing
+consistent across title/text elements within a demo so motion reads as one
+system, not several. Preserve the navigation and evidence already being
+shown — motion direction decorates what was captured; it does not invent a
+cursor path, a state change, animated data, or any other unrecorded product
+behavior, and it does not obscure a result the audience needs to read. Name a
+reduced-motion fallback (a static equivalent of the same card) wherever
+motion is directed, and call for a short rendered preview of titles and
+transitions before full production commits to the treatment.
+
+### Judge pacing after measurement, not before
+
+A scene budget set before narration exists is a guess. After production
+measures actual narration timing (`demo-narrate --place`), `demo-format`'s
+`--narration-plan` input flags narration-free stretches between placed beats
+past a measured threshold. A flagged hold is not proof that time was wasted:
+judge it against the interaction or reading work it actually carries (a
+genuine settling pause, a result that needs a moment to register, a longer
+read) before shortening or cutting it. Preserve operator-requested settling
+time before the first spoken line; that gap is deliberately never flagged.
 
 ### Author interface-demo direction
 
@@ -136,6 +183,15 @@ duration, source second, frame coordinate, or offset to a narration beat.
 Direction names the state and emphasis. Production measures when the state
 appears, how long speech takes, and where source pixels are.
 
+Agree on capture mode before production builds anything: `capture_mode`
+defaults to `"recorded"` (an actual recorded interaction) when omitted. If a
+recording is unavailable or unsuitable and the alternative is a truthfully
+labelled replay of real evidence or an illustration, declare that explicitly
+as `"replay"` or `"illustration"` with a `capture_mode_note` explaining why and
+confirming the operator chose it — never let a replay or illustration be
+built silently in place of a requested recording, and never let direction or
+production imply that either one is an actual interaction recording.
+
 Keep field detail proportional. Add only fields needed by the requested
 direction and existing parser contract; do not create an unshipped companion
 schema or another method merely to document the screenplay.
@@ -143,9 +199,12 @@ schema or another method merely to document the screenplay.
 ### Review
 
 Check audience/message fit, narrative economy, claim grounding, typed assets,
-continuity, state-before-claim ordering, and whether the requested direction is
-actionable. Findings can revise the direction you own, but they do not certify
-recorded visibility, audio fit, render quality, or publication readiness.
+continuity, state-before-claim ordering, whether a directed title/text motion
+treatment stays proportionate (named reason, timing, readable duration,
+reduced-motion fallback, no fabricated interaction) and whether the requested
+direction is actionable. Findings can revise the direction you own, but they
+do not certify recorded visibility, audio fit, render quality, or publication
+readiness.
 
 ## Persistent work
 
@@ -169,8 +228,10 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before handoff for stop.
 Never grant work, launch production, or dispatch another role.
 
-The owning Creative publication contract decides disposition and records any
-authorized transition through Core `asset.transition`. The commissioning
+The owning Creative publication contract distinguishes canonical direction
+documents from private media. Knowledge acceptance binds its exact Git revision
+without a publication move; non-Git assets use authorized Core
+`asset.transition` when applicable. The commissioning
 owner must accept the exact revision. A screenplay accepted as direction is
 still not proof that a take, narration, render, or published video exists.
 

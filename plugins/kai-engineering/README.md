@@ -16,11 +16,28 @@ review, PR delivery, and bounded Nightshift execution.
 | `eng-nightshift` | Approved serial unattended delivery |
 
 Methods include `software-development`, shared/frontend/backend coding
-standards, repository onboarding, research, PR sizing, review, review comments,
+standards, repository onboarding, pre-implementation research, standalone
+engineering investigation, PR sizing, fast/deep review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
 diagrams, development-design documents and readable Word projections,
 `nightshift-run`, and the manual `my-insights`, `team-insights`, and
 `refine-insights` workspace-learning commands.
+
+Use `research-before-coding` to decide whether evidence supports a proposed code
+change. Use `engineering-investigation` for standalone questions or substantial
+unresolved research; it does not require an intention to code. Neither requires
+a plan, saved report, or automatic delivery workflow.
+
+`fast-pr-review` checks a bounded diff, coding standards, and immediate effects,
+with useful low-impact improvements kept separate as optional nits.
+`deep-pr-review` traces affected contracts, consumers, and failure paths when
+explicitly requested. Each is a standalone method with its own rules; the
+methods do not depend on each other or a shared review skill. Ordinary reviewer
+requests default to fast review, never automatic investigation or deep review.
+
+Technical writing verifies facts needed for its documents and asks for guidance
+when evidence is missing; it does not start broader investigations. Developer
+design work may propose one, but needs confirmation unless already authorized.
 
 ## Install
 
@@ -56,18 +73,22 @@ the compact approved profile when present.
 
 ## Durable assets
 
-| Asset | Private workspace | Accepted publication |
+| Asset | Private supporting material | Default canonical knowledge |
 | --- | --- | --- |
-| Feature | `.kai/engineering/features/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/features/<id>/` |
-| Architecture documentation | `.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` |
-| Decision | `.kai/engineering/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` |
-| Investigation report | `.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` |
+| Feature | `.kai/engineering/features/<id>/{evidence,scratch}` | `docs/kai/engineering/features/<id>/` |
+| Architecture documentation | `.kai/engineering/documentation/architecture/<id>/{evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` |
+| Decision | `.kai/engineering/decisions/<id>/{evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` |
+| Investigation report | `.kai/engineering/reports/investigations/<id>/{evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` |
 | Nightshift report | `.kai/engineering/reports/nightshift/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/nightshift/<id>/` |
-| Release report | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` |
+| Release report | `.kai/engineering/reports/releases/<id>/{evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` |
 
-Drafts, evidence, and scratch stay private. Publication requires the named
-completion authority to accept the exact artifact revision and hash. Ordinary
-source changes stay in their native repository paths.
+Write knowledge at its repository home from creation, including proposed
+revisions. Established native documentation takes precedence over these
+defaults; never keep both as authorities. Coordinated acceptance binds the
+exact Git revision. Evidence and scratch stay private. Nightshift's raw
+execution report and checkpoints remain private operational outputs; a
+project narrative is a separate sanitized document. Non-Git deliverables keep
+their exact-byte acceptance and authorized publication rules.
 
 ## Boundaries
 

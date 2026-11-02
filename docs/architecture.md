@@ -92,8 +92,22 @@ project/
 |   |-- core/runtime/coordination.sqlite
 |   |-- project-management/runtime/project.sqlite  optional
 |   `-- <pack>/<type>/<id>/{drafts,evidence,scratch}/
-`-- docs/kai/                                  accepted project knowledge
+`-- docs/kai/                                  canonical project knowledge
 ```
+
+Project knowledge is authored at its canonical repository path from creation,
+on a branch. An established native documentation home takes precedence over
+the default package route under `docs/kai/`; never maintain both as authorities.
+Git preserves revisions and repository review governs integration. Required
+named scope/design/completion acceptance remains distinct from committing,
+merging, implementation, shipping, and external publication.
+
+`.kai` is for runtime state, A2A communication, memory, private evidence and
+working material, including immutable acceptance snapshots. It is not the
+authoritative home for project documents. Coordinated knowledge acceptance
+binds a Git base/head; private and non-Git deliverables retain exact-byte
+acceptance and authorized publication. Project Management's planning database
+and Creative media custody are unchanged.
 
 Schema 6 is the only live contract. Unsupported workspaces are re-onboarded by
 moving durable knowledge and artifacts into current package-owned paths,

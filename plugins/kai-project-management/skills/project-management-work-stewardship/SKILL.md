@@ -41,8 +41,9 @@ Missing, stale, or contradicted evidence blocks closure. The Project Management
 database does not copy Task lifecycle state. Epic, Feature, and Direction
 closure checks only their package-owned child records.
 
-Apply `project-management-workspace-publication` only when named authority asks
-to publish an accepted Direction or planning revision.
+Apply `project-management-workspace-publication` when authoring or revising
+requested durable Direction or planning knowledge. Documenting a proposal does
+not approve it or mutate planning authority.
 
 Never edit either SQLite database directly. Never represent a hold, priority,
 or closure decision in Markdown as authority.

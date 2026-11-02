@@ -53,14 +53,17 @@ The Project Management runtime never opens or mutates
 
 Planning artifacts materialize lazily on the first authorized write:
 
-| Asset | Private workspace | Accepted publication |
+| Asset | Private supporting material | Default canonical knowledge |
 | --- | --- | --- |
-| Direction | `.kai/project-management/direction/<id>/{drafts,evidence,scratch}` | `docs/kai/project-management/direction/<id>/` |
-| Plan | `.kai/project-management/plans/<id>/{drafts,evidence,scratch}` | `docs/kai/project-management/plans/<id>/` |
+| Direction | `.kai/project-management/direction/<id>/{evidence,scratch}` | `docs/kai/project-management/direction/<id>/` |
+| Plan | `.kai/project-management/plans/<id>/{evidence,scratch}` | `docs/kai/project-management/plans/<id>/` |
 
-The SQLite planning records remain private authority. Published Markdown or
-JSON is accepted knowledge, not a writable mirror of the database. Private
-evidence never publishes.
+The SQLite planning records remain private authority. Author Markdown or JSON
+explanations/projections at one canonical repository path from their first
+edit, using established documentation before these defaults. Documents do not
+move on acceptance and are not writable mirrors of the database. Existing
+scope/completion and Git review gates remain; a committed proposal does not
+approve Direction or close planning scope. Private evidence never publishes.
 
 ## Boundaries
 

@@ -13,7 +13,7 @@ authority**. Use:
 node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
 ```
 
-Never hand-edit coordination state. Markdown is accepted knowledge, not a
+Never hand-edit coordination state. Markdown is project knowledge, not a
 lease, lifecycle, message, review, or authority surface.
 
 Direct single-shot work needs no workspace, database, Task, lease, or activity
@@ -57,12 +57,29 @@ the Task, actor, exact actions, version, and lease. Apply only those actions.
 - `review.record`, `approval.record`, `evidence.register`,
   `artifact.register`, and `asset.transition` bind exact subject versions.
 
-For a coordinated durable asset, validate vocabulary and destination through
-the owning package publication skill first. Register the exact private bytes
-with `artifact.register`; publish only the independently accepted hash to its
-mirrored typed target; then record the authorized state with
-`asset.transition`. Runtime refusals are authoritative. Direct repository files
-create no Kai asset state.
+For coordinated project knowledge, validate ownership through the package
+publication skill and write at the canonical repository path from creation.
+Register the committed `{kind: 'git', base, head}` with its project ID through
+`artifact.register`; bind reviews and approvals to that exact Task subject and
+criteria. Review the full base-to-head change range; do not imply acceptance of
+unreviewed paths. A later commit needs its own acceptance. No private draft,
+move, or `asset.transition` publication step is needed. Runtime acceptance and
+repository merge permission remain separate.
+
+Git subjects retain no private byte snapshot. Keep the approved branch, with
+its base as an ancestor, reachable for as long as Core records reference it;
+retain it in the durable project remote for cross-checkout recovery. Never
+delete or rewrite that branch merely because a squash merge completed. A
+squashed or rebased commit is a different subject, not transferred approval.
+Fresh checkouts must fetch the retained branch before verification. If durable
+retention is unavailable or unauthorized, report the evidence-retention gap;
+do not silently push, tag, or change repository policy.
+
+For private or non-Git deliverables, retain immutable source bytes, register
+their exact hash, and use the owning package's authorized acceptance and
+publication route when requested. Never edit a registered source in place;
+record a new output instead. Runtime refusals are authoritative. Ordinary
+repository files and direct edits create no Kai asset state.
 
 The producing actor never accepts its own output where independent acceptance
 is required. Product-design acceptance comes from the declared

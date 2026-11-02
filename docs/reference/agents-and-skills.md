@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **9 agents** and **42 skills**.
+The repository ships **9 agents** and **45 skills**.
 
-The default marketplace supplies **9 agents** and **42 skills** through core, optional project management, engineering, and creative (21 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **9 agents** and **45 skills** through core, optional project management, engineering, and creative (25 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -55,7 +55,7 @@ Selective independent code review. Implementers retain ownership of their change
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact code change for requirements, correctness, contracts, regressions, risk, and test adequacy. Use explicitly for a diff, PR, or implementation review. Returns evidence-based findings and never repairs the code. |
+| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | `kai-engineering` | Independently reviews an exact diff or PR: fast by default, deep only when explicitly requested. Checks correctness, affected contracts, regressions, and test adequacy without repairing the code. |
 
 ## Skills
 
@@ -92,7 +92,7 @@ Own Direction, Epic, Feature, Requirement, priority, holds, dependencies, closur
 | [`project-management-create-epic`](../../plugins/kai-project-management/skills/project-management-create-epic/SKILL.md) | `kai-project-management` | Use when an approved outcome needs a Direction-aligned Epic proposal before Feature, Requirement, or Core Task planning. |
 | [`project-management-work-hierarchy`](../../plugins/kai-project-management/skills/project-management-work-hierarchy/SKILL.md) | `kai-project-management` | Use when reading, proposing, validating, or handing off Direction, Epic, Feature, and Requirement scope. |
 | [`project-management-work-stewardship`](../../plugins/kai-project-management/skills/project-management-work-stewardship/SKILL.md) | `kai-project-management` | Use when a named authority creates, activates, prioritizes, holds, releases, or closes Project Management scope. |
-| [`project-management-workspace-publication`](../../plugins/kai-project-management/skills/project-management-workspace-publication/SKILL.md) | `kai-project-management` | Use when accepted Direction or planning knowledge may be published from Project Management. |
+| [`project-management-workspace-publication`](../../plugins/kai-project-management/skills/project-management-workspace-publication/SKILL.md) | `kai-project-management` | Use when authoring durable Direction or planning knowledge and recording its acceptance. |
 
 ### Pack publication
 
@@ -125,7 +125,7 @@ Optional feedback and lean Kai agent/skill authoring guidance.
 
 ### Engineering craft
 
-Lean development, shared and domain coding standards, bounded evidence, explicit delivery, and useful visuals.
+Lean development, shared and domain coding standards, implementation readiness, standalone investigation, explicit delivery, and useful visuals.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
@@ -134,10 +134,12 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`frontend-coding-standards`](../../plugins/kai-engineering/skills/frontend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring frontend UI or client behavior. |
 | [`backend-coding-standards`](../../plugins/kai-engineering/skills/backend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring APIs, services, persistence, jobs, libraries, or server-side behavior. |
 | [`nightshift-run`](../../plugins/kai-engineering/skills/nightshift-run/SKILL.md) | `kai-engineering` | Use inside eng-nightshift for a bounded unattended engineering run whose Nightshift agent chooses one PR slice at a time and whose runner only persists, launches, and reports. |
-| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
+| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use before implementing a proposed code change when missing evidence could change whether or how to proceed. Not a general investigation entry point. |
+| [`engineering-investigation`](../../plugins/kai-engineering/skills/engineering-investigation/SKILL.md) | `kai-engineering` | Use for evidence-driven engineering investigations into behavior, architecture, integrations, capabilities, or unblocking options. No code change is required. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
 | [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |
-| [`pr-review`](../../plugins/kai-engineering/skills/pr-review/SKILL.md) | `kai-engineering` | Use from eng-reviewer-code after an exact PR or diff is pinned to choose the minimum relevant review from its purpose, changed behavior, evidence, and risk triggers. |
+| [`fast-pr-review`](../../plugins/kai-engineering/skills/fast-pr-review/SKILL.md) | `kai-engineering` | Use for a focused diff or PR review: local correctness, coding standards, immediate contract effects, relevant tests, and optional nits. Does not automatically expand into deeper review or investigation. |
+| [`deep-pr-review`](../../plugins/kai-engineering/skills/deep-pr-review/SKILL.md) | `kai-engineering` | Use when a deeper PR or diff review is explicitly requested to assess affected contracts, consumers, state transitions, and cross-component consequences. Not a repository-wide audit or general investigation. |
 | [`pr-review-comments`](../../plugins/kai-engineering/skills/pr-review-comments/SKILL.md) | `kai-engineering` | Use after verified review findings exist to draft or, with current authorization, post concise actionable pull-request comments. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | `kai-engineering` | Use when the user explicitly requests orientation to a repository or subsystem. |
 | [`my-insights`](../../plugins/kai-engineering/skills/my-insights/SKILL.md) | `kai-engineering` | Use when the operator explicitly asks Kai to remember a correction, preference, or working pattern for one target repository. |
@@ -162,6 +164,7 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 | ---- | ------- | ------------ |
 | [`mockups-ascii`](../../plugins/kai-creative/skills/mockups-ascii/SKILL.md) | `kai-creative` | Use when an ASCII wireframe is requested, or an unresolved layout, placement, grouping, or information-hierarchy decision needs a structural sketch. |
 | [`mockups-html`](../../plugins/kai-creative/skills/mockups-html/SKILL.md) | `kai-creative` | Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout. |
+| [`create-flow-mocks`](../../plugins/kai-creative/skills/create-flow-mocks/SKILL.md) | `kai-creative` | Use to produce or update the canonical accepted-flow HTML for a feature journey once exactly one interaction model has been selected. Not for comparing competing models — use mockups-html for that. |
 | [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | `kai-creative` | Use when a structural block diagram is requested for an HTML or image destination, or an established relationship would be materially clearer in that form. |
 | [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | `kai-creative` | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
 | [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | `kai-creative` | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |

@@ -2,12 +2,12 @@
   "name": "all packs",
   "packs": ["core", "contributor", "project-management", "engineering", "creative"],
   "artifact": {
-    "pack": "core",
-    "type": "decisions",
+    "pack": "creative",
+    "type": "media",
     "subtype": null,
     "id": "consumer-composition",
-    "file": "decision.md",
-    "privateDirectory": ".kai/core/decisions/consumer-composition/drafts",
-    "publicationDirectory": "docs/kai/core/decisions/consumer-composition"
+    "file": "destination.md",
+    "privateDirectory": ".kai/creative/media/consumer-composition/drafts",
+    "publicationDirectory": "docs/kai/creative/media/consumer-composition"
   }
 }

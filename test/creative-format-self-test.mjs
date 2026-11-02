@@ -148,9 +148,51 @@ test('explicit dimension object flows through checkDuration and checkSize using 
   const duration = checkDuration(screenplay, { seconds: 35 });
   assert.equal(duration.status, 'warn');
   assert.match(duration.detail, /30s editorial cap/);
+  assert.match(duration.detail, /declared editorial guidance/);
+  assert.doesNotMatch(duration.detail, /product default/);
+  assert.equal(checkDuration({ ...screenplay, max_seconds: 30 }, { seconds: 35 }).status, 'fail');
   const size = checkSize(screenplay, { bytes: 6 * 1024 * 1024 });
   assert.equal(size.status, 'fail');
   assert.match(size.detail, /5 MB limit/);
+  assert.match(size.detail, /declared destination limit/);
+  assert.doesNotMatch(size.detail, /upload is refused/i);
+});
+
+test('explicit placement rejects non-finite numeric bounds, including JSON overflow', () => {
+  for (const field of ['target', 'cap', 'maxBytes']) {
+    for (const value of [Infinity, -Infinity, NaN, JSON.parse('1e400')]) {
+      const placement = { target: 20, cap: 30, maxBytes: 5242880, muted: true, [field]: value };
+      assert.throws(() => profileFor({ placement }), new RegExp(`placement\\.${field}`));
+    }
+  }
+});
+
+test('explicit placement with no byte limit reports a missing declaration, not a destination fact', () => {
+  const result = checkSize({ placement: { target: 20, cap: 30, muted: false } }, { bytes: 1024 });
+  assert.equal(result.status, 'n/a');
+  assert.match(result.detail, /no upload limit declared/);
+  assert.doesNotMatch(result.detail, /no published upload limit/);
+});
+
+test('explicit muted placement requires captions and review bound to the current render', () => {
+  const screenplay = parseScreenplay(JSON.stringify({
+    ...base,
+    placement: { target: 20, cap: 30, maxBytes: null, muted: true },
+    narration: [{ id: 'n', text: 'hello', start_after: 'hold', visual_span: { from_step: 'hold', through_step: 'click' } }],
+  }));
+  assert.equal(checkMutedComprehension(screenplay).status, 'fail');
+  const captioned = { ...screenplay, captions: true };
+  assert.equal(checkMutedComprehension(captioned).status, 'warn');
+  assert.equal(checkMutedComprehension(captioned, {
+    captionReview: review({ render_sha256: 'b'.repeat(64) }),
+  }).status, 'warn');
+  assert.equal(checkMutedComprehension(captioned, {
+    captionReview: review({ method: 'subtitle-metadata' }),
+  }).status, 'warn');
+  assert.equal(checkMutedComprehension(captioned, { captionReview: review() }).status, 'pass');
+  assert.equal(checkMutedComprehension({
+    ...captioned, placement: { ...captioned.placement, muted: false },
+  }).status, 'n/a');
 });
 
 test('explicit dimension object rejects a missing target with a source-labeled refusal', () => {
@@ -174,10 +216,10 @@ test('explicit dimension object rejects a non-boolean muted flag, naming it a pl
   );
 });
 
-test('explicit dimension object rejects a negative maxBytes, naming it a destination fact', () => {
+test('explicit dimension object rejects a negative maxBytes, naming it a declared destination limit', () => {
   assert.throws(
     () => profileFor({ placement: { target: 20, cap: 30, maxBytes: -1, muted: false } }),
-    /destination's published upload limit, a fact/,
+    /declared destination upload limit/,
   );
 });
 

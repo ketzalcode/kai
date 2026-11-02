@@ -15,10 +15,10 @@ product.
 
 **Primary profile:** operations
 
-Direct work may return only inline or repository-native output. It must not
-register a durable Kai artifact. Any durable Kai report or publication requires
-an existing standalone Task, its current version, an authorized
-artifact target, current acting authority, and named acceptance authority. If
+Direct work may return inline or requested repository files, including
+canonical project knowledge, without Kai state. Registering a coordinated
+artifact requires an existing standalone Task, its current version, an
+authorized artifact target, current acting authority, and named acceptance authority. If
 any is absent, stop; never mint a subject or call `artifact.register` from the
 direct branch.
 
@@ -65,6 +65,7 @@ Run the existing format helper directly:
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json>
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <take.json> --video <final.mp4>
 node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --video <final.mp4> --caption-review <review.json>
+node "<kai-creative-provider>/scripts/demo-format.mjs" <screenplay.json> --take <edited_take.json> --source-take <raw_take.json> --video <final.mp4>
 node "<kai-creative-provider>/scripts/demo-format.mjs" --placements
 ```
 
@@ -100,8 +101,9 @@ visual inspection supplies that evidence.
 
 The five named placements (`--placements` lists them) are supported sugar
 over four underlying values: an editorial duration target/cap, a destination
-upload byte limit (a published fact), and whether the destination autoplays
-muted (an observed playback fact). When a real destination combines these
+upload byte limit, and whether the destination autoplays
+muted. Verify destination limits and playback behavior before declaring them;
+the checker evaluates supplied values, not the live destination. When a real destination combines these
 differently than any preset — for example a short teaser bound for a
 byte-capped doc page — declare `"placement"` as an explicit object instead of
 a name:
@@ -110,10 +112,14 @@ a name:
 "placement": { "target": 20, "cap": 30, "maxBytes": 5242880, "muted": true, "note": "short teaser embedded in a byte-capped doc" }
 ```
 
-This is deliberately only those four preset fields, not a new named dimension
-vocabulary (purpose, destination, or orientation enums and similar remain an
-open design question that has not been approved); it only lets a declaration
-combine values a preset cannot.
+`target` and `cap` are finite positive seconds, with `cap >= target`; both are
+editorial guidance, so exceeding them warns rather than fails. Set the
+screenplay's top-level `max_seconds` for a hard duration limit. `maxBytes` is a
+finite positive byte limit, or null/omitted when none is declared; exceeding a
+declared limit fails the size check. `muted` must be a boolean.
+
+This uses only the four existing preset fields; purpose, destination, and
+orientation enums are outside this change.
 
 Keep screenplay, take, clips, source footage, and output paths explicit and
 outside plugin files.
@@ -127,9 +133,49 @@ allowed paid operations, output paths, and operations that are intentionally
 omitted. Zoom and narration are optional. A silent demo skips narration; clear
 footage skips zoom.
 
+Read the screenplay's `capture_mode` before building anything. A recording is
+the default and needs no extra step. If the screenplay declares `"replay"` or
+`"illustration"`, confirm the `capture_mode_note` actually explains an agreed
+substitution rather than treating its presence alone as sufficient; if
+`capture_mode` is absent or `"recorded"` but what is being built is actually a
+replay or illustration, stop and return that mismatch rather than building an
+unapproved substitution. Any produced replay or illustration output must carry
+that label visibly and must never be presented, captioned, or described as an
+actual recording of the live interaction.
+
+Production's own canonical artifacts — the `kai.demo-screenplay/v1` direction
+and its `kai.demo-take/v1` capture take (or a `kai.demo-edited-take/v1` cut
+from one, carrying `source_take_id`) — are required production outputs, not an
+adapter built later to satisfy a helper. If direction arrived as Markdown or a
+custom editorial plan, obtain or project the canonical screenplay and take
+before running format or narration checks; do not hand-build a plan the
+helpers were never given to validate, and do not relabel edited timing as the
+original capture measurement or the reverse.
+
 Do not turn production into a fixed capture → zoom → speech chain. There is no
 worker-per-stage dispatch, mandatory zoom, mandatory speech, or automatic
 director call.
+
+### Resuming an interrupted production
+
+An existing file is not proof a stage was accepted. Before reusing any prior
+output after an interruption, check its verified status with
+`scripts/demo-status.mjs`:
+
+```text
+node "<kai-creative-provider>/scripts/demo-status.mjs" --report <production-descriptor.json> --receipts <receipts.json>
+```
+
+Each stage reports exactly one of `complete`, `pending`, `stale`, `failed`, or
+`unknown`. Treat `unknown` and `failed` as distinct from `complete`: an
+`unknown` stage has a file but no verified receipt, and a `failed` stage was
+recorded as not succeeding. Neither licenses reuse, and neither is retried
+automatically — report the printed `pending_operations` to the operator and
+let them decide, especially for any stage that would re-run a paid operation.
+A stage only earns `complete` when its output and every declared input still
+match the hashes recorded the last time it actually finished; record a stage's
+own receipt immediately after it finishes with
+`--record <stage> --output <path> [--input <path> ...] --status ok|failed`.
 
 ### 2. Check direction and format
 
@@ -177,7 +223,43 @@ a visually accepted render.
 
 No operation automatically triggers either of the others.
 
-### 4. Inspect and report
+### 3. Select a narration voice before new synthesis
+
+A new narration synthesis request is a creative decision, not an inherited
+default. Before requesting new synthesis, offer 2-3 actually available voice
+candidates and recommend one with a reason tied to the approved direction's
+audience, tone, pace, and language — never invent voice availability beyond
+what the provider or operator actually confirms. Compare candidates using the
+same approved line(s) of text where a short sample is useful, and reuse a
+cached or previously supplied sample instead of generating a new one when it
+already answers the comparison. This is proportional to the task: skip it
+when reusing an existing voice/take, or when the operator has already made
+the selection.
+
+Use `ask_user` to get explicit operator consent and cost awareness before
+generating any new paid audition or full-pass synthesis; an existing allowed
+paid operation does not itself authorize a provider call without the
+operator having seen and chosen among the offered candidates.
+
+### 4. Run only authorized media operations
+
+Report measured clips, failures, and partial output; estimates are not
+measurements.
+
+Invoke `video-align-narration` only for an explicit fit, placement, command, or
+mix request with matching measured inputs. Inspect relevant interior states and
+visibility evidence; action times alone do not prove state visibility. Missing
+clips are a named gap, not something to generate. A printed command is not an executed mix.
+
+Invoke `video-render-zoom` only for an explicit focus operation or evidenced
+legibility need on existing footage. Supplied intent chooses emphasis; measured
+frames establish coordinates and times. Surface compiler skips, clamping,
+unsettled states, and missing duration evidence. A plan or contact sheet is not
+a visually accepted render.
+
+No operation automatically triggers either of the others.
+
+### 5. Inspect and report
 
 Verify requested files exist and distinguish source media, intermediate files,
 commands, plans, and final deliverables. Report actual inspection performed.
@@ -207,8 +289,10 @@ Task record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 
-The owning Creative publication contract decides disposition and records any
-authorized transition through Core `asset.transition`. Preserve exact paths,
+The owning Creative publication contract keeps project narratives canonical
+from creation and raw media private. Knowledge acceptance binds its exact Git
+revision without a publication move; non-Git media retains authorized Core
+`asset.transition` when applicable. Preserve exact paths,
 revision/status, limitations, validity owner, pending reviews, and missing
 stages. No external publication: the operator retains publication and
 distribution authority.

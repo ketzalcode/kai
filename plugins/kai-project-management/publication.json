@@ -5,7 +5,7 @@
     {
       "type": "direction",
       "subtype": null,
-      "privateForm": ".kai/project-management/direction/<id>/{drafts,evidence,scratch}",
+      "privateForm": ".kai/project-management/direction/<id>/{evidence,scratch}",
       "publicForm": "docs/kai/project-management/direction/<id>/",
       "formats": ["markdown", "markdown-single-file", "bundle"],
       "authority": "completion",
@@ -14,7 +14,7 @@
     {
       "type": "plans",
       "subtype": null,
-      "privateForm": ".kai/project-management/plans/<id>/{drafts,evidence,scratch}",
+      "privateForm": ".kai/project-management/plans/<id>/{evidence,scratch}",
       "publicForm": "docs/kai/project-management/plans/<id>/",
       "formats": ["markdown", "json", "bundle"],
       "authority": "completion",
