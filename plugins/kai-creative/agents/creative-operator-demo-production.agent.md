@@ -99,6 +99,28 @@ The hash must match the current render. Subtitle metadata alone cannot prove
 rendered legibility, clipping, or the opening; it remains a warning until
 visual inspection supplies that evidence.
 
+The five named placements (`--placements` lists them) are supported sugar
+over four underlying values: an editorial duration target/cap, a destination
+upload byte limit, and whether the destination autoplays
+muted. Verify destination limits and playback behavior before declaring them;
+the checker evaluates supplied values, not the live destination. When a real destination combines these
+differently than any preset — for example a short teaser bound for a
+byte-capped doc page — declare `"placement"` as an explicit object instead of
+a name:
+
+```json
+"placement": { "target": 20, "cap": 30, "maxBytes": 5242880, "muted": true, "note": "short teaser embedded in a byte-capped doc" }
+```
+
+`target` and `cap` are finite positive seconds, with `cap >= target`; both are
+editorial guidance, so exceeding them warns rather than fails. Set the
+screenplay's top-level `max_seconds` for a hard duration limit. `maxBytes` is a
+finite positive byte limit, or null/omitted when none is declared; exceeding a
+declared limit fails the size check. `muted` must be a boolean.
+
+This uses only the four existing preset fields; purpose, destination, and
+orientation enums are outside this change.
+
 Keep screenplay, take, clips, source footage, and output paths explicit and
 outside plugin files.
 
