@@ -126,7 +126,7 @@ const CATEGORIES = [
       'pr-sizing', 'pr-delivery', 'fast-pr-review', 'deep-pr-review',
       'pr-review-comments',
       'onboard-to-codebase', 'my-insights', 'team-insights', 'refine-insights',
-      'build-diagrams', 'development-design-documents',
+      'build-diagrams',
     ],
   },
   {

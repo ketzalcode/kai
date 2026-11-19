@@ -19,8 +19,7 @@ Methods include `software-development`, shared/frontend/backend coding
 standards, repository onboarding, pre-implementation research, standalone
 engineering investigation, PR sizing, fast/deep review, review comments,
 PR delivery, feasibility-first `setup-agentic-repository-maintenance`,
-diagrams, development-design documents and readable Word projections,
-`nightshift-run`, and the manual `my-insights`, `team-insights`, and
+diagrams, `nightshift-run`, and the manual `my-insights`, `team-insights`, and
 `refine-insights` workspace-learning commands.
 
 Use `research-before-coding` to decide whether evidence supports a proposed code
