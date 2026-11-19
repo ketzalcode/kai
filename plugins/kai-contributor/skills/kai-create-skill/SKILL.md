@@ -15,6 +15,19 @@ skill.
 Repository instructions and loader conventions govern. Inspect them before
 editing.
 
+## Choose ownership first
+
+Default to a repository-local skill when the method is requested for one
+workspace, is new or still evolving, or depends on local terminology, practice,
+or tools. Preserve the repository's established skill root; Copilot CLI reads
+`.github/skills/`, `.agents/skills/`, and `.claude/skills/` with no documented
+preference. If the root is unclear, ask instead of inventing one.
+
+Choose a Kai package only when the operator explicitly requests Kai-wide
+ownership or evidence shows stable, caller-agnostic reuse across repositories.
+Apparent generality is insufficient. If ownership is ambiguous, ask one
+local-versus-Kai question before editing Kai or opening a public Kai PR.
+
 ## Establish the boundary
 
 A skill is justified when the method:
@@ -24,10 +37,8 @@ A skill is justified when the method:
 - benefits from context that should load only when needed; and
 - can be applied without knowing which agent invoked it.
 
-Keep phases of one method as sections or companion references. Split another
-skill only when it has an independent trigger, independent reuse, or materially
-different tools/context. Do not create prepare, execute, and report skills only
-because a lifecycle has three phases.
+Keep phases of one method together. Split only for an independent trigger,
+independent reuse, or materially different tools/context.
 
 ## Preserve dependency direction
 
@@ -66,13 +77,6 @@ Use progressive disclosure:
 3. **Resources:** load references, scripts, assets, or lower-level skills only
    at the step that needs them.
 
-The main `SKILL.md` contains:
-
-- a precise use-when description;
-- the stable decision or method;
-- hard boundaries and failure behavior; and
-- links to companion material only when it is needed.
-
 Put large examples, templates, and lookup material under `references/`. Put
 deterministic parsing, persistence, and machine validation in scripts or source
 code. Do not copy a runtime schema into prose merely so an agent can keep
@@ -92,8 +96,8 @@ The report is not another authority and the admission is not a progress log.
 
 ## Author or revise
 
-1. Read neighboring skills and reuse their frontmatter, naming, tools, and
-   reference conventions.
+1. Read neighboring skills in the chosen owner and reuse their conventions; do
+   not impose Kai frontmatter on a repository-local skill.
 2. Search for an existing skill that already owns the method.
 3. Write the trigger around the real repeated request, not the current task.
 4. Keep caller-specific routing in the caller.

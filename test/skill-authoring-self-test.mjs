@@ -37,6 +37,9 @@ test('create-skill keeps reusable resources caller-agnostic and lean', () => {
   assert.match(body, /\*\*Instructions:\*\*/);
   assert.match(body, /\*\*Resources:\*\*/);
   assert.match(body, /Do not begin with a collected dependency list/);
+  assert.match(body, /Default to a repository-local skill/);
+  assert.match(body, /Apparent generality is insufficient/);
+  assert.match(body, /ask one\s+local-versus-Kai question before editing Kai/);
   assert.doesNotMatch(body, /eng-nightshift|eng-lead-software/);
 });
 
@@ -81,6 +84,9 @@ test('create-agent keeps roles focused and routes shared context just in time', 
   assert.match(body, /Do not add an `\*\*Inherits:\*\*` line/);
   assert.match(body, /A conditional route is still just in time/);
   assert.match(body, /Never create a\s+`workflow-\*` agent/);
+  assert.match(body, /Default to a repository-local agent/);
+  assert.match(body, /Apparent generality is insufficient/);
+  assert.match(body, /ask one local-versus-Kai question before editing Kai/);
 });
 
 test('loader contract rejects malformed agent and skill frontmatter', () => {
