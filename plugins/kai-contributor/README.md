@@ -12,6 +12,9 @@ agents and skills.
 - `kai-create-skill` defines reusable, caller-agnostic skills with valid package
   ownership and dependency direction.
 
+Both default new or evolving work to the requesting repository and choose a Kai
+package only on explicit request or stable cross-repository evidence.
+
 ## Install
 
 ```text
