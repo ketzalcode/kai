@@ -114,10 +114,10 @@ Slugs are kebab-case, lowercase, and short enough to read in a branch list.
 
 ## 4 - PR description
 
-Read `references/pr-description.md` before drafting or updating the body. Use
-the `Overview` and `Validation scenarios` sections by default. Add scoped ASCII
-architecture when its trigger applies, and a rollout plan only when the change
-has one.
+Read `references/pr-description.md` before drafting or updating the body and
+choose its profile by effect first. For a behavior change, use the `Overview`
+and `Validation scenarios` sections by default. Add scoped ASCII architecture
+when its trigger applies, and a rollout plan only when the change has one.
 
 Describe one accepted delivery slice. Name dependencies on earlier PRs and work
 deliberately deferred to later slices. CI owns commands, pass/fail status,
