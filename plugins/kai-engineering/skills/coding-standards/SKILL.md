@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: "Use when writing, modifying, or refactoring code."
+description: "Use when writing, modifying, refactoring, or reviewing implementation code. Not for documentation, threat-model, or diagram-only edits."
 tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"
@@ -15,6 +15,11 @@ must remain compatible. These standards guide implementation quality.
 Start from established repository patterns, but improve them within the
 authorized scope when they conflict with correctness, clarity, safety, or
 maintainability.
+
+Apply these standards to implementation code only. Documentation, threat-model
+prose, and diagram labels follow repository instructions and the artifact's
+existing pattern; technical vocabulary alone is not implementation intent. In
+mixed changes, apply them only to the code.
 
 ## Rules
 
@@ -49,6 +54,10 @@ maintainability.
   reuse, or independent testing; keep cohesive, single-use logic local when
   extraction would hide context or add indirection. Prefer pure helpers for
   reusable transformations and decisions.
+- Before adding a helper, check relevant existing utilities and their
+  contracts. Reuse an equivalent helper or place the logic with its natural
+  owner; do not move single-use logic into shared utilities or broaden a
+  helper's behavior just to enable reuse.
 - Avoid speculative abstractions, unnecessary layers, generic frameworks, and
   lookup tables that do not simplify the current requirement.
 - Preserve public behavior and compatibility during refactors unless the task
