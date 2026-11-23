@@ -90,6 +90,10 @@ test('software development scales process and stops at evidence handoff', () => 
   );
   assert.match(development, /Do not use for review-only, PR merge/);
   assert.match(development, /Apply `coding-standards` to implementation code/);
+  assert.match(development, /^## Make architecture choices$/m);
+  assert.match(development, /Migration progress is not framework completeness/);
+  assert.match(development, /only when a current consumer or invariant\s+requires it/);
+  assert.match(development, /smallest product-complete, reversible slice/);
   const standards = readSkill('coding-standards');
   assert.match(standards, /^description:.*Not for documentation, threat-model, or diagram-only edits/m);
   assert.match(standards, /In\s+mixed changes, apply them only to the code/);
