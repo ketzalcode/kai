@@ -23,6 +23,20 @@ instructions and task requirements govern; this skill adds no approval layer.
 Do not turn ordinary local choices into operator decisions. Follow established
 repository patterns and preserve unrelated work.
 
+## Make architecture choices
+
+When architecture, migration sequencing, shared infrastructure, or a public
+contract materially shapes the change, decide from current needs:
+
+- Inventory remaining product behaviors and their consumers before sequencing
+  migration work. Migration progress is not framework completeness.
+- Add or finish a shared abstraction only when a current consumer or invariant
+  requires it, not for speculative reuse.
+- Prefer the smallest product-complete, reversible slice, and keep explicit
+  compatibility, rollback, and removal boundaries.
+- Use `research-before-coding` to gather missing evidence; this step still owns
+  the choice.
+
 ## Apply implementation guidance
 
 Apply `coding-standards` to implementation code alongside the repository's
