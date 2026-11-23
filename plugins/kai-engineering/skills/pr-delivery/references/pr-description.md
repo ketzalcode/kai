@@ -3,6 +3,36 @@
 Use verified facts from the final delivery slice. When a fact is not settled,
 use `Pending decision` or `Not applicable` rather than inventing content.
 
+## Choose the profile by effect
+
+Classify the PR by its effect, not by file extension. Select the profile before
+applying any repository or downstream template, and apply such a template only
+within its declared scope: a migration template does not govern an
+artifact-only PR.
+
+- **Behavior change:** code, schema, configuration, generated contracts, or
+  anything else that can change runtime or public-contract behavior. Use the
+  sections below.
+- **Artifact-only:** documentation, diagrams, or models with no runtime or
+  public-contract effect. Use this shape and omit validation scenarios and
+  rollout:
+
+```markdown
+## Overview
+What the artifact changes, why, and what remains unchanged.
+
+## Changes
+| Artifact / section | Change |
+| --- | --- |
+
+## Review guide
+Where to start, what to inspect, and any unresolved decisions.
+```
+
+For artifact-only review, name the relevant criteria: readable rendering,
+valid references, preserved identities, and intended scope. Add a diagram only
+when it helps reviewers navigate the change, not to restate the artifact.
+
 ## Overview
 
 One sentence describing the behavior changed by this PR, followed by two to

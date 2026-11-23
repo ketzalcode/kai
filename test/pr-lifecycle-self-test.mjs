@@ -201,6 +201,10 @@ test('pr delivery reads the shared description reference', () => {
     reference,
     /A removal, version change, or deferred follow-up by\s+itself does not trigger this section/,
   );
+  assert.match(reference, /^## Choose the profile by effect$/m);
+  assert.match(reference, /Classify the PR by its effect, not by file extension/);
+  assert.match(reference, /a migration template does not govern an\s+artifact-only PR/);
+  assert.match(reference, /^## Review guide$/m);
   assert.match(reference, /^## Overview$/m);
   assert.match(reference, /^## Scoped architecture$/m);
   assert.match(reference, /^## Validation scenarios$/m);
