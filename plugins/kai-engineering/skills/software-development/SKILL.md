@@ -25,7 +25,8 @@ repository patterns and preserve unrelated work.
 
 ## Apply implementation guidance
 
-Apply `coding-standards` alongside the repository's conventions. Apply the
+Apply `coding-standards` to implementation code alongside the repository's
+conventions; documentation-only edits do not need it. Apply the
 relevant frontend or backend coding standards when the change touches that
 domain. Use only concerns the change actually reaches; these are not universal
 checklists.

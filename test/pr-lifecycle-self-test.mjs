@@ -89,7 +89,12 @@ test('software development scales process and stops at evidence handoff', () => 
     /feature, fix, refactor, or behavior change/,
   );
   assert.match(development, /Do not use for review-only, PR merge/);
-  assert.match(development, /Apply `coding-standards`/);
+  assert.match(development, /Apply `coding-standards` to implementation code/);
+  const standards = readSkill('coding-standards');
+  assert.match(standards, /^description:.*Not for documentation, threat-model, or diagram-only edits/m);
+  assert.match(standards, /In\s+mixed changes, apply them only to the code/);
+  assert.match(standards, /check relevant existing utilities and their\s+contracts/);
+  assert.match(standards, /broaden a\s+helper's behavior just to enable reuse/);
   assert.match(development, /Clear bounded change/);
   assert.match(development, /Material ambiguity/);
   assert.match(development, /Architecture or risky cross-cutting change/);
