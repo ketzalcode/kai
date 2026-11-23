@@ -18,6 +18,17 @@ patterns rather than creating parallel conventions.
 - Keep state as local as its consumers allow. Make ownership, loading, empty,
   error, stale, and cancellation behavior explicit where the interaction needs
   them.
+- Store coupled lifecycle fields atomically, for example a discriminated state
+  whose ready variant requires its data. Preserve existing guards that keep
+  stale host data from rendering before effects synchronize. Note non-obvious
+  loading ownership or intentional best-effort async failure at the invariant.
+- Use established typed properties, such as feature flags, and framework
+  contracts directly; do not widen them through generic records, casts, or a
+  parallel fallback. Copy arrays or objects only for a mutation or identity
+  need.
+- Name capability predicates positively and keep eligibility, rollout,
+  recovery, and error telemetry distinct. A disabled feature or normal recovery
+  path is not an error event.
 - Reuse repository components, tokens, forms, data-fetching patterns, and
   interaction conventions before introducing another abstraction.
 - Preserve semantic controls, keyboard operation, focus behavior, labels, and

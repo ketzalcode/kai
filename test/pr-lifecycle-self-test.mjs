@@ -95,6 +95,10 @@ test('software development scales process and stops at evidence handoff', () => 
   assert.match(standards, /In\s+mixed changes, apply them only to the code/);
   assert.match(standards, /check relevant existing utilities and their\s+contracts/);
   assert.match(standards, /broaden a\s+helper's behavior just to enable reuse/);
+  const frontendStandards = readSkill('frontend-coding-standards');
+  assert.match(frontendStandards, /ready variant requires its data/);
+  assert.match(frontendStandards, /do not widen them through generic records/);
+  assert.match(frontendStandards, /normal recovery\s+path is not an error event/);
   assert.match(development, /Clear bounded change/);
   assert.match(development, /Material ambiguity/);
   assert.match(development, /Architecture or risky cross-cutting change/);
