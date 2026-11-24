@@ -202,13 +202,15 @@ test('Engineering evidence skills keep independent entry points and one-way rese
       .includes(ref.target)), []);
 });
 
-test('engineering investigation drives to a recommendation and resumes from its basis', () => {
+test('engineering investigation drives to a recommendation, resumes from its basis, and preserves browser sessions', () => {
   const body = skills.get('engineering-investigation');
   assert.match(body, /Run available, authorized read-only checks yourself/);
   assert.match(body, /Stop only for a real external dependency or decision/);
   assert.match(body, /Earlier assistant advice, or documents repeating it, is not independent\s+corroboration/);
   assert.match(body, /at most one or two consequential operator actions/);
   assert.match(body, /On re-entry, read the basis first and revalidate unstable claims/);
+  assert.match(body, /treat existing sessions, tabs, and authenticated\s+profiles as owned by other work/);
+  assert.match(body, /Never close another\s+session, reuse an unrelated authenticated context/);
 });
 
 test('reference cycles report the complete caller-resource loop', () => {

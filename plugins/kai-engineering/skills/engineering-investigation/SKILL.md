@@ -73,6 +73,14 @@ question; prefer authoritative material. Supplied sources remain valid evidence
 without requiring new tools. Run a focused experiment only when needed and
 authorized. Use a diagram only when it materially clarifies a relationship.
 
+When using browser tooling, treat existing sessions, tabs, and authenticated
+profiles as owned by other work. Use an isolated context or profile when the
+tooling supports one, and verify the signed-in identity is the intended actor
+before relying on results. If isolation is unavailable, state the exact
+constraint and continue through other authorized sources. Never close another
+session, reuse an unrelated authenticated context, or bypass authentication
+controls.
+
 If blocked, change to another authorized evidence source or validation strategy.
 Do not repeat an unchanged failing attempt indefinitely, bypass permissions,
 expose secrets, or convert an inaccessible source into an impossibility claim.
