@@ -25,7 +25,8 @@ Before showing a plan:
 1. Resolve the current plugin directory again before every command.
 2. Read `copilot plugin marketplace list` and `copilot plugin list`.
 3. Refuse mixed provenance, unreadable state, disabled plugins, or version
-   skew.
+   skew. An equal version does not prove equal content: feature changes ship
+   without version bumps.
 4. Browse the marketplace and prove all requested packs exist at one version.
 
 Do not infer enabled state from `plugin list`. Never substitute a direct
@@ -47,8 +48,10 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
 
-Use `update` for an installed older pack. Obtain confirmation for the displayed
-plan before changing marketplace or plugin state.
+Use `update` for an installed pack. Any update plan includes every installed
+Kai pack, not only the requested one; packs updated separately can carry
+contradictory contracts at the same version. Obtain confirmation for the
+displayed plan before changing marketplace or plugin state.
 
 ## Execute
 
@@ -57,8 +60,10 @@ Install/update Core before Project Management or departments. Contributor has
 no ordering dependency. If a pack is disabled, tell the operator to enable it
 through `/plugin` and start a fresh session; do not invent an enable command.
 
-After any install or update, require a fresh session. Do not uninstall earlier
-successful steps to manufacture rollback.
+After any install or update, require a fresh session. After an update, offer
+to compare the consumer's managed `AGENTS.md` region with the updated block in
+that session. Do not uninstall earlier successful steps to manufacture
+rollback.
 
 ## Report
 

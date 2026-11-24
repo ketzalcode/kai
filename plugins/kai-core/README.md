@@ -22,7 +22,8 @@ Feature, and Requirement records belong to `kai-project-management`.
 copilot plugin install kai-core@kai-plugins
 ```
 
-Start a new Copilot session after installation or update.
+Update all installed Kai packs together; an equal version does not prove equal
+content. Start a new Copilot session after installation or update.
 
 ## Workspace behavior
 

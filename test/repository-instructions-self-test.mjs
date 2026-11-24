@@ -69,3 +69,14 @@ test('onboarding covers absent and existing AGENTS.md without staging it', () =>
   assert.match(onboarding, /replace\s+only\s+the\s+marked\s+Kai\s+region/);
   assert.match(onboarding, /never stage or commit/i);
 });
+
+test('updates keep installed packs together and refresh a drifted managed region', () => {
+  const packInstallation = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-workspace-onboarding/references/pack-installation.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(packInstallation, /An equal version does not prove equal content/);
+  assert.match(packInstallation, /Any update plan includes every installed\s+Kai pack/);
+  assert.match(onboarding, /exists but differs from the installed block, show the\s+difference/);
+  assert.match(onboarding, /never migrate content automatically/);
+});
