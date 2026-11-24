@@ -6,11 +6,16 @@ source registrations or newly generated packs. Older installations are
 unchanged until updated; this source change does not verify or claim their
 removal from a live host.
 
-Moving a component here is not approval to reintroduce it. Re-entry is tracked
-in [#211](https://github.com/RubenSaucedo/kai/issues/211) and requires an
+Moving a component here is not approval to reintroduce it. Re-entry requires an
 independent review of its responsibility, triggers, inputs, output contract,
 consumer, stopping point, grounding rules, focused evidence, and operator
 sign-off.
+
+Dedicated document review was declined in
+[#211](https://github.com/ketzalcode/kai/issues/211): no current consumer needed
+it beyond fast/deep code review and the artifact-only PR review guide. Its
+`workflow-doc-review` agent and ten review skills were removed; Git history is
+the archive. A new proposal needs fresh consumer evidence.
 
 `eng-lead-architecture` is tracked separately in
 [#249](https://github.com/ketzalcode/kai/issues/249). Its active trigger and
@@ -32,19 +37,8 @@ host support that makes absence and participation claims reliable.
 
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
-| `workflow-doc-review` | agent | `plugins/kai-engineering/agents/workflow-doc-review.agent.md` | inactive |
 | `eng-lead-architecture` | agent | `plugins/kai-engineering/agents/eng-lead-architecture.agent.md` | inactive; re-entry tracked by #249 |
 | `eng-builder-platform` | agent | `plugins/kai-engineering/agents/eng-builder-platform.agent.md` | inactive; requires repository-learning redesign |
 | `workflow-ship` | agent | `plugins/kai-engineering/agents/workflow-ship.agent.md` | inactive; requires meaningful release actions |
 | `issue-analysis` | skill | `plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md` | inactive; needs an active Engineering issue/feedback owner |
 | `fleet-observation` | skill + hook/scripts | `plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md` | inactive; current host cannot observe Kai agents |
-| `doc-review-rigor` | skill | `plugins/kai-engineering/skills/doc-review-rigor/SKILL.md` | inactive |
-| `review-security-privacy` | skill | `plugins/kai-engineering/skills/review-security-privacy/SKILL.md` | inactive |
-| `review-rollout-operability` | skill | `plugins/kai-engineering/skills/review-rollout-operability/SKILL.md` | inactive |
-| `review-rationale` | skill | `plugins/kai-engineering/skills/review-rationale/SKILL.md` | inactive |
-| `review-alternatives` | skill | `plugins/kai-engineering/skills/review-alternatives/SKILL.md` | inactive |
-| `review-risks-scope` | skill | `plugins/kai-engineering/skills/review-risks-scope/SKILL.md` | inactive |
-| `review-dependencies` | skill | `plugins/kai-engineering/skills/review-dependencies/SKILL.md` | inactive |
-| `review-performance-scale` | skill | `plugins/kai-engineering/skills/review-performance-scale/SKILL.md` | inactive |
-| `review-success-metrics` | skill | `plugins/kai-engineering/skills/review-success-metrics/SKILL.md` | inactive |
-| `review-ux-accessibility` | skill | `plugins/kai-engineering/skills/review-ux-accessibility/SKILL.md` | inactive |
