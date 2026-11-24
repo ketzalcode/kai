@@ -169,6 +169,10 @@ printed command renders a short speech-plus-music sample, not a technical
 waveform check alone -- the operator has to actually hear narration and music
 together to judge fit, balance, and whether the track suits the story.
 
+When several suitable tracks are available, audition two or three short
+candidates and present each with its style, tempo, energy, and provenance from
+its cue so the operator can compare them before accepting one.
+
 Record the operator's judgment before anything downstream relies on it:
 
 ```text
