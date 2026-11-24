@@ -72,6 +72,12 @@ Offer once to install `scripts/lib/repository-instructions-block.md`. If
 region and preserve every other byte. Never stage or commit the file without
 separate operator authorization.
 
+When the marked region exists but differs from the installed block, show the
+difference and offer to refresh it. If other consumer instructions or
+navigation still state a superseded Kai contract, propose a narrow edit.
+Preserve uncommitted work, registered evidence, acceptance, and publication
+boundaries; never migrate content automatically.
+
 ## Result
 
 Return the selected mode, exact verified state, changes made, checks performed,
