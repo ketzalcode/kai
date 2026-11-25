@@ -53,7 +53,7 @@ package's directory.
 | Package | Contents |
 | --- | --- |
 | `kai-creative` | [`demo-capture` and design grounding](kai-creative/README.md) |
-| `kai-engineering` | [Architecture, platform, release, issue analysis, and unsupported fleet observation](kai-engineering/README.md) |
+| `kai-engineering` | [Platform, release, issue analysis, and unsupported fleet observation](kai-engineering/README.md) |
 
 ## Returning something to the active tree
 
